@@ -43,14 +43,14 @@ export const signin = async (payload: TSignin) => {
 
   const accessToken = createToken(
     jwtPayload,
-    config.jwt_access_secret as string,
-    config.jwt_access_secret_expires_in as string,
+    config.jwt_access_secret,
+    config.jwt_access_secret_expires_in,
   );
 
   const refreshToken = createToken(
     jwtPayload,
-    config.jwt_refresh_secret as string,
-    config.jwt_refresh_secret_expires_in as string,
+    config.jwt_refresh_secret,
+    config.jwt_refresh_secret_expires_in,
   );
 
   return {
@@ -84,14 +84,14 @@ export const signup = async (payload: TSignup) => {
 
   const accessToken = createToken(
     jwtPayload,
-    config.jwt_access_secret as string,
-    config.jwt_access_secret_expires_in as string,
+    config.jwt_access_secret,
+    config.jwt_access_secret_expires_in,
   );
 
   const refreshToken = createToken(
     jwtPayload,
-    config.jwt_refresh_secret as string,
-    config.jwt_refresh_secret_expires_in as string,
+    config.jwt_refresh_secret,
+    config.jwt_refresh_secret_expires_in,
   );
 
   return {
@@ -102,9 +102,9 @@ export const signup = async (payload: TSignup) => {
 };
 
 export const refreshToken = async (token: string) => {
-  const { id, iat } = verifyToken(token, config.jwt_refresh_secret as string);
+  const { email, iat } = verifyToken(token, config.jwt_refresh_secret);
 
-  const user = await User.isUserExistByEmail(id);
+  const user = await User.isUserExistByEmail(email);
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
@@ -140,8 +140,8 @@ export const refreshToken = async (token: string) => {
 
   const accessToken = createToken(
     jwtPayload,
-    config.jwt_access_secret as string,
-    config.jwt_access_secret_expires_in as string,
+    config.jwt_access_secret,
+    config.jwt_access_secret_expires_in,
   );
 
   return {
@@ -221,8 +221,8 @@ export const forgetPassword = async (payload: TForgetPassword) => {
 
   const resetToken = createToken(
     jwtPayload,
-    config.jwt_access_secret as string,
-    config.jwt_access_secret_expires_in as string,
+    config.jwt_access_secret,
+    config.jwt_access_secret_expires_in,
   );
 
   const resetUILink = `${config.reset_password_ui_link}?id=${user.email}&token=${resetToken}`;
@@ -250,9 +250,9 @@ export const resetPassword = async (payload: TResetPassword, token: string) => {
     throw new AppError(httpStatus.FORBIDDEN, 'User is blocked!');
   }
 
-  const { id } = verifyToken(token, config.jwt_access_secret as string);
+  const { email } = verifyToken(token, config.jwt_access_secret);
 
-  if (payload.email !== id) {
+  if (payload.email !== email) {
     throw new AppError(httpStatus.FORBIDDEN, 'User is forbidden!');
   }
 
