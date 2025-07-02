@@ -9,13 +9,14 @@ import {
   TChangePassword,
   TForgetPassword,
   TJwtPayload,
-  TLogin,
   TResetPassword,
+  TSignin,
+  TSignup,
 } from './auth.type';
 import { createToken, verifyToken } from './auth.utils';
 
-const loginUser = async (payload: TLogin) => {
-  const user = await User.isUserExistById(payload.id);
+export const signin = async (payload: TSignin) => {
+  const user = await User.isUserExistByEmail(payload.email);
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
@@ -35,8 +36,7 @@ const loginUser = async (payload: TLogin) => {
 
   const jwtPayload: TJwtPayload = {
     _id: user._id,
-    id: user.id,
-    username: user.username,
+    name: user.name,
     email: user.email,
     role: user.role,
   };
@@ -56,15 +56,55 @@ const loginUser = async (payload: TLogin) => {
   return {
     access_token: accessToken,
     refresh_token: refreshToken,
-    jwt_payload: jwtPayload,
-    need_password_change: user?.need_password_change,
+    info: jwtPayload,
   };
 };
 
-const refreshToken = async (token: string) => {
+export const signup = async (payload: TSignup) => {
+  const isExist = await User.isUserExistByEmail(payload.email);
+  if (isExist) {
+    throw new AppError(httpStatus.CONFLICT, 'User already exists!');
+  }
+
+  const user = await User.create(payload);
+
+  if (!user) {
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'Failed to create user!',
+    );
+  }
+
+  const jwtPayload: TJwtPayload = {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  };
+
+  const accessToken = createToken(
+    jwtPayload,
+    config.jwt_access_secret as string,
+    config.jwt_access_secret_expires_in as string,
+  );
+
+  const refreshToken = createToken(
+    jwtPayload,
+    config.jwt_refresh_secret as string,
+    config.jwt_refresh_secret_expires_in as string,
+  );
+
+  return {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    info: jwtPayload,
+  };
+};
+
+export const refreshToken = async (token: string) => {
   const { id, iat } = verifyToken(token, config.jwt_refresh_secret as string);
 
-  const user = await User.isUserExistById(id);
+  const user = await User.isUserExistByEmail(id);
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
@@ -93,8 +133,7 @@ const refreshToken = async (token: string) => {
 
   const jwtPayload: TJwtPayload = {
     _id: user._id,
-    id: user.id,
-    username: user.username,
+    name: user.name,
     email: user.email,
     role: user.role,
   };
@@ -111,11 +150,11 @@ const refreshToken = async (token: string) => {
   };
 };
 
-const changePassword = async (
+export const changePassword = async (
   userData: JwtPayload,
   payload: TChangePassword,
 ) => {
-  const user = await User.isUserExistById(userData.id);
+  const user = await User.isUserExistByEmail(userData.id);
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
@@ -142,13 +181,12 @@ const changePassword = async (
 
   const result = await User.findOneAndUpdate(
     {
-      id: user.id,
+      email: user.email,
       role: user.role,
     },
     {
       password: hashedNewPassword,
       password_changed_at: new Date(),
-      need_password_change: false,
     },
     {
       new: true,
@@ -159,8 +197,8 @@ const changePassword = async (
   return result;
 };
 
-const forgetPassword = async (payload: TForgetPassword) => {
-  const user = await User.isUserExistById(payload.id);
+export const forgetPassword = async (payload: TForgetPassword) => {
+  const user = await User.isUserExistByEmail(payload.email);
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
@@ -176,8 +214,7 @@ const forgetPassword = async (payload: TForgetPassword) => {
 
   const jwtPayload: TJwtPayload = {
     _id: user._id,
-    id: user.id,
-    username: user.username,
+    name: user.name,
     email: user.email,
     role: user.role,
   };
@@ -188,18 +225,18 @@ const forgetPassword = async (payload: TForgetPassword) => {
     config.jwt_access_secret_expires_in as string,
   );
 
-  const resetUILink = `${config.reset_password_ui_link}?id=${user.id}&token=${resetToken}`;
+  const resetUILink = `${config.reset_password_ui_link}?id=${user.email}&token=${resetToken}`;
 
   sendEmail({
     to: user.email,
-    subject: 'z-news Password Change Link',
+    subject: 'Z-News Password Change Link',
     text: 'Reset your password within 10 minuets',
     html: resetUILink,
   });
 };
 
-const resetPassword = async (payload: TResetPassword, token: string) => {
-  const user = await User.isUserExistById(payload.id);
+export const resetPassword = async (payload: TResetPassword, token: string) => {
+  const user = await User.isUserExistByEmail(payload.email);
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
@@ -215,7 +252,7 @@ const resetPassword = async (payload: TResetPassword, token: string) => {
 
   const { id } = verifyToken(token, config.jwt_access_secret as string);
 
-  if (payload.id !== id) {
+  if (payload.email !== id) {
     throw new AppError(httpStatus.FORBIDDEN, 'User is forbidden!');
   }
 
@@ -226,13 +263,12 @@ const resetPassword = async (payload: TResetPassword, token: string) => {
 
   const result = await User.findByIdAndUpdate(
     {
-      id: user.id,
+      email: user.email,
       role: user.role,
     },
     {
       password: hashedNewPassword,
       password_changed_at: new Date(),
-      need_password_change: false,
     },
     {
       new: true,
@@ -241,12 +277,4 @@ const resetPassword = async (payload: TResetPassword, token: string) => {
   );
 
   return result;
-};
-
-export const AuthServices = {
-  loginUser,
-  refreshToken,
-  changePassword,
-  forgetPassword,
-  resetPassword,
 };

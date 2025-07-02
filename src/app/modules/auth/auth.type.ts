@@ -1,8 +1,15 @@
 import { Types } from 'mongoose';
 import { TRole } from '../../types/role';
-export type TLogin = {
-  id: string;
+export type TSignin = {
+  email: string;
   password: string;
+};
+
+export type TSignup = {
+  name: string;
+  email: string;
+  password: string;
+  role?: TRole;
 };
 
 export type TChangePassword = {
@@ -11,18 +18,17 @@ export type TChangePassword = {
 };
 
 export type TForgetPassword = {
-  id: string;
+  email: string;
 };
 
 export type TResetPassword = {
-  id: string;
+  email: string;
   new_password: string;
 };
 
 export type TJwtPayload = {
   _id?: Types.ObjectId;
-  id: string;
-  username: string;
+  name: string;
   email: string;
   role: TRole;
 };

@@ -1,15 +1,15 @@
 import express from 'express';
 import auth from '../../middlewares/auth.middleware';
 import validation from '../../middlewares/validation.middleware';
-import { AuthControllers } from './auth.controller';
+import * as AuthControllers from './auth.controller';
 import { AuthValidations } from './auth.validation';
 
 const router = express.Router();
 
 router.post(
-  '/login',
+  '/signin',
   validation(AuthValidations.loginValidationSchema),
-  AuthControllers.loginUser,
+  AuthControllers.signin,
 );
 
 router.post(
@@ -20,7 +20,7 @@ router.post(
 
 router.patch(
   '/change-password',
-  auth('admin', 'student', 'faculty'),
+  auth('admin', 'editor', 'author', 'contributor', 'subscriber', 'user'),
   validation(AuthValidations.changePasswordValidationSchema),
   AuthControllers.changePassword,
 );
