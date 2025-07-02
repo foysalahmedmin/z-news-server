@@ -3,6 +3,8 @@ import httpStatus from 'http-status';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import AppError from '../builder/AppError';
 import config from '../config';
+import { TJwtPayload } from '../modules/auth/auth.type';
+import { isJWTIssuedBeforeChangedPassword } from '../modules/auth/auth.utils';
 import { User } from '../modules/user/user.model';
 import { TRole } from '../types/role';
 import catchAsync from '../utils/catchAsync';
@@ -41,10 +43,10 @@ const auth = (...roles: TRole[]) => {
 
       if (
         user?.password_changed_at &&
-        (await User.isJWTIssuedBeforeChangedPassword(
+        isJWTIssuedBeforeChangedPassword(
           user.password_changed_at,
           iat as number,
-        ))
+        )
       ) {
         throw new AppError(
           httpStatus.UNAUTHORIZED,
@@ -58,7 +60,7 @@ const auth = (...roles: TRole[]) => {
           'You do not have the necessary permissions to access this resource.',
         );
       }
-      req.user = decoded as JwtPayload;
+      req.user = decoded as JwtPayload & TJwtPayload;
       next();
     },
   );

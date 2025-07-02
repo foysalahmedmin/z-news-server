@@ -13,7 +13,12 @@ import {
   TSignin,
   TSignup,
 } from './auth.type';
-import { createToken, verifyToken } from './auth.utils';
+import {
+  createToken,
+  isJWTIssuedBeforeChangedPassword,
+  isPasswordMatched,
+  verifyToken,
+} from './auth.utils';
 
 export const signin = async (payload: TSignin) => {
   const user = await User.isUserExistByEmail(payload.email);
@@ -30,7 +35,7 @@ export const signin = async (payload: TSignin) => {
     throw new AppError(httpStatus.FORBIDDEN, 'User is blocked!');
   }
 
-  if (!(await User.isPasswordMatched(payload?.password, user?.password))) {
+  if (!(await isPasswordMatched(payload?.password, user?.password))) {
     throw new AppError(httpStatus.FORBIDDEN, 'Password do not matched!');
   }
 
@@ -120,10 +125,7 @@ export const refreshToken = async (token: string) => {
 
   if (
     user?.password_changed_at &&
-    (await User.isJWTIssuedBeforeChangedPassword(
-      user.password_changed_at,
-      iat as number,
-    ))
+    isJWTIssuedBeforeChangedPassword(user.password_changed_at, iat as number)
   ) {
     throw new AppError(
       httpStatus.UNAUTHORIZED,
@@ -151,26 +153,10 @@ export const refreshToken = async (token: string) => {
 };
 
 export const changePassword = async (
-  userData: JwtPayload,
+  user: JwtPayload,
   payload: TChangePassword,
 ) => {
-  const user = await User.isUserExistByEmail(userData.id);
-
-  if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
-  }
-
-  if (user?.is_deleted) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User is deleted!');
-  }
-
-  if (user?.status == 'blocked') {
-    throw new AppError(httpStatus.NOT_FOUND, 'User is blocked!');
-  }
-
-  if (
-    !(await User.isPasswordMatched(payload?.current_password, user?.password))
-  ) {
+  if (!(await isPasswordMatched(payload?.current_password, user?.password))) {
     throw new AppError(httpStatus.FORBIDDEN, 'Password do not matched!');
   }
 
@@ -219,11 +205,7 @@ export const forgetPassword = async (payload: TForgetPassword) => {
     role: user.role,
   };
 
-  const resetToken = createToken(
-    jwtPayload,
-    config.jwt_access_secret,
-    config.jwt_access_secret_expires_in,
-  );
+  const resetToken = createToken(jwtPayload, config.jwt_access_secret, '10m');
 
   const resetUILink = `${config.reset_password_ui_link}?id=${user.email}&token=${resetToken}`;
 
@@ -235,40 +217,58 @@ export const forgetPassword = async (payload: TForgetPassword) => {
   });
 };
 
-export const resetPassword = async (payload: TResetPassword, token: string) => {
-  const user = await User.isUserExistByEmail(payload.email);
+export const resetPassword = async (
+  payload: TResetPassword,
+  user: TJwtPayload,
+) => {
+  const { _id } = user;
 
-  if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
-  }
-
-  if (user?.is_deleted) {
-    throw new AppError(httpStatus.FORBIDDEN, 'User is deleted!');
-  }
-
-  if (user?.status == 'blocked') {
-    throw new AppError(httpStatus.FORBIDDEN, 'User is blocked!');
-  }
-
-  const { email } = verifyToken(token, config.jwt_access_secret);
-
-  if (payload.email !== email) {
-    throw new AppError(httpStatus.FORBIDDEN, 'User is forbidden!');
-  }
-
-  const hashedNewPassword = await bcrypt.hash(
-    payload.new_password,
+  const hashedPassword = await bcrypt.hash(
+    payload.password,
     Number(config.bcrypt_salt_rounds),
   );
 
   const result = await User.findByIdAndUpdate(
+    _id,
     {
-      email: user.email,
-      role: user.role,
+      password: hashedPassword,
+      password_changed_at: new Date(),
     },
     {
-      password: hashedNewPassword,
-      password_changed_at: new Date(),
+      new: true,
+      runValidators: true,
+    },
+  );
+
+  return result;
+};
+
+export const emailVerificationSource = async (user: TJwtPayload) => {
+  const jwtPayload: TJwtPayload = {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  };
+
+  const resetToken = createToken(jwtPayload, config.jwt_access_secret, '10m');
+
+  const resetUILink = `${config.reset_password_ui_link}?id=${user.email}&token=${resetToken}`;
+
+  sendEmail({
+    to: user.email,
+    subject: 'Z-News Email Verification Link',
+    text: 'Verify your email within 10 minuets',
+    html: resetUILink,
+  });
+};
+
+export const emailVerification = async (user: TJwtPayload) => {
+  const { _id } = user;
+  const result = await User.findByIdAndUpdate(
+    _id,
+    {
+      is_verified: true,
     },
     {
       new: true,

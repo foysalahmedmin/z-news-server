@@ -16,9 +16,4 @@ export type TUser = {
 export interface TUserModel extends Model<TUser> {
   isUserExist(_id: string): Promise<TUser>;
   isUserExistByEmail(id: string): Promise<TUser>;
-  isPasswordMatched(password: string, hashedPassword: string): Promise<boolean>;
-  isJWTIssuedBeforeChangedPassword(
-    passwordChangedTimestamp: Date,
-    JWTIssuedTimestamp: number,
-  ): Promise<boolean>;
 }

@@ -15,6 +15,13 @@ export const verifyToken = (token: string, secret: string) => {
   return jwt.verify(token, secret) as JwtPayload;
 };
 
+export const isJWTIssuedBeforeChangedPassword = (
+  passwordChangedTimestamp: Date,
+  JWTIssuedTimestamp: number,
+) => {
+  return JWTIssuedTimestamp < passwordChangedTimestamp.getTime();
+};
+
 export const isPasswordMatched = async (
   plainPassword: string,
   hashedPassword: string,

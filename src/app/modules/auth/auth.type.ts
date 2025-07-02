@@ -22,8 +22,7 @@ export type TForgetPassword = {
 };
 
 export type TResetPassword = {
-  email: string;
-  new_password: string;
+  password: string;
 };
 
 export type TJwtPayload = {

@@ -106,20 +106,4 @@ userSchema.statics.isUserExistByEmail = async function (email: string) {
   );
 };
 
-userSchema.statics.isPasswordMatched = async function (
-  password: string,
-  hashedPassword: string,
-) {
-  return await bcrypt.compare(password, hashedPassword);
-};
-
-userSchema.statics.isJWTIssuedBeforeChangedPassword = async function (
-  passwordChangedTimestamp: Date,
-  JWTIssuedTimestamp: number,
-) {
-  const passwordChangedTime =
-    new Date(passwordChangedTimestamp).getTime() / 1000;
-  return passwordChangedTime > JWTIssuedTimestamp;
-};
-
 export const User = mongoose.model<TUser, TUserModel>('User', userSchema);
