@@ -75,17 +75,39 @@ export const forgetPassword = catchAsync(async (req, res) => {
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Password reset link is sent successfully!',
+    message: 'Password reset link is sent successfully! Check your email.',
     data: result,
   });
 });
 
 export const resetPassword = catchAsync(async (req, res) => {
-  const result = await AuthServices.resetPassword(req.body, req.user);
+  const token = req.headers.authorization || '';
+  const result = await AuthServices.resetPassword(req.body, token);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
     message: 'Password is reset successfully!',
+    data: result,
+  });
+});
+
+export const emailVerificationSource = catchAsync(async (req, res) => {
+  const result = await AuthServices.emailVerificationSource(req.user);
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'Email verification link is sent successfully! Check your email.',
+    data: result,
+  });
+});
+
+export const emailVerification = catchAsync(async (req, res) => {
+  const token = req.headers.authorization || '';
+  const result = await AuthServices.emailVerification(token);
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'Email is verified successfully!',
     data: result,
   });
 });

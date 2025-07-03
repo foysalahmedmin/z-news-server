@@ -17,8 +17,16 @@ export default {
   jwt_refresh_secret: process.env.JWT_REFRESH_SECRET as string,
   jwt_refresh_secret_expires_in: process.env
     .JWT_REFRESH_SECRET_EXPIRES_IN as ExpiresIn,
+  jwt_reset_password_secret: process.env.JWT_RESET_PASSWORD_SECRET as string,
+  jwt_reset_password_secret_expires_in: process.env
+    .JWT_RESET_PASSWORD_SECRET_EXPIRES_IN as ExpiresIn,
+  jwt_email_verification_secret: process.env
+    .JWT_EMAIL_VERIFICATION_SECRET as string,
+  jwt_email_verification_secret_expires_in: process.env
+    .JWT_EMAIL_VERIFICATION_SECRET_EXPIRES_IN as ExpiresIn,
   session_secret: process.env.SESSION_SECRET as string,
   reset_password_ui_link: process.env.RESET_PASSWORD_UI_LINK as string,
+  email_verification_ui_link: process.env.EMAIL_VERIFICATION_UI_LINK as string,
   auth_user_email: process.env.AUTH_USER_EMAIL as string,
   auth_user_email_password: process.env.AUTH_USER_EMAIL_PASSWORD as string,
 };

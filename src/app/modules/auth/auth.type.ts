@@ -1,5 +1,5 @@
-import { Types } from 'mongoose';
-import { TRole } from '../../types/role';
+import { TRole } from '../user/user.type';
+
 export type TSignin = {
   email: string;
   password: string;
@@ -26,7 +26,7 @@ export type TResetPassword = {
 };
 
 export type TJwtPayload = {
-  _id?: Types.ObjectId;
+  _id?: string | undefined;
   name: string;
   email: string;
   role: TRole;

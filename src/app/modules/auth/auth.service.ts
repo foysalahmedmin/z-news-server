@@ -13,12 +13,7 @@ import {
   TSignin,
   TSignup,
 } from './auth.type';
-import {
-  createToken,
-  isJWTIssuedBeforeChangedPassword,
-  isPasswordMatched,
-  verifyToken,
-} from './auth.utils';
+import { createToken, verifyToken } from './auth.utils';
 
 export const signin = async (payload: TSignin) => {
   const user = await User.isUserExistByEmail(payload.email);
@@ -35,12 +30,12 @@ export const signin = async (payload: TSignin) => {
     throw new AppError(httpStatus.FORBIDDEN, 'User is blocked!');
   }
 
-  if (!(await isPasswordMatched(payload?.password, user?.password))) {
+  if (!(await bcrypt.compare(payload?.password, user?.password))) {
     throw new AppError(httpStatus.FORBIDDEN, 'Password do not matched!');
   }
 
   const jwtPayload: TJwtPayload = {
-    _id: user._id,
+    _id: ((user._id as string) || '').toString(),
     name: user.name,
     email: user.email,
     role: user.role,
@@ -81,7 +76,7 @@ export const signup = async (payload: TSignup) => {
   }
 
   const jwtPayload: TJwtPayload = {
-    _id: user._id,
+    _id: ((user._id as string) || '').toString(),
     name: user.name,
     email: user.email,
     role: user.role,
@@ -109,6 +104,13 @@ export const signup = async (payload: TSignup) => {
 export const refreshToken = async (token: string) => {
   const { email, iat } = verifyToken(token, config.jwt_refresh_secret);
 
+  if (!email || typeof iat !== 'number') {
+    throw new AppError(
+      httpStatus.UNAUTHORIZED,
+      'You do not have the necessary permissions to access this resource.',
+    );
+  }
+
   const user = await User.isUserExistByEmail(email);
 
   if (!user) {
@@ -123,10 +125,7 @@ export const refreshToken = async (token: string) => {
     throw new AppError(httpStatus.FORBIDDEN, 'User is blocked!');
   }
 
-  if (
-    user?.password_changed_at &&
-    isJWTIssuedBeforeChangedPassword(user.password_changed_at, iat as number)
-  ) {
+  if (user?.password_changed_at && user.isPasswordChanged(iat)) {
     throw new AppError(
       httpStatus.UNAUTHORIZED,
       'You do not have the necessary permissions to access this resource.',
@@ -134,7 +133,7 @@ export const refreshToken = async (token: string) => {
   }
 
   const jwtPayload: TJwtPayload = {
-    _id: user._id,
+    _id: ((user._id as string) || '').toString(),
     name: user.name,
     email: user.email,
     role: user.role,
@@ -156,7 +155,7 @@ export const changePassword = async (
   user: JwtPayload,
   payload: TChangePassword,
 ) => {
-  if (!(await isPasswordMatched(payload?.current_password, user?.password))) {
+  if (!(await bcrypt.compare(payload?.current_password, user?.password))) {
     throw new AppError(httpStatus.FORBIDDEN, 'Password do not matched!');
   }
 
@@ -199,28 +198,55 @@ export const forgetPassword = async (payload: TForgetPassword) => {
   }
 
   const jwtPayload: TJwtPayload = {
-    _id: user._id,
+    _id: ((user._id as string) || '').toString(),
     name: user.name,
     email: user.email,
     role: user.role,
   };
 
-  const resetToken = createToken(jwtPayload, config.jwt_access_secret, '10m');
+  const resetToken = createToken(
+    jwtPayload,
+    config.jwt_reset_password_secret,
+    config.jwt_reset_password_secret_expires_in || '10m',
+  );
 
-  const resetUILink = `${config.reset_password_ui_link}?id=${user.email}&token=${resetToken}`;
+  const link = `${config.reset_password_ui_link}?id=${user.email}&token=${resetToken}`;
+  const content = `<a href="${link}">Click here to reset your password</a>`;
 
   sendEmail({
     to: user.email,
     subject: 'Z-News Password Change Link',
     text: 'Reset your password within 10 minuets',
-    html: resetUILink,
+    html: content,
   });
 };
 
-export const resetPassword = async (
-  payload: TResetPassword,
-  user: TJwtPayload,
-) => {
+export const resetPassword = async (payload: TResetPassword, token: string) => {
+  const decoded = verifyToken(token, config.jwt_reset_password_secret);
+
+  if (!decoded?.email) {
+    throw new AppError(
+      httpStatus.UNAUTHORIZED,
+      'You do not have the necessary permissions to access this resource.',
+    );
+  }
+
+  const { email } = decoded;
+
+  const user = await User.isUserExistByEmail(email);
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+  }
+
+  if (user?.is_deleted) {
+    throw new AppError(httpStatus.FORBIDDEN, 'User is deleted!');
+  }
+
+  if (user?.status == 'blocked') {
+    throw new AppError(httpStatus.FORBIDDEN, 'User is blocked!');
+  }
+
   const { _id } = user;
 
   const hashedPassword = await bcrypt.hash(
@@ -251,20 +277,51 @@ export const emailVerificationSource = async (user: TJwtPayload) => {
     role: user.role,
   };
 
-  const resetToken = createToken(jwtPayload, config.jwt_access_secret, '10m');
+  const resetToken = createToken(
+    jwtPayload,
+    config.jwt_email_verification_secret,
+    config.jwt_email_verification_secret_expires_in || '10m',
+  );
 
-  const resetUILink = `${config.reset_password_ui_link}?id=${user.email}&token=${resetToken}`;
+  const link = `${config.email_verification_ui_link}?id=${user.email}&token=${resetToken}`;
+  const content = `<a href="${link}">Click here to verify your email</a>`;
 
   sendEmail({
     to: user.email,
     subject: 'Z-News Email Verification Link',
     text: 'Verify your email within 10 minuets',
-    html: resetUILink,
+    html: content,
   });
 };
 
-export const emailVerification = async (user: TJwtPayload) => {
+export const emailVerification = async (token: string) => {
+  const decoded = verifyToken(token, config.jwt_email_verification_secret);
+
+  if (!decoded?.email) {
+    throw new AppError(
+      httpStatus.UNAUTHORIZED,
+      'You do not have the necessary permissions to access this resource.',
+    );
+  }
+
+  const { email } = decoded;
+
+  const user = await User.isUserExistByEmail(email);
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+  }
+
+  if (user?.is_deleted) {
+    throw new AppError(httpStatus.FORBIDDEN, 'User is deleted!');
+  }
+
+  if (user?.status == 'blocked') {
+    throw new AppError(httpStatus.FORBIDDEN, 'User is blocked!');
+  }
+
   const { _id } = user;
+
   const result = await User.findByIdAndUpdate(
     _id,
     {

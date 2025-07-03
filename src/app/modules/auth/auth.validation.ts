@@ -1,19 +1,27 @@
 import { z } from 'zod';
 
-const loginValidationSchema = z.object({
+export const signinValidationSchema = z.object({
   body: z.object({
-    id: z.string(),
+    email: z.string().email(),
     password: z.string().min(6).max(12),
   }),
 });
 
-const refreshTokenValidationSchema = z.object({
+export const signupValidationSchema = z.object({
+  body: z.object({
+    name: z.string(),
+    email: z.string().email(),
+    password: z.string().min(6).max(12),
+  }),
+});
+
+export const refreshTokenValidationSchema = z.object({
   cookies: z.object({
     refresh_token: z.string(),
   }),
 });
 
-const changePasswordValidationSchema = z.object({
+export const changePasswordValidationSchema = z.object({
   body: z
     .object({
       current_password: z.string().min(6).max(12),
@@ -24,23 +32,14 @@ const changePasswordValidationSchema = z.object({
     }),
 });
 
-const forgetPasswordValidationSchema = z.object({
+export const forgetPasswordValidationSchema = z.object({
   body: z.object({
-    id: z.string(),
+    email: z.string().email(),
   }),
 });
 
-const resetPasswordValidationSchema = z.object({
+export const resetPasswordValidationSchema = z.object({
   body: z.object({
-    id: z.string(),
-    new_password: z.string().min(6).max(12),
+    password: z.string().min(6).max(12),
   }),
 });
-
-export const AuthValidations = {
-  loginValidationSchema,
-  changePasswordValidationSchema,
-  refreshTokenValidationSchema,
-  forgetPasswordValidationSchema,
-  resetPasswordValidationSchema,
-};
