@@ -35,7 +35,7 @@ export const signin = async (payload: TSignin) => {
   }
 
   const jwtPayload: TJwtPayload = {
-    _id: ((user._id as string) || '').toString(),
+    _id: user._id.toString(),
     name: user.name,
     email: user.email,
     role: user.role,
@@ -76,7 +76,7 @@ export const signup = async (payload: TSignup) => {
   }
 
   const jwtPayload: TJwtPayload = {
-    _id: ((user._id as string) || '').toString(),
+    _id: user._id.toString(),
     name: user.name,
     email: user.email,
     role: user.role,
@@ -133,7 +133,7 @@ export const refreshToken = async (token: string) => {
   }
 
   const jwtPayload: TJwtPayload = {
-    _id: ((user._id as string) || '').toString(),
+    _id: user._id.toString(),
     name: user.name,
     email: user.email,
     role: user.role,
@@ -198,7 +198,7 @@ export const forgetPassword = async (payload: TForgetPassword) => {
   }
 
   const jwtPayload: TJwtPayload = {
-    _id: ((user._id as string) || '').toString(),
+    _id: user._id.toString(),
     name: user.name,
     email: user.email,
     role: user.role,
