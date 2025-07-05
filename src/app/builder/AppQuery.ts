@@ -1,67 +1,93 @@
-import { FilterQuery, Query } from 'mongoose';
+import { Document, FilterQuery, Query } from 'mongoose';
 
-class AppQuery<T> {
-  public modelQuery: Query<T[], T>;
-  public query: Record<string, unknown>;
+class AppQuery<T extends Document> {
+  public query: Query<T[], T>;
+  public queryParams: Record<string, unknown>;
+  public queryFilter: FilterQuery<T>;
 
-  constructor(modelQuery: Query<T[], T>, query: Record<string, unknown>) {
-    this.modelQuery = modelQuery;
+  private _page = 1;
+  private _limit = 10;
+
+  constructor(query: Query<T[], T>, queryParams: Record<string, unknown>) {
     this.query = query;
+    this.queryParams = queryParams;
+    this.queryFilter = {};
   }
 
-  search(searchableFields: string[]) {
-    const search = this?.query?.search;
+  search(fields: string[]) {
+    const search = this?.queryParams?.search;
     if (search) {
-      this.modelQuery = this.modelQuery.find({
-        $or: searchableFields.map(
-          (field) =>
-            ({
-              [field]: { $regex: search, $options: 'i' },
-            }) as FilterQuery<T>,
-        ),
-      });
+      const searchCondition: FilterQuery<T> = {
+        $or: fields.map((field) => ({
+          [field]: { $regex: search, $options: 'i' },
+        })) as FilterQuery<T>[],
+      };
+
+      this.queryFilter = {
+        ...this.queryFilter,
+        ...searchCondition,
+      };
+
+      this.query = this.query.find(searchCondition);
     }
 
     return this;
   }
 
   filter() {
-    const queryObj = { ...this.query };
+    const queryObj = { ...this.queryParams };
 
-    // Filtering
     const excludeFields = ['search', 'sort', 'limit', 'page', 'fields'];
-
     excludeFields.forEach((el) => delete queryObj[el]);
 
-    this.modelQuery = this.modelQuery.find(queryObj as FilterQuery<T>);
+    this.queryFilter = {
+      ...this.queryFilter,
+      ...(queryObj as FilterQuery<T>),
+    };
+
+    this.query = this.query.find(queryObj as FilterQuery<T>);
 
     return this;
   }
 
   sort() {
     const sort =
-      (this?.query?.sort as string)?.split(',')?.join(' ') || '-createdAt';
-    this.modelQuery = this.modelQuery.sort(sort as string);
-
+      (this?.queryParams?.sort as string)?.split(',')?.join(' ') ||
+      '-createdAt';
+    this.query = this.query.sort(sort);
     return this;
   }
 
   paginate() {
-    const page = Number(this?.query?.page) || 1;
-    const limit = Number(this?.query?.limit) || 10;
-    const skip = (page - 1) * limit;
+    this._page = Number(this?.queryParams?.page) || 1;
+    this._limit = Number(this?.queryParams?.limit) || 10;
+    const skip = (this._page - 1) * this._limit;
 
-    this.modelQuery = this.modelQuery.skip(skip).limit(limit);
-
+    this.query = this.query.skip(skip).limit(this._limit);
     return this;
   }
 
   fields() {
     const fields =
-      (this?.query?.fields as string)?.split(',')?.join(' ') || '-__v';
-
-    this.modelQuery = this.modelQuery.select(fields);
+      (this?.queryParams?.fields as string)?.split(',')?.join(' ') || '-__v';
+    this.query = this.query.select(fields);
     return this;
+  }
+
+  async execute() {
+    const [data, total] = await Promise.all([
+      this.query,
+      (this.query.model as any).countDocuments(this.queryFilter),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page: this._page,
+        limit: this._limit,
+      },
+    };
   }
 }
 

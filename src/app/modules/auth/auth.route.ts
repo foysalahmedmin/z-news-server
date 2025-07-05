@@ -51,4 +51,6 @@ router.post(
 
 router.post('/email-verification', AuthControllers.emailVerification);
 
-export const authRoutes = router;
+const authRoutes = router;
+
+export default authRoutes;
