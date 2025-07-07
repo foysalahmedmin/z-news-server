@@ -35,19 +35,19 @@ export const getUsers = catchAsync(async (req, res) => {
   });
 });
 
+export const updateSelf = catchAsync(async (req, res) => {
+  const result = await UserServices.updateSelf(req.user, req.body);
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'User updated successfully',
+    data: result,
+  });
+});
+
 export const updateUser = catchAsync(async (req, res) => {
-  const result = await UserServices.updateUser(req.user, req.body);
-  sendResponse(res, {
-    status: httpStatus.OK,
-    success: true,
-    message: 'User updated successfully',
-    data: result,
-  });
-});
-
-export const updateUserByAdmin = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await UserServices.updateUserByAdmin(id, req.body);
+  const result = await UserServices.updateUser(id, req.body);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -56,9 +56,9 @@ export const updateUserByAdmin = catchAsync(async (req, res) => {
   });
 });
 
-export const updateUsersByAdmin = catchAsync(async (req, res) => {
+export const updateUsers = catchAsync(async (req, res) => {
   const { ids, ...payload } = req.body;
-  const result = await UserServices.updateUsersByAdmin(ids, payload);
+  const result = await UserServices.updateUsers(ids, payload);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,

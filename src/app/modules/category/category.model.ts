@@ -39,15 +39,6 @@ const categorySchema = new Schema<TCategoryDocument>(
   },
 );
 
-categorySchema.index(
-  { email: 1 },
-  {
-    unique: true,
-    partialFilterExpression: { is_deleted: false },
-    name: 'unique_email_not_deleted',
-  },
-);
-
 // toJSON override to remove sensitive fields from output
 categorySchema.methods.toJSON = function () {
   const category = this.toObject();

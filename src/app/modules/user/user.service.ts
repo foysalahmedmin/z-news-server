@@ -39,7 +39,7 @@ export const getUsers = async (
   return result;
 };
 
-export const updateUser = async (
+export const updateSelf = async (
   user: TJwtPayload,
   payload: Partial<Pick<TUser, 'name' | 'email'>>,
 ): Promise<TUserDocument> => {
@@ -56,7 +56,7 @@ export const updateUser = async (
   return result!;
 };
 
-export const updateUserByAdmin = async (
+export const updateUser = async (
   id: string,
   payload: Partial<
     Pick<TUser, 'name' | 'email' | 'role' | 'status' | 'is_verified'>
@@ -75,7 +75,7 @@ export const updateUserByAdmin = async (
   return updatedUser!;
 };
 
-export const updateUsersByAdmin = async (
+export const updateUsers = async (
   ids: string[],
   payload: Partial<Pick<TUser, 'role' | 'status' | 'is_verified'>>,
 ): Promise<{

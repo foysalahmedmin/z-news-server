@@ -26,22 +26,22 @@ router.get(
 router.patch(
   '/self',
   auth('admin', 'editor', 'author', 'contributor', 'subscriber'),
-  validation(UserValidations.updateUserValidationSchema),
-  UserControllers.updateUser,
+  validation(UserValidations.updateSelfValidationSchema),
+  UserControllers.updateSelf,
 );
 
 router.patch(
   '/bulk',
   auth('admin'),
-  validation(UserValidations.updateUsersByAdminValidationSchema),
-  UserControllers.updateUsersByAdmin,
+  validation(UserValidations.updateUsersValidationSchema),
+  UserControllers.updateUsers,
 );
 
 router.patch(
   '/:id',
   auth('admin'),
-  validation(UserValidations.updateUserByAdminValidationSchema),
-  UserControllers.updateUserByAdmin,
+  validation(UserValidations.updateUserValidationSchema),
+  UserControllers.updateUser,
 );
 
 // DELETE

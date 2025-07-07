@@ -18,7 +18,7 @@ export const createUserValidationSchema = z.object({
   }),
 });
 
-export const updateUserValidationSchema = z.object({
+export const updateSelfValidationSchema = z.object({
   body: z.object({
     name: z
       .string()
@@ -29,7 +29,7 @@ export const updateUserValidationSchema = z.object({
   }),
 });
 
-export const updateUserByAdminValidationSchema = z.object({
+export const updateUserValidationSchema = z.object({
   params: z.object({
     id: idSchema,
   }),
@@ -48,7 +48,7 @@ export const updateUserByAdminValidationSchema = z.object({
   }),
 });
 
-export const updateUsersByAdminValidationSchema = z.object({
+export const updateUsersValidationSchema = z.object({
   body: z.object({
     ids: z
       .array(idSchema, {

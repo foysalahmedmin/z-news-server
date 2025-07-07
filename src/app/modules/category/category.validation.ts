@@ -26,6 +26,9 @@ export const createCategoryValidationSchema = z.object({
 });
 
 export const updateCategoryValidationSchema = z.object({
+  params: z.object({
+    id: idSchema,
+  }),
   body: z.object({
     name: z
       .string()
@@ -55,7 +58,6 @@ export const updateCategoriesValidationSchema = z.object({
       })
       .nonempty('At least one category ID is required'),
     status: statusEnum.optional(),
-    is_deleted: z.boolean().optional(),
   }),
 });
 
