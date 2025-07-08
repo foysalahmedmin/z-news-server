@@ -1,3 +1,4 @@
+import MongoStore from 'connect-mongo';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -21,9 +22,14 @@ app.use(
     secret: config.session_secret,
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: config.database_url,
+      ttl: (1000 * 60 * 60 * 24) / 1000,
+    }),
     cookie: {
-      secure: false,
-      maxAge: 1000 * 60 * 60,
+      secure: config.node_dev === 'production',
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 * 24,
     },
   }),
 );

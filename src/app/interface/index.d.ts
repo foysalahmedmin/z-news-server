@@ -7,6 +7,7 @@ declare global {
   namespace Express {
     interface Request {
       user: JwtPayload & TJwtPayload;
+      guest: TGuest;
       session: Session & Partial<SessionData>;
     }
   }

@@ -2,14 +2,15 @@ import crypto from 'crypto';
 import { Request } from 'express';
 import { TGuest } from '../types/express-session.type';
 
-export const processGuest = (req: Request): TGuest => {
+const processGuest = async (req: Request): Promise<TGuest> => {
   if (!req.session.guest) {
+    const guestId = await generateId(req);
     req.session.guest = {
-      _id: generateId(req),
+      _id: guestId,
       session_id: req.sessionID,
-      ip_address: getIpAddress(req),
+      ip_address: await getIpAddress(req),
       user_agent: req.get('User-Agent') || '',
-      fingerprint: generateFingerprint(req),
+      fingerprint: await generateFingerprint(req),
       preferences: {},
       created_at: new Date(),
     };
@@ -17,12 +18,13 @@ export const processGuest = (req: Request): TGuest => {
     req.session.guest.updated_at = new Date();
   }
 
-  enrichGuestFromRequest(req.session.guest, req);
+  await enrichGuestFromRequest(req.session.guest, req);
 
   return req.session.guest;
 };
 
-const generateId = (req: Request): string => {
+// ⬇️ These are async to keep signature consistent
+const generateId = async (req: Request): Promise<string> => {
   const timestamp = Date.now().toString();
   const sessionId = req.sessionID;
   const randomBytes = crypto.randomBytes(16).toString('hex');
@@ -34,7 +36,7 @@ const generateId = (req: Request): string => {
     .substring(0, 24);
 };
 
-const getIpAddress = (req: Request): string | undefined => {
+const getIpAddress = async (req: Request): Promise<string | undefined> => {
   const forwarded = req.get('X-Forwarded-For');
   const realIp = req.get('X-Real-IP');
   const cfConnectingIp = req.get('CF-Connecting-IP');
@@ -46,7 +48,7 @@ const getIpAddress = (req: Request): string | undefined => {
   return realIp || cfConnectingIp || req.socket.remoteAddress;
 };
 
-const generateFingerprint = (req: Request): string => {
+const generateFingerprint = async (req: Request): Promise<string> => {
   const userAgent = req.get('User-Agent') || '';
   const acceptLanguage = req.get('Accept-Language') || '';
   const acceptEncoding = req.get('Accept-Encoding') || '';
@@ -61,7 +63,10 @@ const generateFingerprint = (req: Request): string => {
     .substring(0, 16);
 };
 
-const enrichGuestFromRequest = (guest: TGuest, req: Request): void => {
+const enrichGuestFromRequest = async (
+  guest: TGuest,
+  req: Request,
+): Promise<void> => {
   const theme = (req.query.theme as string) || req.get('X-Theme');
   if (theme && ['light', 'dark', 'system'].includes(theme)) {
     guest.preferences.theme = theme as 'light' | 'dark' | 'system';
@@ -78,3 +83,5 @@ const enrichGuestFromRequest = (guest: TGuest, req: Request): void => {
     guest.preferences.language = language;
   }
 };
+
+export default processGuest;

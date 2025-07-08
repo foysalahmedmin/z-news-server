@@ -8,10 +8,14 @@ import { User } from '../modules/user/user.model';
 import { TRole } from '../modules/user/user.type';
 import catchAsync from '../utils/catchAsync';
 
-const auth = (...roles: TRole[]) => {
+const auth = (...roles: (TRole | 'guest')[]) => {
   return catchAsync(
     async (req: Request, _res: Response, next: NextFunction) => {
       const token = req.headers.authorization;
+
+      if (roles.includes('guest') && req.guest && req.guest?._id && !token) {
+        return next();
+      }
 
       if (!token) {
         throw new AppError(
@@ -60,6 +64,7 @@ const auth = (...roles: TRole[]) => {
           'You do not have the necessary permissions to access this resource.',
         );
       }
+
       req.user = decoded as JwtPayload & TJwtPayload;
       next();
     },

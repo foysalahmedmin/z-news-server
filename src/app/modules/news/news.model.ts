@@ -1,7 +1,7 @@
 import mongoose, { Query, Schema } from 'mongoose';
 import { TNews, TNewsDocument, TNewsModel } from './news.type';
 
-const NewsSchema = new Schema<TNewsDocument>(
+const newsSchema = new Schema<TNewsDocument>(
   {
     sequence: {
       type: Number,
@@ -68,10 +68,6 @@ const NewsSchema = new Schema<TNewsDocument>(
       default: false,
     },
 
-    view_count: {
-      type: Number,
-      default: 0,
-    },
     seo: {
       title: String,
       description: String,
@@ -96,14 +92,14 @@ const NewsSchema = new Schema<TNewsDocument>(
 );
 
 // toJSON override to remove sensitive fields from output
-NewsSchema.methods.toJSON = function () {
+newsSchema.methods.toJSON = function () {
   const News = this.toObject();
   delete News.is_deleted;
   return News;
 };
 
 // Query middleware to exclude deleted categories
-NewsSchema.pre(/^find/, function (this: Query<TNews, TNews>, next) {
+newsSchema.pre(/^find/, function (this: Query<TNews, TNews>, next) {
   this.setQuery({
     ...this.getQuery(),
     is_deleted: { $ne: true },
@@ -111,7 +107,7 @@ NewsSchema.pre(/^find/, function (this: Query<TNews, TNews>, next) {
   next();
 });
 
-NewsSchema.pre(/^update/, function (this: Query<TNews, TNews>, next) {
+newsSchema.pre(/^update/, function (this: Query<TNews, TNews>, next) {
   this.setQuery({
     ...this.getQuery(),
     is_deleted: { $ne: true },
@@ -120,23 +116,23 @@ NewsSchema.pre(/^update/, function (this: Query<TNews, TNews>, next) {
 });
 
 // Aggregation pipeline
-NewsSchema.pre('aggregate', function (next) {
+newsSchema.pre('aggregate', function (next) {
   this.pipeline().unshift({ $match: { is_deleted: { $ne: true } } });
   next();
 });
 
 // Static methods
-NewsSchema.statics.isNewsExist = async function (_id: string) {
+newsSchema.statics.isNewsExist = async function (_id: string) {
   return await this.findById(_id);
 };
 
 // Instance methods
-NewsSchema.methods.softDelete = async function () {
+newsSchema.methods.softDelete = async function () {
   this.is_deleted = true;
   return await this.save();
 };
 
 export const News = mongoose.model<TNewsDocument, TNewsModel>(
   'News',
-  NewsSchema,
+  newsSchema,
 );

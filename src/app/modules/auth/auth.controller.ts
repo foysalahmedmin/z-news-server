@@ -10,7 +10,7 @@ export const signin = catchAsync(async (req, res) => {
   );
 
   res.cookie('refresh_token', refresh_token, {
-    secure: config.NODE_ENV === 'production',
+    secure: config.node_dev === 'production',
     httpOnly: true,
   });
 
@@ -31,7 +31,7 @@ export const signup = catchAsync(async (req, res) => {
   );
 
   res.cookie('refresh_token', refresh_token, {
-    secure: config.NODE_ENV === 'production',
+    secure: config.node_dev === 'production',
     httpOnly: true,
   });
 

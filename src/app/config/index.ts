@@ -1,12 +1,12 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
-export type ExpiresIn = `${number}${'s' | 'm' | 'h' | 'd'}`;
+export type ExpiresIn = `${number}${'s' | 'm' | 'h' | 'd'}` | number;
 
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
 export default {
-  NODE_ENV: process.env.NODE_ENV as string,
+  node_dev: process.env.NODE_ENV as string,
   port: process.env.PORT as string,
   database_url: process.env.DATABASE_URL as string,
   bcrypt_salt_rounds: process.env.BCRYPT_SALT_ROUNDS as string,
@@ -31,4 +31,5 @@ export default {
   auth_user_email_password: process.env.AUTH_USER_EMAIL_PASSWORD as string,
 };
 
-// console.log(require('crypto').randomBytes(32).toString('hex'))
+// node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+// node -e "console.log(require('crypto').createHash('sha256').update('password' + 12).digest('hex'))"
