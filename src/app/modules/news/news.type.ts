@@ -23,6 +23,8 @@ export type TNews = {
     keywords?: string[];
   };
   published_at?: Date;
+  is_edited?: boolean;
+  edited_at?: Date;
   is_deleted: boolean;
 };
 

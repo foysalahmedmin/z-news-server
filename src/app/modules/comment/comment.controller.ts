@@ -4,11 +4,26 @@ import sendResponse from '../../utils/sendResponse';
 import * as CommentServices from './comment.service';
 
 export const createComment = catchAsync(async (req, res) => {
-  const result = await CommentServices.createComment(req.body);
+  const result = await CommentServices.createComment(
+    req.user,
+    req.guest,
+    req.body,
+  );
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
     message: 'Comment created successfully',
+    data: result,
+  });
+});
+
+export const getSelfComment = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const result = await CommentServices.getSelfComment(req.user, req.guest, id);
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'Comment retrieved successfully',
     data: result,
   });
 });
@@ -32,6 +47,22 @@ export const getComments = catchAsync(async (req, res) => {
     message: 'Comments retrieved successfully',
     meta: result.meta,
     data: result.data,
+  });
+});
+
+export const updateSelfComment = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const result = await CommentServices.updateSelfComment(
+    req.user,
+    req.guest,
+    id,
+    req.body,
+  );
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'Comment updated successfully',
+    data: result,
   });
 });
 

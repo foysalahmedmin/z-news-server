@@ -1,11 +1,27 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
+import { TGuest } from '../../types/express-session.type';
+import { TJwtPayload } from '../auth/auth.type';
 import { Comment } from './comment.model';
 import { TComment, TCommentDocument } from './comment.type';
 
-export const createComment = async (data: TComment): Promise<TComment> => {
-  const result = await Comment.create(data);
+export const createComment = async (
+  user: TJwtPayload,
+  guest: TGuest,
+  payload: TComment,
+): Promise<TComment> => {
+  if (!user?._id && !guest?._id) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  const update = {
+    ...payload,
+    ...(user?._id ? { user: user._id } : {}),
+    ...(guest?._id ? { guest: guest._id } : {}),
+  };
+
+  const result = await Comment.create(update);
   return result;
 };
 
@@ -17,6 +33,27 @@ export const getComment = async (id: string): Promise<TCommentDocument> => {
   return result;
 };
 
+export const getSelfComment = async (
+  user: TJwtPayload,
+  guest: TGuest,
+  id: string,
+): Promise<TCommentDocument> => {
+  if (!user?._id && !guest?._id) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  const result = await Comment.findOne({
+    _id: id,
+    ...(user?._id ? { user: user._id } : { guest: guest._id }),
+  });
+
+  if (!result) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
+  }
+
+  return result;
+};
+
 export const getComments = async (
   query: Record<string, unknown>,
 ): Promise<{
@@ -24,7 +61,7 @@ export const getComments = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const commentQuery = new AppQuery(Comment.find(), query)
-    .search(['name', 'email'])
+    .search(['name', 'email', 'content'])
     .filter()
     .sort()
     .paginate()
@@ -35,16 +72,57 @@ export const getComments = async (
   return result;
 };
 
+export const updateSelfComment = async (
+  user: TJwtPayload,
+  guest: TGuest,
+  id: string,
+  payload: Partial<Pick<TComment, 'content' | 'name' | 'email'>>,
+): Promise<TCommentDocument> => {
+  if (!user?._id && !guest?._id) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  const data = await Comment.findOne({
+    _id: id,
+    ...(user?._id ? { user: user._id } : { guest: guest._id }),
+  });
+
+  if (!data) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
+  }
+
+  const update: Partial<TComment> = { ...payload };
+
+  if (Object.keys(payload).includes('content')) {
+    update.is_edited = true;
+    update.edited_at = new Date();
+  }
+
+  const result = await Comment.findByIdAndUpdate(id, update, {
+    new: true,
+    runValidators: true,
+  });
+
+  return result!;
+};
+
 export const updateComment = async (
   id: string,
-  payload: Partial<Pick<TComment, 'name' | 'code' | 'sequence' | 'status'>>,
+  payload: Partial<Pick<TComment, 'content' | 'status'>>,
 ): Promise<TCommentDocument> => {
   const data = await Comment.findById(id);
   if (!data) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
   }
 
-  const result = await Comment.findByIdAndUpdate(id, payload, {
+  const update: Partial<TComment> = { ...payload };
+
+  if (Object.keys(payload).includes('content')) {
+    update.is_edited = true;
+    update.edited_at = new Date();
+  }
+
+  const result = await Comment.findByIdAndUpdate(id, update, {
     new: true,
     runValidators: true,
   });

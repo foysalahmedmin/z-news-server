@@ -78,6 +78,15 @@ const newsSchema = new Schema<TNewsDocument>(
       type: Date,
     },
 
+    is_edited: {
+      type: Boolean,
+      default: false,
+    },
+
+    edited_at: {
+      type: Date,
+    },
+
     is_deleted: {
       type: Boolean,
       default: false,

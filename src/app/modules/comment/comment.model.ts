@@ -9,13 +9,13 @@ const commentSchema = new Schema<TCommentDocument>(
       required: true,
     },
 
-    parent: {
+    comment: {
       type: Schema.Types.ObjectId,
       ref: 'Comment',
       default: null,
     },
 
-    author: {
+    user: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: function () {
@@ -26,7 +26,7 @@ const commentSchema = new Schema<TCommentDocument>(
     guest: {
       type: String,
       required: function () {
-        return !this.author;
+        return !this.user;
       },
       default: null,
     },
@@ -51,6 +51,21 @@ const commentSchema = new Schema<TCommentDocument>(
       type: String,
       required: true,
       trim: true,
+    },
+
+    status: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending',
+    },
+
+    is_edited: {
+      type: Boolean,
+      default: false,
+    },
+
+    edited_at: {
+      type: Date,
     },
 
     is_deleted: {

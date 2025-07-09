@@ -4,7 +4,7 @@ import sendResponse from '../../utils/sendResponse';
 import * as NewsServices from './news.service';
 
 export const createNews = catchAsync(async (req, res) => {
-  const result = await NewsServices.createNews(req.body);
+  const result = await NewsServices.createNews(req.user, req.body);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,

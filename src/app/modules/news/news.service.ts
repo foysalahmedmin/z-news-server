@@ -5,8 +5,20 @@ import { TJwtPayload } from '../auth/auth.type';
 import { News } from './news.model';
 import { TNews, TNewsDocument } from './news.type';
 
-export const createNews = async (data: TNews): Promise<TNews> => {
-  const result = await News.create(data);
+export const createNews = async (
+  user: TJwtPayload,
+  payload: TNews,
+): Promise<TNews> => {
+  if (!user?._id) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  const update = {
+    ...payload,
+    author: user._id,
+  };
+
+  const result = await News.create(update);
   return result;
 };
 
@@ -25,7 +37,7 @@ export const getBulkNews = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const NewsQuery = new AppQuery(News.find(), query)
-    .search(['name', 'email'])
+    .search(['title', 'summary', 'content'])
     .filter()
     .sort()
     .paginate()
@@ -46,7 +58,14 @@ export const updateSelfNews = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const result = await News.findByIdAndUpdate(user._id, payload, {
+  const update: Partial<TNews> = { ...payload };
+
+  if (Object.keys(payload).includes('content')) {
+    update.is_edited = true;
+    update.edited_at = new Date();
+  }
+
+  const result = await News.findByIdAndUpdate(id, update, {
     new: true,
     runValidators: true,
   });
@@ -86,7 +105,14 @@ export const updateNews = async (
     throw new AppError(httpStatus.NOT_FOUND, 'News not found');
   }
 
-  const result = await News.findByIdAndUpdate(id, payload, {
+  const update: Partial<TNews> = { ...payload };
+
+  if (Object.keys(payload).includes('content')) {
+    update.is_edited = true;
+    update.edited_at = new Date();
+  }
+
+  const result = await News.findByIdAndUpdate(id, update, {
     new: true,
     runValidators: true,
   });

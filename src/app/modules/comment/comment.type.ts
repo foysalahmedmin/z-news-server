@@ -4,12 +4,15 @@ export type TStatus = 'active' | 'inactive';
 
 export type TComment = {
   news: Types.ObjectId;
-  parent?: Types.ObjectId;
-  author?: Types.ObjectId;
+  comment?: Types.ObjectId;
+  user?: Types.ObjectId;
   guest?: string;
   name: string;
   email: string;
   content: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  is_edited?: boolean;
+  edited_at?: Date;
   is_deleted?: boolean;
 };
 
