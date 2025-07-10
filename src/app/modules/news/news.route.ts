@@ -7,7 +7,15 @@ import * as NewsValidations from './news.validation';
 const router = express.Router();
 
 // GET
+router.get('/self', auth('admin'), NewsControllers.getSelfBulkNews);
 router.get('/', auth('admin'), NewsControllers.getBulkNews);
+
+router.get(
+  '/:id/self',
+  auth('admin', 'author'),
+  validation(NewsValidations.newsOperationValidationSchema),
+  NewsControllers.getSelfNews,
+);
 
 router.get(
   '/:id',
@@ -18,15 +26,15 @@ router.get(
 
 // PATCH
 router.patch(
-  '/bulk',
-  auth('admin', 'editor', 'author', 'contributor'),
+  '/bulk/self',
+  auth('admin', 'author'),
   validation(NewsValidations.updateSelfBulkNewsValidationSchema),
   NewsControllers.updateBulkNews,
 );
 
 router.patch(
-  '/:id',
-  auth('admin', 'editor', 'author', 'contributor'),
+  '/:id/self',
+  auth('admin', 'author'),
   validation(NewsValidations.updateSelfNewsValidationSchema),
   NewsControllers.updateNews,
 );
@@ -47,6 +55,13 @@ router.patch(
 
 // DELETE
 router.delete(
+  '/bulk/self',
+  auth('admin', 'author'),
+  validation(NewsValidations.bulkNewsOperationValidationSchema),
+  NewsControllers.deleteSelfBulkNews,
+);
+
+router.delete(
   '/bulk/permanent',
   auth('admin'),
   validation(NewsValidations.bulkNewsOperationValidationSchema),
@@ -58,6 +73,13 @@ router.delete(
   auth('admin'),
   validation(NewsValidations.bulkNewsOperationValidationSchema),
   NewsControllers.deleteBulkNews,
+);
+
+router.delete(
+  '/:id/self',
+  auth('admin', 'author'),
+  validation(NewsValidations.newsOperationValidationSchema),
+  NewsControllers.deleteSelfNews,
 );
 
 router.delete(
@@ -83,10 +105,24 @@ router.post(
 );
 
 router.post(
+  '/bulk/restore/self',
+  auth('admin'),
+  validation(NewsValidations.bulkNewsOperationValidationSchema),
+  NewsControllers.restoreSelfBulkNews,
+);
+
+router.post(
   '/bulk/restore',
   auth('admin'),
   validation(NewsValidations.bulkNewsOperationValidationSchema),
   NewsControllers.restoreBulkNews,
+);
+
+router.post(
+  '/:id/restore/self',
+  auth('admin'),
+  validation(NewsValidations.newsOperationValidationSchema),
+  NewsControllers.restoreSelfNews,
 );
 
 router.post(

@@ -1,10 +1,9 @@
-import { Document, FilterQuery, Query } from 'mongoose';
+import { Document, FilterQuery, Model, Query } from 'mongoose';
 
-class AppQuery<T extends Document> {
+class AppQuery<T extends Document, R = T> {
   public query: Query<T[], T>;
   public queryParams: Record<string, unknown>;
   public queryFilter: FilterQuery<T>;
-
   private _page = 1;
   private _limit = 10;
 
@@ -22,31 +21,24 @@ class AppQuery<T extends Document> {
           [field]: { $regex: search, $options: 'i' },
         })) as FilterQuery<T>[],
       };
-
       this.queryFilter = {
         ...this.queryFilter,
         ...searchCondition,
       };
-
       this.query = this.query.find(searchCondition);
     }
-
     return this;
   }
 
   filter() {
     const queryObj = { ...this.queryParams };
-
     const excludeFields = ['search', 'sort', 'limit', 'page', 'fields'];
     excludeFields.forEach((el) => delete queryObj[el]);
-
     this.queryFilter = {
       ...this.queryFilter,
       ...(queryObj as FilterQuery<T>),
     };
-
     this.query = this.query.find(queryObj as FilterQuery<T>);
-
     return this;
   }
 
@@ -62,7 +54,6 @@ class AppQuery<T extends Document> {
     this._page = Number(this?.queryParams?.page) || 1;
     this._limit = Number(this?.queryParams?.limit) || 10;
     const skip = (this._page - 1) * this._limit;
-
     this.query = this.query.skip(skip).limit(this._limit);
     return this;
   }
@@ -74,14 +65,21 @@ class AppQuery<T extends Document> {
     return this;
   }
 
-  async execute() {
+  async execute(): Promise<{
+    data: R[];
+    meta: {
+      total: number;
+      page: number;
+      limit: number;
+    };
+  }> {
     const [data, total] = await Promise.all([
       this.query,
-      (this.query.model as any).countDocuments(this.queryFilter),
+      (this.query.model as Model<T>).countDocuments(this.queryFilter),
     ]);
 
     return {
-      data,
+      data: data as unknown as R[],
       meta: {
         total,
         page: this._page,

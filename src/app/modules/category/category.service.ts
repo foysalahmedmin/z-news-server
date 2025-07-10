@@ -65,7 +65,7 @@ export const updateCategories = async (
 
   const result = await Category.updateMany(
     { _id: { $in: foundIds } },
-    { ...payload, updated_at: new Date() },
+    { ...payload },
   );
 
   return {
@@ -102,10 +102,7 @@ export const deleteCategories = async (
   const foundIds = categories.map((category) => category._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Category.updateMany(
-    { _id: { $in: foundIds } },
-    { is_deleted: true, updated_at: new Date() },
-  );
+  await Category.updateMany({ _id: { $in: foundIds } }, { is_deleted: true });
 
   return {
     count: foundIds.length,
@@ -136,7 +133,7 @@ export const restoreCategory = async (
 ): Promise<TCategoryDocument> => {
   const category = await Category.findOneAndUpdate(
     { _id: id, is_deleted: true },
-    { is_deleted: false, updated_at: new Date() },
+    { is_deleted: false },
     { new: true },
   );
 
@@ -158,7 +155,7 @@ export const restoreCategories = async (
 }> => {
   const result = await Category.updateMany(
     { _id: { $in: ids }, is_deleted: true },
-    { is_deleted: false, updated_at: new Date() },
+    { is_deleted: false },
   );
 
   const restoredCategories = await Category.find({ _id: { $in: ids } });

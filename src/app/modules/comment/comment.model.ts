@@ -51,6 +51,7 @@ const commentSchema = new Schema<TCommentDocument>(
       type: String,
       required: true,
       trim: true,
+      maxlength: 300,
     },
 
     status: {

@@ -9,19 +9,34 @@ const statusEnum = z.enum(['active', 'inactive']);
 
 export const createCommentValidationSchema = z.object({
   body: z.object({
+    news: idSchema,
+    comment: idSchema.optional(),
     name: z
       .string()
+      .trim()
       .min(2, 'Name must be at least 2 characters')
       .max(50, 'Name cannot exceed 50 characters'),
-    code: z
+    email: z.string().email('Invalid email format'),
+    content: z.string().trim().max(300, 'Content cannot exceed 300 characters'),
+  }),
+});
+
+export const updateSelfCommentValidationSchema = z.object({
+  params: z.object({
+    id: idSchema,
+  }),
+  body: z.object({
+    name: z
       .string()
-      .min(1, 'Code is required')
-      .max(20, 'Code cannot exceed 20 characters'),
-    sequence: z
-      .number({ invalid_type_error: 'Sequence must be a number' })
-      .int('Sequence must be an integer')
-      .nonnegative('Sequence must be 0 or greater'),
-    status: statusEnum.optional(),
+      .trim()
+      .min(2, 'Name must be at least 2 characters')
+      .max(50, 'Name cannot exceed 50 characters'),
+    email: z.string().email('Invalid email format'),
+    content: z
+      .string()
+      .trim()
+      .max(300, 'Content cannot exceed 300 characters')
+      .optional(),
   }),
 });
 
@@ -30,20 +45,10 @@ export const updateCommentValidationSchema = z.object({
     id: idSchema,
   }),
   body: z.object({
-    name: z
+    content: z
       .string()
-      .min(2, 'Name must be at least 2 characters')
-      .max(50, 'Name cannot exceed 50 characters')
-      .optional(),
-    code: z
-      .string()
-      .min(1, 'Code is required')
-      .max(20, 'Code cannot exceed 20 characters')
-      .optional(),
-    sequence: z
-      .number({ invalid_type_error: 'Sequence must be a number' })
-      .int('Sequence must be an integer')
-      .nonnegative('Sequence must be 0 or greater')
+      .trim()
+      .max(300, 'Content cannot exceed 300 characters')
       .optional(),
     status: statusEnum.optional(),
   }),

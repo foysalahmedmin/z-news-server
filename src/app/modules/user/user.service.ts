@@ -88,7 +88,7 @@ export const updateUsers = async (
 
   const result = await User.updateMany(
     { _id: { $in: foundIds } },
-    { ...payload, updated_at: new Date() },
+    { ...payload },
   );
 
   return {
@@ -125,10 +125,7 @@ export const deleteUsers = async (
   const foundIds = users.map((user) => user._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await User.updateMany(
-    { _id: { $in: foundIds } },
-    { is_deleted: true, updated_at: new Date() },
-  );
+  await User.updateMany({ _id: { $in: foundIds } }, { is_deleted: true });
 
   return {
     count: foundIds.length,
@@ -157,7 +154,7 @@ export const deleteUsersPermanent = async (
 export const restoreUser = async (id: string): Promise<TUserDocument> => {
   const user = await User.findOneAndUpdate(
     { _id: id, is_deleted: true },
-    { is_deleted: false, updated_at: new Date() },
+    { is_deleted: false },
     { new: true },
   );
 
@@ -176,7 +173,7 @@ export const restoreUsers = async (
 }> => {
   const result = await User.updateMany(
     { _id: { $in: ids }, is_deleted: true },
-    { is_deleted: false, updated_at: new Date() },
+    { is_deleted: false },
   );
 
   const restoredUsers = await User.find({ _id: { $in: ids } });
