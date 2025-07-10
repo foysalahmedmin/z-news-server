@@ -13,10 +13,10 @@ export const createCategoryValidationSchema = z.object({
       .string()
       .min(2, 'Name must be at least 2 characters')
       .max(50, 'Name cannot exceed 50 characters'),
-    code: z
+    slug: z
       .string()
-      .min(1, 'Code is required')
-      .max(20, 'Code cannot exceed 20 characters'),
+      .min(1, 'Slug is required')
+      .max(50, 'Slug cannot exceed 50 characters'),
     sequence: z
       .number({ invalid_type_error: 'Sequence must be a number' })
       .int('Sequence must be an integer')
@@ -35,10 +35,10 @@ export const updateCategoryValidationSchema = z.object({
       .min(2, 'Name must be at least 2 characters')
       .max(50, 'Name cannot exceed 50 characters')
       .optional(),
-    code: z
+    slug: z
       .string()
-      .min(1, 'Code is required')
-      .max(20, 'Code cannot exceed 20 characters')
+      .min(1, 'Slug is required')
+      .max(50, 'Slug cannot exceed 50 characters')
       .optional(),
     sequence: z
       .number({ invalid_type_error: 'Sequence must be a number' })

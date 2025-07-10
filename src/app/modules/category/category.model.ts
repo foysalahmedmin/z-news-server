@@ -6,11 +6,12 @@ const categorySchema = new Schema<TCategoryDocument>(
     name: {
       type: String,
       required: [true, 'Name is required'],
+      unique: true,
       trim: true,
       minlength: [2, 'Name must be at least 2 characters'],
       maxlength: [50, 'Name cannot exceed 50 characters'],
     },
-    code: {
+    slug: {
       type: String,
       required: [true, 'Code is required'],
       unique: true,

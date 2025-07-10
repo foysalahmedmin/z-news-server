@@ -4,7 +4,7 @@ export type TStatus = 'active' | 'inactive';
 
 export type TCategory = {
   name: string;
-  code: string;
+  slug: string;
   sequence: number;
   status: TStatus;
   is_deleted: boolean;

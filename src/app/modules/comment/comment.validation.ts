@@ -54,6 +54,18 @@ export const updateCommentValidationSchema = z.object({
   }),
 });
 
+export const updateSelfCommentsValidationSchema = z.object({
+  body: z.object({
+    ids: z
+      .array(idSchema, {
+        required_error: 'At least one comment ID is required',
+        invalid_type_error: 'Comment IDs must be an array of valid Mongo IDs',
+      })
+      .nonempty('At least one comment ID is required'),
+    status: statusEnum.optional(),
+  }),
+});
+
 export const updateCommentsValidationSchema = z.object({
   body: z.object({
     ids: z

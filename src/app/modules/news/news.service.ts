@@ -145,7 +145,7 @@ export const updateSelfBulkNews = async (
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   const result = await News.updateMany(
-    { _id: { $in: foundIds } },
+    { _id: { $in: foundIds }, author: user._id },
     { ...payload },
   );
 
@@ -221,7 +221,10 @@ export const deleteSelfBulkNews = async (
   const foundIds = all_news.map((news) => news._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await News.updateMany({ _id: { $in: foundIds } }, { is_deleted: true });
+  await News.updateMany(
+    { _id: { $in: foundIds }, author: user._id },
+    { is_deleted: true },
+  );
 
   return {
     count: foundIds.length,
@@ -308,7 +311,10 @@ export const restoreSelfBulkNews = async (
     { is_deleted: false },
   );
 
-  const restoredBulkNews = await News.find({ _id: { $in: ids } }).lean();
+  const restoredBulkNews = await News.find({
+    _id: { $in: ids },
+    author: user._id,
+  }).lean();
   const restoredIds = restoredBulkNews.map((news) => news._id.toString());
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 

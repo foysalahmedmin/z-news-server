@@ -9,7 +9,7 @@ const router = express.Router();
 // GET
 router.get(
   '/self',
-  auth('admin', 'editor', 'author', 'contributor', 'subscriber'),
+  auth('admin', 'editor', 'author', 'contributor', 'subscriber', 'user'),
   UserControllers.getSelf,
 );
 
@@ -25,7 +25,7 @@ router.get(
 // PATCH
 router.patch(
   '/self',
-  auth('admin', 'editor', 'author', 'contributor', 'subscriber'),
+  auth('admin', 'editor', 'author', 'contributor', 'subscriber', 'user'),
   validation(UserValidations.updateSelfValidationSchema),
   UserControllers.updateSelf,
 );

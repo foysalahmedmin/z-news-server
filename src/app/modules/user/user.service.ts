@@ -1,20 +1,21 @@
 import httpStatus from 'http-status';
+import { Document } from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
 import { TJwtPayload } from '../auth/auth.type';
 import { User } from './user.model';
-import { TUser, TUserDocument } from './user.type';
+import { TUser } from './user.type';
 
-export const getSelf = async (user: TJwtPayload): Promise<TUserDocument> => {
-  const result = await User.findById(user._id);
+export const getSelf = async (user: TJwtPayload): Promise<TUser> => {
+  const result = await User.findById(user._id).lean();
   if (!result) {
     throw new AppError(404, 'User not found');
   }
   return result;
 };
 
-export const getUser = async (id: string): Promise<TUserDocument> => {
-  const result = await User.findById(id);
+export const getUser = async (id: string): Promise<TUser> => {
+  const result = await User.findById(id).lean();
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
@@ -24,10 +25,10 @@ export const getUser = async (id: string): Promise<TUserDocument> => {
 export const getUsers = async (
   query: Record<string, unknown>,
 ): Promise<{
-  data: TUserDocument[];
+  data: TUser[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const userQuery = new AppQuery(User.find(), query)
+  const userQuery = new AppQuery<Document, TUser>(User.find().lean(), query)
     .search(['name', 'email'])
     .filter()
     .sort()
@@ -42,7 +43,7 @@ export const getUsers = async (
 export const updateSelf = async (
   user: TJwtPayload,
   payload: Partial<Pick<TUser, 'name' | 'email'>>,
-): Promise<TUserDocument> => {
+): Promise<TUser> => {
   const data = await User.findById(user._id);
   if (!data) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
@@ -61,7 +62,7 @@ export const updateUser = async (
   payload: Partial<
     Pick<TUser, 'name' | 'email' | 'role' | 'status' | 'is_verified'>
   >,
-): Promise<TUserDocument> => {
+): Promise<TUser> => {
   const data = await User.findById(id);
   if (!data) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
@@ -82,7 +83,7 @@ export const updateUsers = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const users = await User.find({ _id: { $in: ids } });
+  const users = await User.find({ _id: { $in: ids } }).lean();
   const foundIds = users.map((user) => user._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
@@ -121,7 +122,7 @@ export const deleteUsers = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const users = await User.find({ _id: { $in: ids } });
+  const users = await User.find({ _id: { $in: ids } }).lean();
   const foundIds = users.map((user) => user._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
@@ -139,7 +140,7 @@ export const deleteUsersPermanent = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const users = await User.find({ _id: { $in: ids } });
+  const users = await User.find({ _id: { $in: ids } }).lean();
   const foundIds = users.map((user) => user._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
@@ -151,7 +152,7 @@ export const deleteUsersPermanent = async (
   };
 };
 
-export const restoreUser = async (id: string): Promise<TUserDocument> => {
+export const restoreUser = async (id: string): Promise<TUser> => {
   const user = await User.findOneAndUpdate(
     { _id: id, is_deleted: true },
     { is_deleted: false },
@@ -176,7 +177,7 @@ export const restoreUsers = async (
     { is_deleted: false },
   );
 
-  const restoredUsers = await User.find({ _id: { $in: ids } });
+  const restoredUsers = await User.find({ _id: { $in: ids } }).lean();
   const restoredIds = restoredUsers.map((user) => user._id.toString());
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 
