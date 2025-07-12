@@ -3,8 +3,8 @@ import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
 import * as NewsServices from './news-headline.service';
 
-export const createNews = catchAsync(async (req, res) => {
-  const result = await NewsServices.createNews(req.user, req.body);
+export const createNewsHeadline = catchAsync(async (req, res) => {
+  const result = await NewsServices.createNewsHeadline(req.user, req.body);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -13,9 +13,9 @@ export const createNews = catchAsync(async (req, res) => {
   });
 });
 
-export const getSelfNews = catchAsync(async (req, res) => {
+export const getSelfNewsHeadline = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await NewsServices.getSelfNews(req.user, id);
+  const result = await NewsServices.getSelfNewsHeadline(req.user, id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -24,9 +24,9 @@ export const getSelfNews = catchAsync(async (req, res) => {
   });
 });
 
-export const getNews = catchAsync(async (req, res) => {
+export const getNewsHeadline = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await NewsServices.getNews(id);
+  const result = await NewsServices.getNewsHeadline(id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -35,8 +35,11 @@ export const getNews = catchAsync(async (req, res) => {
   });
 });
 
-export const getSelfBulkNews = catchAsync(async (req, res) => {
-  const result = await NewsServices.getSelfBulkNews(req.user, req.query);
+export const getSelfNewsHeadlineHeadlines = catchAsync(async (req, res) => {
+  const result = await NewsServices.getSelfNewsHeadlineHeadlines(
+    req.user,
+    req.query,
+  );
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -46,8 +49,8 @@ export const getSelfBulkNews = catchAsync(async (req, res) => {
   });
 });
 
-export const getBulkNews = catchAsync(async (req, res) => {
-  const result = await NewsServices.getBulkNews(req.query);
+export const getNewsHeadlines = catchAsync(async (req, res) => {
+  const result = await NewsServices.getNewsHeadlines(req.query);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -57,9 +60,13 @@ export const getBulkNews = catchAsync(async (req, res) => {
   });
 });
 
-export const updateSelfNews = catchAsync(async (req, res) => {
+export const updateSelfNewsHeadline = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await NewsServices.updateSelfNews(req.user, id, req.body);
+  const result = await NewsServices.updateSelfNewsHeadline(
+    req.user,
+    id,
+    req.body,
+  );
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -68,9 +75,9 @@ export const updateSelfNews = catchAsync(async (req, res) => {
   });
 });
 
-export const updateNews = catchAsync(async (req, res) => {
+export const updateNewsHeadline = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await NewsServices.updateNews(id, req.body);
+  const result = await NewsServices.updateNewsHeadline(id, req.body);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -79,9 +86,13 @@ export const updateNews = catchAsync(async (req, res) => {
   });
 });
 
-export const updateSelfBulkNews = catchAsync(async (req, res) => {
+export const updateSelfNewsHeadlineHeadlines = catchAsync(async (req, res) => {
   const { ids, ...payload } = req.body;
-  const result = await NewsServices.updateSelfBulkNews(req.user, ids, payload);
+  const result = await NewsServices.updateSelfNewsHeadlineHeadlines(
+    req.user,
+    ids,
+    payload,
+  );
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -90,9 +101,9 @@ export const updateSelfBulkNews = catchAsync(async (req, res) => {
   });
 });
 
-export const updateBulkNews = catchAsync(async (req, res) => {
+export const updateNewsHeadlines = catchAsync(async (req, res) => {
   const { ids, ...payload } = req.body;
-  const result = await NewsServices.updateBulkNews(ids, payload);
+  const result = await NewsServices.updateNewsHeadlines(ids, payload);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -101,9 +112,9 @@ export const updateBulkNews = catchAsync(async (req, res) => {
   });
 });
 
-export const deleteSelfNews = catchAsync(async (req, res) => {
+export const deleteSelfNewsHeadline = catchAsync(async (req, res) => {
   const { id } = req.params;
-  await NewsServices.deleteSelfNews(req.user, id);
+  await NewsServices.deleteSelfNewsHeadline(req.user, id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -112,9 +123,9 @@ export const deleteSelfNews = catchAsync(async (req, res) => {
   });
 });
 
-export const deleteNews = catchAsync(async (req, res) => {
+export const deleteNewsHeadline = catchAsync(async (req, res) => {
   const { id } = req.params;
-  await NewsServices.deleteNews(id);
+  await NewsServices.deleteNewsHeadline(id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -123,9 +134,9 @@ export const deleteNews = catchAsync(async (req, res) => {
   });
 });
 
-export const deleteNewsPermanent = catchAsync(async (req, res) => {
+export const deleteNewsHeadlinePermanent = catchAsync(async (req, res) => {
   const { id } = req.params;
-  await NewsServices.deleteNewsPermanent(id);
+  await NewsServices.deleteNewsHeadlinePermanent(id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -134,35 +145,38 @@ export const deleteNewsPermanent = catchAsync(async (req, res) => {
   });
 });
 
-export const deleteSelfBulkNews = catchAsync(async (req, res) => {
+export const deleteSelfNewsHeadlineHeadlines = catchAsync(async (req, res) => {
   const { ids } = req.body;
-  const result = await NewsServices.deleteSelfBulkNews(req.user, ids);
+  const result = await NewsServices.deleteSelfNewsHeadlineHeadlines(
+    req.user,
+    ids,
+  );
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: `${result.count} BulkNews soft deleted successfully`,
+    message: `${result.count} NewsHeadlines soft deleted successfully`,
     data: {
       not_found_ids: result.not_found_ids,
     },
   });
 });
 
-export const deleteBulkNews = catchAsync(async (req, res) => {
+export const deleteNewsHeadlines = catchAsync(async (req, res) => {
   const { ids } = req.body;
-  const result = await NewsServices.deleteBulkNews(ids);
+  const result = await NewsServices.deleteNewsHeadlines(ids);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: `${result.count} BulkNews soft deleted successfully`,
+    message: `${result.count} NewsHeadlines soft deleted successfully`,
     data: {
       not_found_ids: result.not_found_ids,
     },
   });
 });
 
-export const deleteBulkNewsPermanent = catchAsync(async (req, res) => {
+export const deleteNewsHeadlinesPermanent = catchAsync(async (req, res) => {
   const { ids } = req.body;
-  const result = await NewsServices.deleteBulkNewsPermanent(ids);
+  const result = await NewsServices.deleteNewsHeadlinesPermanent(ids);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -173,9 +187,9 @@ export const deleteBulkNewsPermanent = catchAsync(async (req, res) => {
   });
 });
 
-export const restoreSelfNews = catchAsync(async (req, res) => {
+export const restoreSelfNewsHeadline = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await NewsServices.restoreSelfNews(req.user, id);
+  const result = await NewsServices.restoreSelfNewsHeadline(req.user, id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -184,9 +198,9 @@ export const restoreSelfNews = catchAsync(async (req, res) => {
   });
 });
 
-export const restoreNews = catchAsync(async (req, res) => {
+export const restoreNewsHeadline = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await NewsServices.restoreNews(id);
+  const result = await NewsServices.restoreNewsHeadline(id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -195,9 +209,12 @@ export const restoreNews = catchAsync(async (req, res) => {
   });
 });
 
-export const restoreSelfBulkNews = catchAsync(async (req, res) => {
+export const restoreSelfNewsHeadlineHeadlines = catchAsync(async (req, res) => {
   const { ids } = req.body;
-  const result = await NewsServices.restoreSelfBulkNews(req.user, ids);
+  const result = await NewsServices.restoreSelfNewsHeadlineHeadlines(
+    req.user,
+    ids,
+  );
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -208,9 +225,9 @@ export const restoreSelfBulkNews = catchAsync(async (req, res) => {
   });
 });
 
-export const restoreBulkNews = catchAsync(async (req, res) => {
+export const restoreNewsHeadlines = catchAsync(async (req, res) => {
   const { ids } = req.body;
-  const result = await NewsServices.restoreBulkNews(ids);
+  const result = await NewsServices.restoreNewsHeadlines(ids);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,

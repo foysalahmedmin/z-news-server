@@ -36,7 +36,7 @@ router.patch(
   '/:id/self',
   auth('admin', 'author'),
   validation(NewsValidations.updateSelfNewsValidationSchema),
-  NewsControllers.updateNews,
+  NewsControllers.updateSelfNews,
 );
 
 router.patch(
@@ -99,14 +99,14 @@ router.delete(
 // POST
 router.post(
   '/',
-  auth('admin'),
+  auth('admin', 'author'),
   validation(NewsValidations.createNewsValidationSchema),
   NewsControllers.createNews,
 );
 
 router.post(
   '/bulk/restore/self',
-  auth('admin'),
+  auth('admin', 'author'),
   validation(NewsValidations.bulkNewsOperationValidationSchema),
   NewsControllers.restoreSelfBulkNews,
 );
@@ -120,7 +120,7 @@ router.post(
 
 router.post(
   '/:id/restore/self',
-  auth('admin'),
+  auth('admin', 'author'),
   validation(NewsValidations.newsOperationValidationSchema),
   NewsControllers.restoreSelfNews,
 );

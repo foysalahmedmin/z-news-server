@@ -3,31 +3,71 @@ import { Document } from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
 import { TJwtPayload } from '../auth/auth.type';
+import { NewsHeadline } from '../news-headline/news-headline.model';
+import { TNewsHeadline } from '../news-headline/news-headline.type';
 import { News } from './news.model';
 import { TNews } from './news.type';
 
+import mongoose from 'mongoose';
+
 export const createNews = async (
   user: TJwtPayload,
-  payload: TNews,
+  payload: TNews & { headline?: TNewsHeadline; breaking?: TNewsHeadline },
 ): Promise<TNews> => {
   if (!user?._id) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const update = {
-    ...payload,
-    author: user._id,
-  };
+  const session = await mongoose.startSession();
 
-  const result = await News.create(update);
-  return result.toObject();
+  try {
+    session.startTransaction();
+
+    const { headline, breaking, ...rest } = payload;
+
+    const update = {
+      ...rest,
+      author: user._id,
+    };
+
+    const result = await News.create([update], { session });
+
+    if (headline?.title) {
+      await NewsHeadline.create(
+        [{ ...headline, author: user._id, news: result[0]._id }],
+        { session },
+      );
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return result[0].toObject();
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
 };
 
 export const getSelfNews = async (
   user: TJwtPayload,
   id: string,
 ): Promise<TNews> => {
-  const result = await News.findOne({ _id: id, author: user._id }).lean();
+  const result = await News.findOne({ _id: id, author: user._id })
+    .populate([
+      { path: 'author', select: '_id name email' },
+      { path: 'category', select: '_id name slug' },
+      {
+        path: 'headline',
+        select: '_id title published_at expired_at status',
+      },
+      {
+        path: 'breaking',
+        select: '_id title published_at expired_at status',
+      },
+    ])
+    .lean();
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'News not found');
   }
@@ -35,7 +75,20 @@ export const getSelfNews = async (
 };
 
 export const getNews = async (id: string): Promise<TNews> => {
-  const result = await News.findById(id).lean();
+  const result = await News.findById(id)
+    .populate([
+      { path: 'author', select: '_id name email' },
+      { path: 'category', select: '_id name slug' },
+      {
+        path: 'headline',
+        select: '_id title published_at expired_at status',
+      },
+      {
+        path: 'breaking',
+        select: '_id title published_at expired_at status',
+      },
+    ])
+    .lean();
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'News not found');
   }
@@ -50,7 +103,20 @@ export const getSelfBulkNews = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const NewsQuery = new AppQuery<Document, TNews>(
-    News.find({ author: user._id }).lean(),
+    News.find({ author: user._id })
+      .populate([
+        { path: 'author', select: '_id name email' },
+        { path: 'category', select: '_id name slug' },
+        {
+          path: 'headline',
+          select: '_id title published_at expired_at status',
+        },
+        {
+          path: 'breaking',
+          select: '_id title published_at expired_at status',
+        },
+      ])
+      .lean(),
     query,
   )
     .search(['title', 'summary', 'content'])
@@ -69,7 +135,23 @@ export const getBulkNews = async (
   data: TNews[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const NewsQuery = new AppQuery<Document, TNews>(News.find().lean(), query)
+  const NewsQuery = new AppQuery<Document, TNews>(
+    News.find()
+      .populate([
+        { path: 'author', select: '_id name email' },
+        { path: 'category', select: '_id name slug' },
+        {
+          path: 'headline',
+          select: '_id title published_at expired_at status',
+        },
+        {
+          path: 'breaking',
+          select: '_id title published_at expired_at status',
+        },
+      ])
+      .lean(),
+    query,
+  )
     .search(['title', 'summary', 'content'])
     .filter()
     .sort()

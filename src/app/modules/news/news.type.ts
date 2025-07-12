@@ -1,4 +1,5 @@
 import { Document, Model, Types } from 'mongoose';
+import { TNewsHeadline } from '../news-headline/news-headline.type';
 
 export type TStatus = 'draft' | 'pending' | 'published' | 'archived';
 
@@ -9,23 +10,24 @@ export type TNews = {
   summary?: string;
   content: string;
   thumbnail?: string;
-  images: string[];
-  tags: string[];
+  images?: string[];
+  tags?: string[];
   category: Types.ObjectId;
   author: Types.ObjectId;
   status: TStatus;
   is_featured: boolean;
   is_premium: boolean;
-  view_count: number;
   seo?: {
     title?: string;
     description?: string;
     keywords?: string[];
   };
   published_at?: Date;
+  expired_at?: Date;
   is_edited?: boolean;
   edited_at?: Date;
   is_deleted: boolean;
+  headline?: TNewsHeadline;
 };
 
 export interface TNewsDocument extends TNews, Document {

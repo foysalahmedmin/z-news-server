@@ -7,7 +7,7 @@ const idSchema = z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), {
 
 const statusEnum = z.enum(['draft', 'pending', 'published', 'archived']);
 
-export const createNewsValidationSchema = z.object({
+export const createNewsHeadlineValidationSchema = z.object({
   body: z.object({
     sequence: z
       .number({ invalid_type_error: 'Sequence must be a number' })
@@ -15,34 +15,17 @@ export const createNewsValidationSchema = z.object({
       .nonnegative('Sequence must be 0 or greater')
       .optional(),
     title: z.string().trim().min(1),
-    slug: z
-      .string()
-      .trim()
-      .min(1)
-      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
-        message: 'Slug must be lowercase and kebab-case',
-      }),
     summary: z.string().max(300).optional(),
-    content: z.string().min(1),
-    thumbnail: z.string().url().optional(),
-    images: z.array(z.string().url()).optional(),
     tags: z.array(z.string().min(1)).optional(),
-    author: idSchema,
+    category: idSchema.optional(),
+    news: idSchema.optional(),
     status: statusEnum.optional(),
-    is_featured: z.boolean().optional(),
-    is_premium: z.boolean().optional(),
-    seo: z
-      .object({
-        title: z.string().optional(),
-        description: z.string().optional(),
-        keywords: z.array(z.string()).optional(),
-      })
-      .optional(),
     published_at: z.coerce.date().optional(),
+    expired_at: z.coerce.date().optional(),
   }),
 });
 
-export const updateSelfNewsValidationSchema = z.object({
+export const updateSelfNewsHeadlineValidationSchema = z.object({
   params: z.object({
     id: idSchema,
   }),
@@ -52,36 +35,18 @@ export const updateSelfNewsValidationSchema = z.object({
       .int('Sequence must be an integer')
       .nonnegative('Sequence must be 0 or greater')
       .optional(),
-    title: z.string().trim().min(1).optional(),
-    slug: z
-      .string()
-      .trim()
-      .min(1)
-      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
-        message: 'Slug must be lowercase and kebab-case',
-      })
-      .optional(),
+    title: z.string().trim().min(1),
     summary: z.string().max(300).optional(),
-    content: z.string().min(1).optional(),
-    thumbnail: z.string().url().optional(),
-    images: z.array(z.string().url()).optional(),
     tags: z.array(z.string().min(1)).optional(),
-    author: idSchema.optional(),
+    category: idSchema.optional(),
+    news: idSchema.optional(),
     status: statusEnum.optional(),
-    is_featured: z.boolean().optional(),
-    is_premium: z.boolean().optional(),
-    seo: z
-      .object({
-        title: z.string().optional(),
-        description: z.string().optional(),
-        keywords: z.array(z.string()).optional(),
-      })
-      .optional(),
     published_at: z.coerce.date().optional(),
+    expired_at: z.coerce.date().optional(),
   }),
 });
 
-export const updateSelfBulkNewsValidationSchema = z.object({
+export const updateSelfNewsHeadlineHeadlinesValidationSchema = z.object({
   body: z.object({
     ids: z
       .array(idSchema, {
@@ -93,7 +58,7 @@ export const updateSelfBulkNewsValidationSchema = z.object({
   }),
 });
 
-export const updateNewsValidationSchema = z.object({
+export const updateNewsHeadlineValidationSchema = z.object({
   params: z.object({
     id: idSchema,
   }),
@@ -103,36 +68,18 @@ export const updateNewsValidationSchema = z.object({
       .int('Sequence must be an integer')
       .nonnegative('Sequence must be 0 or greater')
       .optional(),
-    title: z.string().trim().min(1).optional(),
-    slug: z
-      .string()
-      .trim()
-      .min(1)
-      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
-        message: 'Slug must be lowercase and kebab-case',
-      })
-      .optional(),
+    title: z.string().trim().min(1),
     summary: z.string().max(300).optional(),
-    content: z.string().min(1).optional(),
-    thumbnail: z.string().url().optional(),
-    images: z.array(z.string().url()).optional(),
     tags: z.array(z.string().min(1)).optional(),
-    author: idSchema.optional(),
+    category: idSchema.optional(),
+    news: idSchema.optional(),
     status: statusEnum.optional(),
-    is_featured: z.boolean().optional(),
-    is_premium: z.boolean().optional(),
-    seo: z
-      .object({
-        title: z.string().optional(),
-        description: z.string().optional(),
-        keywords: z.array(z.string()).optional(),
-      })
-      .optional(),
     published_at: z.coerce.date().optional(),
+    expired_at: z.coerce.date().optional(),
   }),
 });
 
-export const updateBulkNewsValidationSchema = z.object({
+export const updateNewsHeadlinesValidationSchema = z.object({
   body: z.object({
     ids: z
       .array(idSchema, {
@@ -144,13 +91,13 @@ export const updateBulkNewsValidationSchema = z.object({
   }),
 });
 
-export const newsOperationValidationSchema = z.object({
+export const newsHeadlineOperationValidationSchema = z.object({
   params: z.object({
     id: idSchema,
   }),
 });
 
-export const bulkNewsOperationValidationSchema = z.object({
+export const newsHeadlinesOperationValidationSchema = z.object({
   body: z.object({
     ids: z.array(idSchema).nonempty('At least one news ID is required'),
   }),

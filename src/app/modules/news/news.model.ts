@@ -46,6 +46,11 @@ const newsSchema = new Schema<TNewsDocument>(
       default: [],
     },
 
+    category: {
+      type: Schema.Types.ObjectId,
+      ref: 'Category',
+    },
+
     author: {
       type: Schema.Types.ObjectId,
       ref: 'User',
@@ -76,6 +81,41 @@ const newsSchema = new Schema<TNewsDocument>(
 
     published_at: {
       type: Date,
+      required: function () {
+        return this.status === 'published';
+      },
+      default: function (this: TNewsDocument) {
+        return this.status === 'published' ? new Date() : undefined;
+      },
+      validate: {
+        validator: function (value: Date) {
+          if (this.expired_at && value) {
+            return value <= this.expired_at;
+          }
+          return true;
+        },
+        message: 'published_at cannot be after expired_at',
+      },
+    },
+
+    expired_at: {
+      type: Date,
+      default: function (this: TNewsDocument) {
+        if (this.status === 'published') {
+          const publishedAt = this.published_at || new Date();
+          return new Date(publishedAt.getTime() + 1 * 24 * 60 * 60 * 1000);
+        }
+        return undefined;
+      },
+      validate: {
+        validator: function (value: Date) {
+          if (this.published_at && value) {
+            return value >= this.published_at;
+          }
+          return true;
+        },
+        message: 'expired_at cannot be before published_at',
+      },
     },
 
     is_edited: {
@@ -97,8 +137,24 @@ const newsSchema = new Schema<TNewsDocument>(
       createdAt: 'created_at',
       updatedAt: 'updated_at',
     },
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   },
 );
+
+newsSchema.virtual('headline', {
+  ref: 'NewsHeadline',
+  localField: '_id',
+  foreignField: 'news',
+  justOne: true,
+});
+
+newsSchema.virtual('break', {
+  ref: 'NewsBreak',
+  localField: '_id',
+  foreignField: 'news',
+  justOne: true,
+});
 
 // toJSON override to remove sensitive fields from output
 newsSchema.methods.toJSON = function () {

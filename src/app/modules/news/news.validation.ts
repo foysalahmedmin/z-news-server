@@ -27,7 +27,7 @@ export const createNewsValidationSchema = z.object({
     thumbnail: z.string().url().optional(),
     images: z.array(z.string().url()).optional(),
     tags: z.array(z.string().min(1)).optional(),
-    author: idSchema,
+    category: idSchema.optional(),
     status: statusEnum.optional(),
     is_featured: z.boolean().optional(),
     is_premium: z.boolean().optional(),
@@ -39,6 +39,29 @@ export const createNewsValidationSchema = z.object({
       })
       .optional(),
     published_at: z.coerce.date().optional(),
+    expired_at: z.coerce.date().optional(),
+    headline: z
+      .object({
+        title: z.string().trim().min(1),
+        summary: z.string().max(300).optional(),
+        tags: z.array(z.string().min(1)).optional(),
+        category: idSchema.optional(),
+        status: statusEnum.optional(),
+        published_at: z.coerce.date().optional(),
+        expired_at: z.coerce.date().optional(),
+      })
+      .optional(),
+    break: z
+      .object({
+        title: z.string().trim().min(1),
+        summary: z.string().max(300).optional(),
+        tags: z.array(z.string().min(1)).optional(),
+        category: idSchema.optional(),
+        status: statusEnum.optional(),
+        published_at: z.coerce.date().optional(),
+        expired_at: z.coerce.date().optional(),
+      })
+      .optional(),
   }),
 });
 
@@ -66,7 +89,7 @@ export const updateSelfNewsValidationSchema = z.object({
     thumbnail: z.string().url().optional(),
     images: z.array(z.string().url()).optional(),
     tags: z.array(z.string().min(1)).optional(),
-    author: idSchema.optional(),
+    category: idSchema.optional(),
     status: statusEnum.optional(),
     is_featured: z.boolean().optional(),
     is_premium: z.boolean().optional(),
@@ -78,6 +101,7 @@ export const updateSelfNewsValidationSchema = z.object({
       })
       .optional(),
     published_at: z.coerce.date().optional(),
+    expired_at: z.coerce.date().optional(),
   }),
 });
 
@@ -117,6 +141,7 @@ export const updateNewsValidationSchema = z.object({
     thumbnail: z.string().url().optional(),
     images: z.array(z.string().url()).optional(),
     tags: z.array(z.string().min(1)).optional(),
+    category: idSchema.optional(),
     author: idSchema.optional(),
     status: statusEnum.optional(),
     is_featured: z.boolean().optional(),
@@ -129,6 +154,7 @@ export const updateNewsValidationSchema = z.object({
       })
       .optional(),
     published_at: z.coerce.date().optional(),
+    expired_at: z.coerce.date().optional(),
   }),
 });
 
