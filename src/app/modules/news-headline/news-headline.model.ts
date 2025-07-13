@@ -113,6 +113,14 @@ const newsHeadlineSchema = new Schema<TNewsHeadlineDocument>(
   },
 );
 
+newsHeadlineSchema.index(
+  { news: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { news: { $exists: true, $ne: null } },
+  },
+);
+
 // toJSON override to remove sensitive fields from output
 newsHeadlineSchema.methods.toJSON = function () {
   const News = this.toObject();
@@ -163,4 +171,4 @@ newsHeadlineSchema.methods.softDelete = async function () {
 export const NewsHeadline = mongoose.model<
   TNewsHeadlineDocument,
   TNewsHeadlineModel
->('News', newsHeadlineSchema);
+>('NewsHeadline', newsHeadlineSchema);

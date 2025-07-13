@@ -4,14 +4,14 @@ import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
 import { TGuest } from '../../types/express-session.type';
 import { TJwtPayload } from '../auth/auth.type';
-import { Comment } from './reaction.model';
-import { TComment } from './reaction.type';
+import { Reaction } from './reaction.model';
+import { TReaction } from './reaction.type';
 
 export const createComment = async (
   user: TJwtPayload,
   guest: TGuest,
-  payload: TComment,
-): Promise<TComment> => {
+  payload: TReaction,
+): Promise<TReaction> => {
   if (!user?._id && !guest?._id) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
@@ -22,7 +22,7 @@ export const createComment = async (
     ...(guest?._id ? { guest: guest._id } : {}),
   };
 
-  const result = await Comment.create(update);
+  const result = await Reaction.create(update);
   return result.toObject();
 };
 
@@ -30,12 +30,12 @@ export const getSelfComment = async (
   user: TJwtPayload,
   guest: TGuest,
   id: string,
-): Promise<TComment> => {
+): Promise<TReaction> => {
   if (!user?._id && !guest?._id) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const result = await Comment.findOne({
+  const result = await Reaction.findOne({
     _id: id,
     ...(user?._id ? { user: user._id } : { guest: guest._id }),
   }).lean();
@@ -47,8 +47,8 @@ export const getSelfComment = async (
   return result;
 };
 
-export const getComment = async (id: string): Promise<TComment> => {
-  const result = await Comment.findById(id).lean();
+export const getComment = async (id: string): Promise<TReaction> => {
+  const result = await Reaction.findById(id).lean();
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
   }
@@ -60,15 +60,15 @@ export const getSelfComments = async (
   guest: TGuest,
   query: Record<string, unknown>,
 ): Promise<{
-  data: TComment[];
+  data: TReaction[];
   meta: { total: number; page: number; limit: number };
 }> => {
   if (!user?._id && !guest?._id) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const commentQuery = new AppQuery<Document, TComment>(
-    Comment.find({
+  const commentQuery = new AppQuery<Document, TReaction>(
+    Reaction.find({
       ...(user?._id ? { user: user._id } : { guest: guest._id }),
     }).lean(),
     query,
@@ -86,11 +86,11 @@ export const getSelfComments = async (
 export const getComments = async (
   query: Record<string, unknown>,
 ): Promise<{
-  data: TComment[];
+  data: TReaction[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const commentQuery = new AppQuery<Document, TComment>(
-    Comment.find().lean(),
+  const commentQuery = new AppQuery<Document, TReaction>(
+    Reaction.find().lean(),
     query,
   )
     .search(['name', 'email', 'content'])
@@ -107,13 +107,13 @@ export const updateSelfComment = async (
   user: TJwtPayload,
   guest: TGuest,
   id: string,
-  payload: Partial<Pick<TComment, 'content' | 'name' | 'email'>>,
-): Promise<TComment> => {
+  payload: Partial<Pick<TReaction, 'content' | 'name' | 'email'>>,
+): Promise<TReaction> => {
   if (!user?._id && !guest?._id) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const data = await Comment.findOne({
+  const data = await Reaction.findOne({
     _id: id,
     ...(user?._id ? { user: user._id } : { guest: guest._id }),
   }).lean();
@@ -122,14 +122,14 @@ export const updateSelfComment = async (
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
   }
 
-  const update: Partial<TComment> = { ...payload };
+  const update: Partial<TReaction> = { ...payload };
 
   if (Object.keys(payload).includes('content')) {
     update.is_edited = true;
     update.edited_at = new Date();
   }
 
-  const result = await Comment.findByIdAndUpdate(id, update, {
+  const result = await Reaction.findByIdAndUpdate(id, update, {
     new: true,
     runValidators: true,
   }).lean();
@@ -139,21 +139,21 @@ export const updateSelfComment = async (
 
 export const updateComment = async (
   id: string,
-  payload: Partial<Pick<TComment, 'content' | 'status'>>,
-): Promise<TComment> => {
-  const data = await Comment.findById(id).lean();
+  payload: Partial<Pick<TReaction, 'content' | 'status'>>,
+): Promise<TReaction> => {
+  const data = await Reaction.findById(id).lean();
   if (!data) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
   }
 
-  const update: Partial<TComment> = { ...payload };
+  const update: Partial<TReaction> = { ...payload };
 
   if (Object.keys(payload).includes('content')) {
     update.is_edited = true;
     update.edited_at = new Date();
   }
 
-  const result = await Comment.findByIdAndUpdate(id, update, {
+  const result = await Reaction.findByIdAndUpdate(id, update, {
     new: true,
     runValidators: true,
   }).lean();
@@ -165,7 +165,7 @@ export const updateSelfComments = async (
   user: TJwtPayload,
   guest: TGuest,
   ids: string[],
-  payload: Partial<Pick<TComment, 'status'>>,
+  payload: Partial<Pick<TReaction, 'status'>>,
 ): Promise<{
   count: number;
   not_found_ids: string[];
@@ -174,14 +174,14 @@ export const updateSelfComments = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const comments = await Comment.find({
+  const comments = await Reaction.find({
     _id: { $in: ids },
     ...(user?._id ? { user: user._id } : { guest: guest._id }),
   }).lean();
   const foundIds = comments.map((comment) => comment._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  const result = await Comment.updateMany(
+  const result = await Reaction.updateMany(
     {
       _id: { $in: foundIds },
       ...(user?._id ? { user: user._id } : { guest: guest._id }),
@@ -197,16 +197,16 @@ export const updateSelfComments = async (
 
 export const updateComments = async (
   ids: string[],
-  payload: Partial<Pick<TComment, 'status'>>,
+  payload: Partial<Pick<TReaction, 'status'>>,
 ): Promise<{
   count: number;
   not_found_ids: string[];
 }> => {
-  const comments = await Comment.find({ _id: { $in: ids } }).lean();
+  const comments = await Reaction.find({ _id: { $in: ids } }).lean();
   const foundIds = comments.map((comment) => comment._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  const result = await Comment.updateMany(
+  const result = await Reaction.updateMany(
     { _id: { $in: foundIds } },
     { ...payload },
   );
@@ -226,7 +226,7 @@ export const deleteSelfComment = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const comment = await Comment.findOne({
+  const comment = await Reaction.findOne({
     _id: id,
     ...(user?._id ? { user: user._id } : { guest: guest._id }),
   });
@@ -238,7 +238,7 @@ export const deleteSelfComment = async (
 };
 
 export const deleteComment = async (id: string): Promise<void> => {
-  const comment = await Comment.findById(id);
+  const comment = await Reaction.findById(id);
   if (!comment) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
   }
@@ -247,12 +247,12 @@ export const deleteComment = async (id: string): Promise<void> => {
 };
 
 export const deleteCommentPermanent = async (id: string): Promise<void> => {
-  const comment = await Comment.findById(id).lean();
+  const comment = await Reaction.findById(id).lean();
   if (!comment) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
   }
 
-  await Comment.findByIdAndDelete(id);
+  await Reaction.findByIdAndDelete(id);
 };
 
 export const deleteSelfComments = async (
@@ -267,14 +267,14 @@ export const deleteSelfComments = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const comments = await Comment.find({
+  const comments = await Reaction.find({
     _id: { $in: ids },
     ...(user?._id ? { user: user._id } : { guest: guest._id }),
   }).lean();
   const foundIds = comments.map((comment) => comment._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Comment.updateMany(
+  await Reaction.updateMany(
     {
       _id: { $in: foundIds },
       ...(user?._id ? { user: user._id } : { guest: guest._id }),
@@ -294,11 +294,11 @@ export const deleteComments = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const comments = await Comment.find({ _id: { $in: ids } }).lean();
+  const comments = await Reaction.find({ _id: { $in: ids } }).lean();
   const foundIds = comments.map((comment) => comment._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Comment.updateMany({ _id: { $in: foundIds } }, { is_deleted: true });
+  await Reaction.updateMany({ _id: { $in: foundIds } }, { is_deleted: true });
 
   return {
     count: foundIds.length,
@@ -313,11 +313,11 @@ export const deleteCommentsPermanent = async (
   not_found_ids: string[];
 }> => {
   // Use lean for finding existing comments
-  const comments = await Comment.find({ _id: { $in: ids } }).lean();
+  const comments = await Reaction.find({ _id: { $in: ids } }).lean();
   const foundIds = comments.map((comment) => comment._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Comment.deleteMany({ _id: { $in: foundIds } });
+  await Reaction.deleteMany({ _id: { $in: foundIds } });
 
   return {
     count: foundIds.length,
@@ -329,12 +329,12 @@ export const restoreSelfComment = async (
   user: TJwtPayload,
   guest: TGuest,
   id: string,
-): Promise<TComment> => {
+): Promise<TReaction> => {
   if (!user?._id && !guest?._id) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const comment = await Comment.findOneAndUpdate(
+  const comment = await Reaction.findOneAndUpdate(
     {
       _id: id,
       is_deleted: true,
@@ -354,8 +354,8 @@ export const restoreSelfComment = async (
   return comment;
 };
 
-export const restoreComment = async (id: string): Promise<TComment> => {
-  const comment = await Comment.findOneAndUpdate(
+export const restoreComment = async (id: string): Promise<TReaction> => {
+  const comment = await Reaction.findOneAndUpdate(
     { _id: id, is_deleted: true },
     { is_deleted: false },
     { new: true },
@@ -383,7 +383,7 @@ export const restoreSelfComments = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const result = await Comment.updateMany(
+  const result = await Reaction.updateMany(
     {
       _id: { $in: ids },
       is_deleted: true,
@@ -392,7 +392,7 @@ export const restoreSelfComments = async (
     { is_deleted: false },
   );
 
-  const restoredComments = await Comment.find({
+  const restoredComments = await Reaction.find({
     _id: { $in: ids },
     ...(user?._id ? { user: user._id } : { guest: guest._id }),
   }).lean();
@@ -411,12 +411,12 @@ export const restoreComments = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const result = await Comment.updateMany(
+  const result = await Reaction.updateMany(
     { _id: { $in: ids }, is_deleted: true },
     { is_deleted: false },
   );
 
-  const restoredComments = await Comment.find({ _id: { $in: ids } }).lean();
+  const restoredComments = await Reaction.find({ _id: { $in: ids } }).lean();
   const restoredIds = restoredComments.map((comment) => comment._id.toString());
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 

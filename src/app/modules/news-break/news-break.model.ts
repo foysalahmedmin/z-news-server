@@ -113,6 +113,14 @@ const newsBreakSchema = new Schema<TNewsBreakDocument>(
   },
 );
 
+newsBreakSchema.index(
+  { news: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { news: { $exists: true, $ne: null } },
+  },
+);
+
 // toJSON override to remove sensitive fields from output
 newsBreakSchema.methods.toJSON = function () {
   const News = this.toObject();
@@ -161,6 +169,6 @@ newsBreakSchema.methods.softDelete = async function () {
 };
 
 export const NewsBreak = mongoose.model<TNewsBreakDocument, TNewsBreakModel>(
-  'News',
+  'NewsBreak',
   newsBreakSchema,
 );

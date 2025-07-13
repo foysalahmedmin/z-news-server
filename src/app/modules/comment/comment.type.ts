@@ -1,6 +1,6 @@
 import { Document, Model, Types } from 'mongoose';
 
-export type TStatus = 'active' | 'inactive';
+export type TStatus = 'pending' | 'approved' | 'rejected';
 
 export type TComment = {
   news: Types.ObjectId;
@@ -10,7 +10,7 @@ export type TComment = {
   name: string;
   email: string;
   content: string;
-  status?: 'pending' | 'approved' | 'rejected';
+  status?: TStatus;
   is_edited?: boolean;
   edited_at?: Date;
   is_deleted?: boolean;

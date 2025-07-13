@@ -1,26 +1,23 @@
 import { Document, Model, Types } from 'mongoose';
 
-export type TStatus = 'active' | 'inactive';
+export type TStatus = 'pending' | 'approved' | 'rejected';
 
-export type TComment = {
+export type TReaction = {
   news: Types.ObjectId;
-  comment?: Types.ObjectId;
   user?: Types.ObjectId;
   guest?: string;
   name: string;
   email: string;
-  content: string;
-  status?: 'pending' | 'approved' | 'rejected';
-  is_edited?: boolean;
-  edited_at?: Date;
+  type: 'like' | 'dislike';
+  status?: TStatus;
   is_deleted?: boolean;
 };
 
-export interface TCommentDocument extends TComment, Document {
+export interface TReactionDocument extends TReaction, Document {
   _id: Types.ObjectId;
-  softDelete(): Promise<TCommentDocument | null>;
+  softDelete(): Promise<TReactionDocument | null>;
 }
 
-export type TCommentModel = Model<TCommentDocument> & {
-  isCommentExist(_id: string): Promise<TCommentDocument | null>;
+export type TReactionModel = Model<TReactionDocument> & {
+  isCommentExist(_id: string): Promise<TReactionDocument | null>;
 };

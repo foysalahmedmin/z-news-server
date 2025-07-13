@@ -1,18 +1,12 @@
 import mongoose, { Query, Schema } from 'mongoose';
-import { TComment, TCommentDocument, TCommentModel } from './reaction.type';
+import { TReaction, TReactionDocument, TReactionModel } from './reaction.type';
 
-const commentSchema = new Schema<TCommentDocument>(
+const reactionSchema = new Schema<TReactionDocument>(
   {
     news: {
       type: Schema.Types.ObjectId,
       ref: 'News',
       required: true,
-    },
-
-    comment: {
-      type: Schema.Types.ObjectId,
-      ref: 'Comment',
-      default: null,
     },
 
     user: {
@@ -47,26 +41,16 @@ const commentSchema = new Schema<TCommentDocument>(
       trim: true,
     },
 
-    content: {
+    type: {
       type: String,
       required: true,
-      trim: true,
-      maxlength: 300,
+      enum: ['like', 'dislike'],
     },
 
     status: {
       type: String,
       enum: ['pending', 'approved', 'rejected'],
       default: 'pending',
-    },
-
-    is_edited: {
-      type: Boolean,
-      default: false,
-    },
-
-    edited_at: {
-      type: Date,
     },
 
     is_deleted: {
@@ -82,15 +66,17 @@ const commentSchema = new Schema<TCommentDocument>(
   },
 );
 
+reactionSchema.index({ user: 1, news: 1 }, { unique: true });
+
 // toJSON override to remove sensitive fields from output
-commentSchema.methods.toJSON = function () {
+reactionSchema.methods.toJSON = function () {
   const comment = this.toObject();
   delete comment.is_deleted;
   return comment;
 };
 
 // Query middleware to exclude deleted categories
-commentSchema.pre(/^find/, function (this: Query<TComment, TComment>, next) {
+reactionSchema.pre(/^find/, function (this: Query<TReaction, TReaction>, next) {
   this.setQuery({
     ...this.getQuery(),
     is_deleted: { $ne: true },
@@ -98,32 +84,35 @@ commentSchema.pre(/^find/, function (this: Query<TComment, TComment>, next) {
   next();
 });
 
-commentSchema.pre(/^update/, function (this: Query<TComment, TComment>, next) {
-  this.setQuery({
-    ...this.getQuery(),
-    is_deleted: { $ne: true },
-  });
-  next();
-});
+reactionSchema.pre(
+  /^update/,
+  function (this: Query<TReaction, TReaction>, next) {
+    this.setQuery({
+      ...this.getQuery(),
+      is_deleted: { $ne: true },
+    });
+    next();
+  },
+);
 
 // Aggregation pipeline
-commentSchema.pre('aggregate', function (next) {
+reactionSchema.pre('aggregate', function (next) {
   this.pipeline().unshift({ $match: { is_deleted: { $ne: true } } });
   next();
 });
 
 // Static methods
-commentSchema.statics.isCommentExist = async function (_id: string) {
+reactionSchema.statics.isCommentExist = async function (_id: string) {
   return await this.findById(_id);
 };
 
 // Instance methods
-commentSchema.methods.softDelete = async function () {
+reactionSchema.methods.softDelete = async function () {
   this.is_deleted = true;
   return await this.save();
 };
 
-export const Comment = mongoose.model<TCommentDocument, TCommentModel>(
-  'Comment',
-  commentSchema,
+export const Reaction = mongoose.model<TReactionDocument, TReactionModel>(
+  'Reaction',
+  reactionSchema,
 );
