@@ -1,18 +1,21 @@
 import httpStatus from 'http-status';
-import { Document } from 'mongoose';
+import mongoose, { Document } from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
 import { TJwtPayload } from '../auth/auth.type';
+import { NewsBreak } from '../news-break/news-break.model';
+import { TNewsBreak } from '../news-break/news-break.type';
 import { NewsHeadline } from '../news-headline/news-headline.model';
 import { TNewsHeadline } from '../news-headline/news-headline.type';
 import { News } from './news.model';
 import { TNews } from './news.type';
 
-import mongoose from 'mongoose';
-
 export const createNews = async (
   user: TJwtPayload,
-  payload: TNews & { headline?: TNewsHeadline; breaking?: TNewsHeadline },
+  payload: TNews & {
+    news_headline?: TNewsHeadline;
+    news_break?: TNewsBreak;
+  },
 ): Promise<TNews> => {
   if (!user?._id) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
@@ -23,18 +26,71 @@ export const createNews = async (
   try {
     session.startTransaction();
 
-    const { headline, breaking, ...rest } = payload;
+    const { news_headline, news_break, ...rest } = payload;
 
-    const update = {
+    const newsData = {
       ...rest,
       author: user._id,
     };
 
-    const result = await News.create([update], { session });
+    const [created_news] = await News.create([newsData], { session });
 
-    if (headline?.title) {
+    // Create NewsHeadline
+    if (news_headline?.title) {
+      const {
+        sequence,
+        title,
+        summary,
+        tags,
+        category,
+        published_at,
+        expired_at,
+      } = news_headline;
+
       await NewsHeadline.create(
-        [{ ...headline, author: user._id, news: result[0]._id }],
+        [
+          {
+            sequence,
+            author: user._id,
+            news: created_news._id,
+            title: title || created_news.title,
+            summary: summary || created_news.summary,
+            tags: tags || created_news.tags,
+            category: category || created_news.category,
+            published_at: published_at || created_news.published_at,
+            expired_at: expired_at || created_news.expired_at,
+          },
+        ],
+        { session },
+      );
+    }
+
+    // Create NewsBreak
+    if (news_break?.title) {
+      const {
+        sequence,
+        title,
+        summary,
+        tags,
+        category,
+        published_at,
+        expired_at,
+      } = news_break;
+
+      await NewsBreak.create(
+        [
+          {
+            sequence,
+            author: user._id,
+            news: created_news._id,
+            title: title || created_news.title,
+            summary: summary || created_news.summary,
+            tags: tags || created_news.tags,
+            category: category || created_news.category,
+            published_at: published_at || created_news.published_at,
+            expired_at: expired_at || created_news.expired_at,
+          },
+        ],
         { session },
       );
     }
@@ -42,7 +98,7 @@ export const createNews = async (
     await session.commitTransaction();
     session.endSession();
 
-    return result[0].toObject();
+    return created_news.toObject();
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
@@ -59,11 +115,11 @@ export const getSelfNews = async (
       { path: 'author', select: '_id name email' },
       { path: 'category', select: '_id name slug' },
       {
-        path: 'headline',
+        path: 'news_headline',
         select: '_id title published_at expired_at status',
       },
       {
-        path: 'breaking',
+        path: 'news_break',
         select: '_id title published_at expired_at status',
       },
     ])
@@ -80,11 +136,11 @@ export const getNews = async (id: string): Promise<TNews> => {
       { path: 'author', select: '_id name email' },
       { path: 'category', select: '_id name slug' },
       {
-        path: 'headline',
+        path: 'news_headline',
         select: '_id title published_at expired_at status',
       },
       {
-        path: 'breaking',
+        path: 'news_break',
         select: '_id title published_at expired_at status',
       },
     ])
@@ -108,11 +164,11 @@ export const getSelfBulkNews = async (
         { path: 'author', select: '_id name email' },
         { path: 'category', select: '_id name slug' },
         {
-          path: 'headline',
+          path: 'news_headline',
           select: '_id title published_at expired_at status',
         },
         {
-          path: 'breaking',
+          path: 'news_break',
           select: '_id title published_at expired_at status',
         },
       ])
@@ -141,11 +197,11 @@ export const getBulkNews = async (
         { path: 'author', select: '_id name email' },
         { path: 'category', select: '_id name slug' },
         {
-          path: 'headline',
+          path: 'news_headline',
           select: '_id title published_at expired_at status',
         },
         {
-          path: 'breaking',
+          path: 'news_break',
           select: '_id title published_at expired_at status',
         },
       ])
@@ -219,11 +275,11 @@ export const updateSelfBulkNews = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const all_news = await News.find({
+  const allNews = await News.find({
     _id: { $in: ids },
     author: user._id,
   }).lean();
-  const foundIds = all_news.map((news) => news._id.toString());
+  const foundIds = allNews.map((news) => news._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   const result = await News.updateMany(
@@ -244,8 +300,8 @@ export const updateBulkNews = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const all_news = await News.find({ _id: { $in: ids } }).lean();
-  const foundIds = all_news.map((news) => news._id.toString());
+  const allNews = await News.find({ _id: { $in: ids } }).lean();
+  const foundIds = allNews.map((news) => news._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   const result = await News.updateMany(
@@ -296,11 +352,11 @@ export const deleteSelfBulkNews = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const all_news = await News.find({
+  const allNews = await News.find({
     _id: { $in: ids },
     author: user._id,
   }).lean();
-  const foundIds = all_news.map((news) => news._id.toString());
+  const foundIds = allNews.map((news) => news._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await News.updateMany(
@@ -320,8 +376,8 @@ export const deleteBulkNews = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const all_news = await News.find({ _id: { $in: ids } }).lean();
-  const foundIds = all_news.map((news) => news._id.toString());
+  const allNews = await News.find({ _id: { $in: ids } }).lean();
+  const foundIds = allNews.map((news) => news._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await News.updateMany({ _id: { $in: foundIds } }, { is_deleted: true });
@@ -338,8 +394,8 @@ export const deleteBulkNewsPermanent = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const all_news = await News.find({ _id: { $in: ids } }).lean();
-  const foundIds = all_news.map((news) => news._id.toString());
+  const allNews = await News.find({ _id: { $in: ids } }).lean();
+  const foundIds = allNews.map((news) => news._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await News.deleteMany({ _id: { $in: foundIds } });

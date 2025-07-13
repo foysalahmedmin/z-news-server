@@ -1,135 +1,135 @@
 import express from 'express';
 import auth from '../../middlewares/auth.middleware';
 import validation from '../../middlewares/validation.middleware';
-import * as NewsControllers from './news-break.controller';
-import * as NewsValidations from './news-break.validation';
+import * as NewsBreakControllers from './news-break.controller';
+import * as NewsBreakValidations from './news-break.validation';
 
 const router = express.Router();
 
 // GET
-router.get('/self', auth('admin'), NewsControllers.getSelfBulkNews);
-router.get('/', auth('admin'), NewsControllers.getBulkNews);
+router.get('/self', auth('admin'), NewsBreakControllers.getSelfNewsBreaks);
+router.get('/', auth('admin'), NewsBreakControllers.getNewsBreaks);
 
 router.get(
   '/:id/self',
   auth('admin', 'author'),
-  validation(NewsValidations.newsOperationValidationSchema),
-  NewsControllers.getSelfNews,
+  validation(NewsBreakValidations.newsBreakOperationValidationSchema),
+  NewsBreakControllers.getSelfNewsBreak,
 );
 
 router.get(
   '/:id',
   auth('admin'),
-  validation(NewsValidations.newsOperationValidationSchema),
-  NewsControllers.getNews,
+  validation(NewsBreakValidations.newsBreakOperationValidationSchema),
+  NewsBreakControllers.getNewsBreak,
 );
 
 // PATCH
 router.patch(
   '/bulk/self',
   auth('admin', 'author'),
-  validation(NewsValidations.updateSelfBulkNewsValidationSchema),
-  NewsControllers.updateBulkNews,
+  validation(NewsBreakValidations.updateSelfNewsBreaksValidationSchema),
+  NewsBreakControllers.updateSelfNewsBreaks,
 );
 
 router.patch(
   '/:id/self',
   auth('admin', 'author'),
-  validation(NewsValidations.updateSelfNewsValidationSchema),
-  NewsControllers.updateNews,
+  validation(NewsBreakValidations.updateSelfNewsBreakValidationSchema),
+  NewsBreakControllers.updateNewsBreak,
 );
 
 router.patch(
   '/bulk',
   auth('admin'),
-  validation(NewsValidations.updateBulkNewsValidationSchema),
-  NewsControllers.updateBulkNews,
+  validation(NewsBreakValidations.updateNewsBreaksValidationSchema),
+  NewsBreakControllers.updateNewsBreaks,
 );
 
 router.patch(
   '/:id',
   auth('admin', 'editor'),
-  validation(NewsValidations.updateNewsValidationSchema),
-  NewsControllers.updateNews,
+  validation(NewsBreakValidations.updateNewsBreakValidationSchema),
+  NewsBreakControllers.updateNewsBreak,
 );
 
 // DELETE
 router.delete(
   '/bulk/self',
   auth('admin', 'author'),
-  validation(NewsValidations.bulkNewsOperationValidationSchema),
-  NewsControllers.deleteSelfBulkNews,
+  validation(NewsBreakValidations.newsBreaksOperationValidationSchema),
+  NewsBreakControllers.deleteSelfNewsBreaks,
 );
 
 router.delete(
   '/bulk/permanent',
   auth('admin'),
-  validation(NewsValidations.bulkNewsOperationValidationSchema),
-  NewsControllers.deleteBulkNewsPermanent,
+  validation(NewsBreakValidations.newsBreaksOperationValidationSchema),
+  NewsBreakControllers.deleteNewsBreaksPermanent,
 );
 
 router.delete(
   '/bulk',
   auth('admin'),
-  validation(NewsValidations.bulkNewsOperationValidationSchema),
-  NewsControllers.deleteBulkNews,
+  validation(NewsBreakValidations.newsBreaksOperationValidationSchema),
+  NewsBreakControllers.deleteNewsBreaks,
 );
 
 router.delete(
   '/:id/self',
   auth('admin', 'author'),
-  validation(NewsValidations.newsOperationValidationSchema),
-  NewsControllers.deleteSelfNews,
+  validation(NewsBreakValidations.newsBreakOperationValidationSchema),
+  NewsBreakControllers.deleteSelfNewsBreak,
 );
 
 router.delete(
   '/:id/permanent',
   auth('admin'),
-  validation(NewsValidations.newsOperationValidationSchema),
-  NewsControllers.deleteNewsPermanent,
+  validation(NewsBreakValidations.newsBreakOperationValidationSchema),
+  NewsBreakControllers.deleteNewsBreakPermanent,
 );
 
 router.delete(
   '/:id',
   auth('admin'),
-  validation(NewsValidations.newsOperationValidationSchema),
-  NewsControllers.deleteNews,
+  validation(NewsBreakValidations.newsBreakOperationValidationSchema),
+  NewsBreakControllers.deleteNewsBreak,
 );
 
 // POST
 router.post(
   '/',
-  auth('admin'),
-  validation(NewsValidations.createNewsValidationSchema),
-  NewsControllers.createNews,
+  auth('admin', 'author'),
+  validation(NewsBreakValidations.createNewsBreakValidationSchema),
+  NewsBreakControllers.createNewsBreak,
 );
 
 router.post(
   '/bulk/restore/self',
-  auth('admin'),
-  validation(NewsValidations.bulkNewsOperationValidationSchema),
-  NewsControllers.restoreSelfBulkNews,
+  auth('admin', 'author'),
+  validation(NewsBreakValidations.newsBreaksOperationValidationSchema),
+  NewsBreakControllers.restoreSelfNewsBreaks,
 );
 
 router.post(
   '/bulk/restore',
   auth('admin'),
-  validation(NewsValidations.bulkNewsOperationValidationSchema),
-  NewsControllers.restoreBulkNews,
+  validation(NewsBreakValidations.newsBreaksOperationValidationSchema),
+  NewsBreakControllers.restoreNewsBreaks,
 );
 
 router.post(
   '/:id/restore/self',
-  auth('admin'),
-  validation(NewsValidations.newsOperationValidationSchema),
-  NewsControllers.restoreSelfNews,
+  auth('admin', 'author'),
+  validation(NewsBreakValidations.newsBreakOperationValidationSchema),
+  NewsBreakControllers.restoreSelfNewsBreak,
 );
 
 router.post(
   '/:id/restore',
   auth('admin'),
-  validation(NewsValidations.newsOperationValidationSchema),
-  NewsControllers.restoreNews,
+  validation(NewsBreakValidations.newsBreakOperationValidationSchema),
+  NewsBreakControllers.restoreNewsBreak,
 );
 
 const NewsRoutes = router;

@@ -46,7 +46,7 @@ export const updateSelfNewsHeadlineValidationSchema = z.object({
   }),
 });
 
-export const updateSelfNewsHeadlineHeadlinesValidationSchema = z.object({
+export const updateSelfNewsHeadlinesValidationSchema = z.object({
   body: z.object({
     ids: z
       .array(idSchema, {

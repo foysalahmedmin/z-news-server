@@ -2,37 +2,27 @@ import { Document, Model, Types } from 'mongoose';
 
 export type TStatus = 'draft' | 'pending' | 'published' | 'archived';
 
-export type TNews = {
+export type TNewsBreak = {
   sequence: number;
   title: string;
-  slug: string;
   summary?: string;
-  content: string;
-  thumbnail?: string;
-  images: string[];
-  tags: string[];
+  tags?: string[];
   category: Types.ObjectId;
   author: Types.ObjectId;
+  news?: Types.ObjectId;
   status: TStatus;
-  is_featured: boolean;
-  is_premium: boolean;
-  view_count: number;
-  seo?: {
-    title?: string;
-    description?: string;
-    keywords?: string[];
-  };
   published_at?: Date;
+  expired_at?: Date;
   is_edited?: boolean;
   edited_at?: Date;
   is_deleted: boolean;
 };
 
-export interface TNewsDocument extends TNews, Document {
+export interface TNewsBreakDocument extends TNewsBreak, Document {
   _id: Types.ObjectId;
-  softDelete(): Promise<TNewsDocument | null>;
+  softDelete(): Promise<TNewsBreakDocument | null>;
 }
 
-export type TNewsModel = Model<TNewsDocument> & {
-  isNewsExist(_id: string): Promise<TNewsDocument | null>;
+export type TNewsBreakModel = Model<TNewsBreakDocument> & {
+  isNewsBreakExist(_id: string): Promise<TNewsBreakDocument | null>;
 };

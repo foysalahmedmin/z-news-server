@@ -7,11 +7,7 @@ import * as NewsValidations from './news-headline.validation';
 const router = express.Router();
 
 // GET
-router.get(
-  '/self',
-  auth('admin'),
-  NewsControllers.getSelfNewsHeadlineHeadlines,
-);
+router.get('/self', auth('admin'), NewsControllers.getSelfNewsHeadlines);
 router.get('/', auth('admin'), NewsControllers.getNewsHeadlines);
 
 router.get(
@@ -32,8 +28,8 @@ router.get(
 router.patch(
   '/bulk/self',
   auth('admin', 'author'),
-  validation(NewsValidations.updateSelfNewsHeadlineHeadlinesValidationSchema),
-  NewsControllers.updateSelfNewsHeadlineHeadlines,
+  validation(NewsValidations.updateSelfNewsHeadlinesValidationSchema),
+  NewsControllers.updateSelfNewsHeadlines,
 );
 
 router.patch(
@@ -62,7 +58,7 @@ router.delete(
   '/bulk/self',
   auth('admin', 'author'),
   validation(NewsValidations.newsHeadlinesOperationValidationSchema),
-  NewsControllers.deleteSelfNewsHeadlineHeadlines,
+  NewsControllers.deleteSelfNewsHeadlines,
 );
 
 router.delete(
@@ -112,7 +108,7 @@ router.post(
   '/bulk/restore/self',
   auth('admin', 'author'),
   validation(NewsValidations.newsHeadlinesOperationValidationSchema),
-  NewsControllers.restoreSelfNewsHeadlineHeadlines,
+  NewsControllers.restoreSelfNewsHeadlines,
 );
 
 router.post(

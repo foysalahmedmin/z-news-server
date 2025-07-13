@@ -40,7 +40,7 @@ export const createNewsValidationSchema = z.object({
       .optional(),
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
-    headline: z
+    news_headline: z
       .object({
         title: z.string().trim().min(1),
         summary: z.string().max(300).optional(),
@@ -51,7 +51,7 @@ export const createNewsValidationSchema = z.object({
         expired_at: z.coerce.date().optional(),
       })
       .optional(),
-    break: z
+    news_break: z
       .object({
         title: z.string().trim().min(1),
         summary: z.string().max(300).optional(),

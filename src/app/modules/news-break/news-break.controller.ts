@@ -1,220 +1,228 @@
 import httpStatus from 'http-status';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
-import * as NewsServices from './news-break.service';
+import * as NewsBreakServices from './news-break.service';
 
-export const createNews = catchAsync(async (req, res) => {
-  const result = await NewsServices.createNews(req.user, req.body);
+export const createNewsBreak = catchAsync(async (req, res) => {
+  const result = await NewsBreakServices.createNewsBreak(req.user, req.body);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'News created successfully',
+    message: 'News-Break created successfully',
     data: result,
   });
 });
 
-export const getSelfNews = catchAsync(async (req, res) => {
+export const getSelfNewsBreak = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await NewsServices.getSelfNews(req.user, id);
+  const result = await NewsBreakServices.getSelfNewsBreak(req.user, id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'News retrieved successfully',
+    message: 'News-Break retrieved successfully',
     data: result,
   });
 });
 
-export const getNews = catchAsync(async (req, res) => {
+export const getNewsBreak = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await NewsServices.getNews(id);
+  const result = await NewsBreakServices.getNewsBreak(id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'News retrieved successfully',
+    message: 'News-Break retrieved successfully',
     data: result,
   });
 });
 
-export const getSelfBulkNews = catchAsync(async (req, res) => {
-  const result = await NewsServices.getSelfBulkNews(req.user, req.query);
+export const getSelfNewsBreaks = catchAsync(async (req, res) => {
+  const result = await NewsBreakServices.getSelfNewsBreaks(req.user, req.query);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'All News are retrieved successfully',
+    message: 'All news-breaks are retrieved successfully',
     meta: result.meta,
     data: result.data,
   });
 });
 
-export const getBulkNews = catchAsync(async (req, res) => {
-  const result = await NewsServices.getBulkNews(req.query);
+export const getNewsBreaks = catchAsync(async (req, res) => {
+  const result = await NewsBreakServices.getNewsBreaks(req.query);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'All News are retrieved successfully',
+    message: 'All news-breaks are retrieved successfully',
     meta: result.meta,
     data: result.data,
   });
 });
 
-export const updateSelfNews = catchAsync(async (req, res) => {
+export const updateSelfNewsBreak = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await NewsServices.updateSelfNews(req.user, id, req.body);
+  const result = await NewsBreakServices.updateSelfNewsBreak(
+    req.user,
+    id,
+    req.body,
+  );
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'News updated successfully',
+    message: 'News-Break updated successfully',
     data: result,
   });
 });
 
-export const updateNews = catchAsync(async (req, res) => {
+export const updateNewsBreak = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await NewsServices.updateNews(id, req.body);
+  const result = await NewsBreakServices.updateNewsBreak(id, req.body);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'News updated successfully',
+    message: 'News-Break updated successfully',
     data: result,
   });
 });
 
-export const updateSelfBulkNews = catchAsync(async (req, res) => {
+export const updateSelfNewsBreaks = catchAsync(async (req, res) => {
   const { ids, ...payload } = req.body;
-  const result = await NewsServices.updateSelfBulkNews(req.user, ids, payload);
+  const result = await NewsBreakServices.updateSelfNewsBreaks(
+    req.user,
+    ids,
+    payload,
+  );
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'News updated successfully',
+    message: 'News-Break updated successfully',
     data: result,
   });
 });
 
-export const updateBulkNews = catchAsync(async (req, res) => {
+export const updateNewsBreaks = catchAsync(async (req, res) => {
   const { ids, ...payload } = req.body;
-  const result = await NewsServices.updateBulkNews(ids, payload);
+  const result = await NewsBreakServices.updateNewsBreaks(ids, payload);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'All News are updated successfully',
+    message: 'All news-breaks are updated successfully',
     data: result,
   });
 });
 
-export const deleteSelfNews = catchAsync(async (req, res) => {
+export const deleteSelfNewsBreak = catchAsync(async (req, res) => {
   const { id } = req.params;
-  await NewsServices.deleteSelfNews(req.user, id);
+  await NewsBreakServices.deleteSelfNewsBreak(req.user, id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'News soft deleted successfully',
+    message: 'News-Break soft deleted successfully',
     data: null,
   });
 });
 
-export const deleteNews = catchAsync(async (req, res) => {
+export const deleteNewsBreak = catchAsync(async (req, res) => {
   const { id } = req.params;
-  await NewsServices.deleteNews(id);
+  await NewsBreakServices.deleteNewsBreak(id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'News soft deleted successfully',
+    message: 'News-Break soft deleted successfully',
     data: null,
   });
 });
 
-export const deleteNewsPermanent = catchAsync(async (req, res) => {
+export const deleteNewsBreakPermanent = catchAsync(async (req, res) => {
   const { id } = req.params;
-  await NewsServices.deleteNewsPermanent(id);
+  await NewsBreakServices.deleteNewsBreakPermanent(id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'News permanently deleted successfully',
+    message: 'News-Break permanently deleted successfully',
     data: null,
   });
 });
 
-export const deleteSelfBulkNews = catchAsync(async (req, res) => {
+export const deleteSelfNewsBreaks = catchAsync(async (req, res) => {
   const { ids } = req.body;
-  const result = await NewsServices.deleteSelfBulkNews(req.user, ids);
+  const result = await NewsBreakServices.deleteSelfNewsBreaks(req.user, ids);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: `${result.count} BulkNews soft deleted successfully`,
+    message: `${result.count} news-breaks are soft deleted successfully`,
     data: {
       not_found_ids: result.not_found_ids,
     },
   });
 });
 
-export const deleteBulkNews = catchAsync(async (req, res) => {
+export const deleteNewsBreaks = catchAsync(async (req, res) => {
   const { ids } = req.body;
-  const result = await NewsServices.deleteBulkNews(ids);
+  const result = await NewsBreakServices.deleteNewsBreaks(ids);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: `${result.count} BulkNews soft deleted successfully`,
+    message: `${result.count} news-breaks are soft deleted successfully`,
     data: {
       not_found_ids: result.not_found_ids,
     },
   });
 });
 
-export const deleteBulkNewsPermanent = catchAsync(async (req, res) => {
+export const deleteNewsBreaksPermanent = catchAsync(async (req, res) => {
   const { ids } = req.body;
-  const result = await NewsServices.deleteBulkNewsPermanent(ids);
+  const result = await NewsBreakServices.deleteNewsBreaksPermanent(ids);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: `${result.count} News are permanently deleted successfully`,
+    message: `${result.count} news-breaks are permanently deleted successfully`,
     data: {
       not_found_ids: result.not_found_ids,
     },
   });
 });
 
-export const restoreSelfNews = catchAsync(async (req, res) => {
+export const restoreSelfNewsBreak = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await NewsServices.restoreSelfNews(req.user, id);
+  const result = await NewsBreakServices.restoreSelfNewsBreak(req.user, id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'News restored successfully',
+    message: 'News-Break restored successfully',
     data: result,
   });
 });
 
-export const restoreNews = catchAsync(async (req, res) => {
+export const restoreNewsBreak = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await NewsServices.restoreNews(id);
+  const result = await NewsBreakServices.restoreNewsBreak(id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'News restored successfully',
+    message: 'News-Break restored successfully',
     data: result,
   });
 });
 
-export const restoreSelfBulkNews = catchAsync(async (req, res) => {
+export const restoreSelfNewsBreaks = catchAsync(async (req, res) => {
   const { ids } = req.body;
-  const result = await NewsServices.restoreSelfBulkNews(req.user, ids);
+  const result = await NewsBreakServices.restoreSelfNewsBreaks(req.user, ids);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: `${result.count} News are restored successfully`,
+    message: `${result.count} news-breaks are restored successfully`,
     data: {
       not_found_ids: result.not_found_ids,
     },
   });
 });
 
-export const restoreBulkNews = catchAsync(async (req, res) => {
+export const restoreNewsBreaks = catchAsync(async (req, res) => {
   const { ids } = req.body;
-  const result = await NewsServices.restoreBulkNews(ids);
+  const result = await NewsBreakServices.restoreNewsBreaks(ids);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: `${result.count} News are restored successfully`,
+    message: `${result.count} news-breaks are restored successfully`,
     data: {
       not_found_ids: result.not_found_ids,
     },

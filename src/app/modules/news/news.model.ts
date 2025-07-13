@@ -142,14 +142,14 @@ const newsSchema = new Schema<TNewsDocument>(
   },
 );
 
-newsSchema.virtual('headline', {
+newsSchema.virtual('news_headline', {
   ref: 'NewsHeadline',
   localField: '_id',
   foreignField: 'news',
   justOne: true,
 });
 
-newsSchema.virtual('break', {
+newsSchema.virtual('news_break', {
   ref: 'NewsBreak',
   localField: '_id',
   foreignField: 'news',
