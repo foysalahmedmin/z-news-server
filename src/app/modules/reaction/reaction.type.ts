@@ -6,8 +6,6 @@ export type TReaction = {
   news: Types.ObjectId;
   user?: Types.ObjectId;
   guest?: string;
-  name: string;
-  email: string;
   type: 'like' | 'dislike';
   status?: TStatus;
   is_deleted?: boolean;

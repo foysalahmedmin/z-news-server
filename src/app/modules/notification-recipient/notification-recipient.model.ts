@@ -1,7 +1,13 @@
-import mongoose, { Query, Schema, Types } from 'mongoose';
-import { TCategory, TCategoryDocument, TCategoryModel } from './category.type';
+import mongoose, { Query, Schema } from 'mongoose';
+import {
+  TNotificationAction,
+  TNotificationMetadata,
+  TNotificationRecipient,
+  TNotificationRecipientDocument,
+  TNotificationRecipientModel,
+} from './notification-recipient.type';
 
-const notificationActionSchema = new Schema(
+const notificationActionSchema = new Schema<TNotificationAction>(
   {
     title: { type: String, required: true, trim: true },
     type: { type: String, required: true, trim: true },
@@ -10,7 +16,7 @@ const notificationActionSchema = new Schema(
   { _id: false },
 );
 
-const metadataSchema = new Schema(
+const notificationMetadataSchema = new Schema<TNotificationMetadata>(
   {
     url: { type: String, trim: true },
     image: { type: String, trim: true },
@@ -21,16 +27,22 @@ const metadataSchema = new Schema(
   { _id: false },
 );
 
-const notificationRecipientSchema = new Schema(
+const notificationRecipientSchema = new Schema<TNotificationRecipientDocument>(
   {
     notification: {
-      type: Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Notification',
       required: true,
     },
 
+    recipient: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+
     metadata: {
-      type: metadataSchema,
+      type: notificationMetadataSchema,
       default: {},
     },
 
@@ -60,6 +72,11 @@ const notificationRecipientSchema = new Schema(
   },
 );
 
+notificationRecipientSchema.index(
+  { notification: 1, recipient: 1 },
+  { unique: true },
+);
+
 // toJSON override to remove sensitive fields from output
 notificationRecipientSchema.methods.toJSON = function () {
   const category = this.toObject();
@@ -70,7 +87,7 @@ notificationRecipientSchema.methods.toJSON = function () {
 // Query middleware to exclude deleted categories
 notificationRecipientSchema.pre(
   /^find/,
-  function (this: Query<TCategory, TCategory>, next) {
+  function (this: Query<TNotificationRecipient, TNotificationRecipient>, next) {
     this.setQuery({
       ...this.getQuery(),
       is_deleted: { $ne: true },
@@ -81,7 +98,7 @@ notificationRecipientSchema.pre(
 
 notificationRecipientSchema.pre(
   /^update/,
-  function (this: Query<TCategory, TCategory>, next) {
+  function (this: Query<TNotificationRecipient, TNotificationRecipient>, next) {
     this.setQuery({
       ...this.getQuery(),
       is_deleted: { $ne: true },
@@ -97,11 +114,10 @@ notificationRecipientSchema.pre('aggregate', function (next) {
 });
 
 // Static methods
-notificationRecipientSchema.statics.isCategoryExist = async function (
-  _id: string,
-) {
-  return await this.findById(_id);
-};
+notificationRecipientSchema.statics.isNotificationRecipientExist =
+  async function (_id: string) {
+    return await this.findById(_id);
+  };
 
 // Instance methods
 notificationRecipientSchema.methods.softDelete = async function () {
@@ -109,7 +125,7 @@ notificationRecipientSchema.methods.softDelete = async function () {
   return await this.save();
 };
 
-export const Category = mongoose.model<TCategoryDocument, TCategoryModel>(
-  'Category',
-  notificationRecipientSchema,
-);
+export const NotificationRecipient = mongoose.model<
+  TNotificationRecipientDocument,
+  TNotificationRecipientModel
+>('NotificationRecipient', notificationRecipientSchema);

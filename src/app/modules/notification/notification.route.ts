@@ -1,8 +1,8 @@
 import express from 'express';
 import auth from '../../middlewares/auth.middleware';
 import validation from '../../middlewares/validation.middleware';
-import * as CategoryControllers from './category.controller';
-import * as CategoryValidations from './category.validation';
+import * as CategoryControllers from './notification.controller';
+import * as CategoryValidations from './notification.validation';
 
 const router = express.Router();
 

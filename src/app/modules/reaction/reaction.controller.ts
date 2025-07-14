@@ -1,10 +1,10 @@
 import httpStatus from 'http-status';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
-import * as CommentServices from './reaction.service';
+import * as ReactionServices from './reaction.service';
 
-export const createComment = catchAsync(async (req, res) => {
-  const result = await CommentServices.createComment(
+export const createReaction = catchAsync(async (req, res) => {
+  const result = await ReactionServices.createReaction(
     req.user,
     req.guest,
     req.body,
@@ -12,35 +12,39 @@ export const createComment = catchAsync(async (req, res) => {
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Comment created successfully',
+    message: 'Reaction created successfully',
     data: result,
   });
 });
 
-export const getSelfComment = catchAsync(async (req, res) => {
+export const getSelfReaction = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await CommentServices.getSelfComment(req.user, req.guest, id);
+  const result = await ReactionServices.getSelfReaction(
+    req.user,
+    req.guest,
+    id,
+  );
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Comment retrieved successfully',
+    message: 'Reaction retrieved successfully',
     data: result,
   });
 });
 
-export const getComment = catchAsync(async (req, res) => {
+export const getReaction = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await CommentServices.getComment(id);
+  const result = await ReactionServices.getReaction(id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Comment retrieved successfully',
+    message: 'Reaction retrieved successfully',
     data: result,
   });
 });
 
-export const getSelfComments = catchAsync(async (req, res) => {
-  const result = await CommentServices.getSelfComments(
+export const getSelfReactions = catchAsync(async (req, res) => {
+  const result = await ReactionServices.getSelfReactions(
     req.user,
     req.guest,
     req.query,
@@ -48,26 +52,26 @@ export const getSelfComments = catchAsync(async (req, res) => {
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Comments retrieved successfully',
+    message: 'Reactions retrieved successfully',
     meta: result.meta,
     data: result.data,
   });
 });
 
-export const getComments = catchAsync(async (req, res) => {
-  const result = await CommentServices.getComments(req.query);
+export const getReactions = catchAsync(async (req, res) => {
+  const result = await ReactionServices.getReactions(req.query);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Comments retrieved successfully',
+    message: 'Reactions retrieved successfully',
     meta: result.meta,
     data: result.data,
   });
 });
 
-export const updateSelfComment = catchAsync(async (req, res) => {
+export const updateSelfReaction = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await CommentServices.updateSelfComment(
+  const result = await ReactionServices.updateSelfReaction(
     req.user,
     req.guest,
     id,
@@ -76,25 +80,25 @@ export const updateSelfComment = catchAsync(async (req, res) => {
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Comment updated successfully',
+    message: 'Reaction updated successfully',
     data: result,
   });
 });
 
-export const updateComment = catchAsync(async (req, res) => {
+export const updateReaction = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await CommentServices.updateComment(id, req.body);
+  const result = await ReactionServices.updateReaction(id, req.body);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Comment updated successfully',
+    message: 'Reaction updated successfully',
     data: result,
   });
 });
 
-export const updateSelfComments = catchAsync(async (req, res) => {
+export const updateSelfReactions = catchAsync(async (req, res) => {
   const { ids, ...payload } = req.body;
-  const result = await CommentServices.updateSelfComments(
+  const result = await ReactionServices.updateSelfReactions(
     req.user,
     req.guest,
     ids,
@@ -103,58 +107,58 @@ export const updateSelfComments = catchAsync(async (req, res) => {
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Comments updated successfully',
+    message: 'Reactions updated successfully',
     data: result,
   });
 });
 
-export const updateComments = catchAsync(async (req, res) => {
+export const updateReactions = catchAsync(async (req, res) => {
   const { ids, ...payload } = req.body;
-  const result = await CommentServices.updateComments(ids, payload);
+  const result = await ReactionServices.updateReactions(ids, payload);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Comments updated successfully',
+    message: 'Reactions updated successfully',
     data: result,
   });
 });
 
-export const deleteSelfComment = catchAsync(async (req, res) => {
+export const deleteSelfReaction = catchAsync(async (req, res) => {
   const { id } = req.params;
-  await CommentServices.deleteSelfComment(req.user, req.guest, id);
+  await ReactionServices.deleteSelfReaction(req.user, req.guest, id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Comment soft deleted successfully',
+    message: 'Reaction soft deleted successfully',
     data: null,
   });
 });
 
-export const deleteComment = catchAsync(async (req, res) => {
+export const deleteReaction = catchAsync(async (req, res) => {
   const { id } = req.params;
-  await CommentServices.deleteComment(id);
+  await ReactionServices.deleteReaction(id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Comment soft deleted successfully',
+    message: 'Reaction soft deleted successfully',
     data: null,
   });
 });
 
-export const deleteCommentPermanent = catchAsync(async (req, res) => {
+export const deleteReactionPermanent = catchAsync(async (req, res) => {
   const { id } = req.params;
-  await CommentServices.deleteCommentPermanent(id);
+  await ReactionServices.deleteReactionPermanent(id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Comment permanently deleted successfully',
+    message: 'Reaction permanently deleted successfully',
     data: null,
   });
 });
 
-export const deleteSelfComments = catchAsync(async (req, res) => {
+export const deleteSelfReactions = catchAsync(async (req, res) => {
   const { ids } = req.body;
-  const result = await CommentServices.deleteSelfComments(
+  const result = await ReactionServices.deleteSelfReactions(
     req.user,
     req.guest,
     ids,
@@ -162,42 +166,42 @@ export const deleteSelfComments = catchAsync(async (req, res) => {
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: `${result.count} comments soft deleted successfully`,
+    message: `${result.count} Reactions soft deleted successfully`,
     data: {
       not_found_ids: result.not_found_ids,
     },
   });
 });
 
-export const deleteComments = catchAsync(async (req, res) => {
+export const deleteReactions = catchAsync(async (req, res) => {
   const { ids } = req.body;
-  const result = await CommentServices.deleteComments(ids);
+  const result = await ReactionServices.deleteReactions(ids);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: `${result.count} comments soft deleted successfully`,
+    message: `${result.count} Reactions soft deleted successfully`,
     data: {
       not_found_ids: result.not_found_ids,
     },
   });
 });
 
-export const deleteCommentsPermanent = catchAsync(async (req, res) => {
+export const deleteReactionsPermanent = catchAsync(async (req, res) => {
   const { ids } = req.body;
-  const result = await CommentServices.deleteCommentsPermanent(ids);
+  const result = await ReactionServices.deleteReactionsPermanent(ids);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: `${result.count} comments permanently deleted successfully`,
+    message: `${result.count} Reactions permanently deleted successfully`,
     data: {
       not_found_ids: result.not_found_ids,
     },
   });
 });
 
-export const restoreSelfComment = catchAsync(async (req, res) => {
+export const restoreSelfReaction = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await CommentServices.restoreSelfComment(
+  const result = await ReactionServices.restoreSelfReaction(
     req.user,
     req.guest,
     id,
@@ -205,25 +209,25 @@ export const restoreSelfComment = catchAsync(async (req, res) => {
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Comment restored successfully',
+    message: 'Reaction restored successfully',
     data: result,
   });
 });
 
-export const restoreComment = catchAsync(async (req, res) => {
+export const restoreReaction = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await CommentServices.restoreComment(id);
+  const result = await ReactionServices.restoreReaction(id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Comment restored successfully',
+    message: 'Reaction restored successfully',
     data: result,
   });
 });
 
-export const restoreSelfComments = catchAsync(async (req, res) => {
+export const restoreSelfReactions = catchAsync(async (req, res) => {
   const { ids } = req.body;
-  const result = await CommentServices.restoreSelfComments(
+  const result = await ReactionServices.restoreSelfReactions(
     req.user,
     req.guest,
     ids,
@@ -231,20 +235,20 @@ export const restoreSelfComments = catchAsync(async (req, res) => {
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: `${result.count} comments restored successfully`,
+    message: `${result.count} Reactions restored successfully`,
     data: {
       not_found_ids: result.not_found_ids,
     },
   });
 });
 
-export const restoreComments = catchAsync(async (req, res) => {
+export const restoreReactions = catchAsync(async (req, res) => {
   const { ids } = req.body;
-  const result = await CommentServices.restoreComments(ids);
+  const result = await ReactionServices.restoreReactions(ids);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: `${result.count} comments restored successfully`,
+    message: `${result.count} Reactions restored successfully`,
     data: {
       not_found_ids: result.not_found_ids,
     },

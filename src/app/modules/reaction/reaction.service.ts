@@ -7,7 +7,7 @@ import { TJwtPayload } from '../auth/auth.type';
 import { Reaction } from './reaction.model';
 import { TReaction } from './reaction.type';
 
-export const createComment = async (
+export const createReaction = async (
   user: TJwtPayload,
   guest: TGuest,
   payload: TReaction,
@@ -26,7 +26,7 @@ export const createComment = async (
   return result.toObject();
 };
 
-export const getSelfComment = async (
+export const getSelfReaction = async (
   user: TJwtPayload,
   guest: TGuest,
   id: string,
@@ -41,21 +41,21 @@ export const getSelfComment = async (
   }).lean();
 
   if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
   }
 
   return result;
 };
 
-export const getComment = async (id: string): Promise<TReaction> => {
+export const getReaction = async (id: string): Promise<TReaction> => {
   const result = await Reaction.findById(id).lean();
   if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
   }
   return result;
 };
 
-export const getSelfComments = async (
+export const getSelfReactions = async (
   user: TJwtPayload,
   guest: TGuest,
   query: Record<string, unknown>,
@@ -67,7 +67,7 @@ export const getSelfComments = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const commentQuery = new AppQuery<Document, TReaction>(
+  const reactionQuery = new AppQuery<Document, TReaction>(
     Reaction.find({
       ...(user?._id ? { user: user._id } : { guest: guest._id }),
     }).lean(),
@@ -79,17 +79,17 @@ export const getSelfComments = async (
     .paginate()
     .fields();
 
-  const result = await commentQuery.execute();
+  const result = await reactionQuery.execute();
   return result;
 };
 
-export const getComments = async (
+export const getReactions = async (
   query: Record<string, unknown>,
 ): Promise<{
   data: TReaction[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const commentQuery = new AppQuery<Document, TReaction>(
+  const reactionQuery = new AppQuery<Document, TReaction>(
     Reaction.find().lean(),
     query,
   )
@@ -99,15 +99,15 @@ export const getComments = async (
     .paginate()
     .fields();
 
-  const result = await commentQuery.execute();
+  const result = await reactionQuery.execute();
   return result;
 };
 
-export const updateSelfComment = async (
+export const updateSelfReaction = async (
   user: TJwtPayload,
   guest: TGuest,
   id: string,
-  payload: Partial<Pick<TReaction, 'content' | 'name' | 'email'>>,
+  payload: Partial<Pick<TReaction, 'type'>>,
 ): Promise<TReaction> => {
   if (!user?._id && !guest?._id) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
@@ -119,15 +119,10 @@ export const updateSelfComment = async (
   }).lean();
 
   if (!data) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
   }
 
   const update: Partial<TReaction> = { ...payload };
-
-  if (Object.keys(payload).includes('content')) {
-    update.is_edited = true;
-    update.edited_at = new Date();
-  }
 
   const result = await Reaction.findByIdAndUpdate(id, update, {
     new: true,
@@ -137,21 +132,16 @@ export const updateSelfComment = async (
   return result!;
 };
 
-export const updateComment = async (
+export const updateReaction = async (
   id: string,
-  payload: Partial<Pick<TReaction, 'content' | 'status'>>,
+  payload: Partial<Pick<TReaction, 'type' | 'status'>>,
 ): Promise<TReaction> => {
   const data = await Reaction.findById(id).lean();
   if (!data) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
   }
 
   const update: Partial<TReaction> = { ...payload };
-
-  if (Object.keys(payload).includes('content')) {
-    update.is_edited = true;
-    update.edited_at = new Date();
-  }
 
   const result = await Reaction.findByIdAndUpdate(id, update, {
     new: true,
@@ -161,7 +151,7 @@ export const updateComment = async (
   return result!;
 };
 
-export const updateSelfComments = async (
+export const updateSelfReactions = async (
   user: TJwtPayload,
   guest: TGuest,
   ids: string[],
@@ -174,11 +164,11 @@ export const updateSelfComments = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const comments = await Reaction.find({
+  const reactions = await Reaction.find({
     _id: { $in: ids },
     ...(user?._id ? { user: user._id } : { guest: guest._id }),
   }).lean();
-  const foundIds = comments.map((comment) => comment._id.toString());
+  const foundIds = reactions.map((reaction) => reaction._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   const result = await Reaction.updateMany(
@@ -195,15 +185,15 @@ export const updateSelfComments = async (
   };
 };
 
-export const updateComments = async (
+export const updateReactions = async (
   ids: string[],
   payload: Partial<Pick<TReaction, 'status'>>,
 ): Promise<{
   count: number;
   not_found_ids: string[];
 }> => {
-  const comments = await Reaction.find({ _id: { $in: ids } }).lean();
-  const foundIds = comments.map((comment) => comment._id.toString());
+  const reactions = await Reaction.find({ _id: { $in: ids } }).lean();
+  const foundIds = reactions.map((reaction) => reaction._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   const result = await Reaction.updateMany(
@@ -217,7 +207,7 @@ export const updateComments = async (
   };
 };
 
-export const deleteSelfComment = async (
+export const deleteSelfReaction = async (
   user: TJwtPayload,
   guest: TGuest,
   id: string,
@@ -226,36 +216,36 @@ export const deleteSelfComment = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const comment = await Reaction.findOne({
+  const reaction = await Reaction.findOne({
     _id: id,
     ...(user?._id ? { user: user._id } : { guest: guest._id }),
   });
-  if (!comment) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
+  if (!reaction) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
   }
 
-  await comment.softDelete();
+  await reaction.softDelete();
 };
 
-export const deleteComment = async (id: string): Promise<void> => {
-  const comment = await Reaction.findById(id);
-  if (!comment) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
+export const deleteReaction = async (id: string): Promise<void> => {
+  const reaction = await Reaction.findById(id);
+  if (!reaction) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
   }
 
-  await comment.softDelete();
+  await reaction.softDelete();
 };
 
-export const deleteCommentPermanent = async (id: string): Promise<void> => {
-  const comment = await Reaction.findById(id).lean();
-  if (!comment) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
+export const deleteReactionPermanent = async (id: string): Promise<void> => {
+  const reaction = await Reaction.findById(id).lean();
+  if (!reaction) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
   }
 
   await Reaction.findByIdAndDelete(id);
 };
 
-export const deleteSelfComments = async (
+export const deleteSelfReactions = async (
   user: TJwtPayload,
   guest: TGuest,
   ids: string[],
@@ -267,11 +257,11 @@ export const deleteSelfComments = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const comments = await Reaction.find({
+  const reactions = await Reaction.find({
     _id: { $in: ids },
     ...(user?._id ? { user: user._id } : { guest: guest._id }),
   }).lean();
-  const foundIds = comments.map((comment) => comment._id.toString());
+  const foundIds = reactions.map((reaction) => reaction._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await Reaction.updateMany(
@@ -288,14 +278,14 @@ export const deleteSelfComments = async (
   };
 };
 
-export const deleteComments = async (
+export const deleteReactions = async (
   ids: string[],
 ): Promise<{
   count: number;
   not_found_ids: string[];
 }> => {
-  const comments = await Reaction.find({ _id: { $in: ids } }).lean();
-  const foundIds = comments.map((comment) => comment._id.toString());
+  const reactions = await Reaction.find({ _id: { $in: ids } }).lean();
+  const foundIds = reactions.map((reaction) => reaction._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await Reaction.updateMany({ _id: { $in: foundIds } }, { is_deleted: true });
@@ -306,15 +296,15 @@ export const deleteComments = async (
   };
 };
 
-export const deleteCommentsPermanent = async (
+export const deleteReactionsPermanent = async (
   ids: string[],
 ): Promise<{
   count: number;
   not_found_ids: string[];
 }> => {
-  // Use lean for finding existing comments
-  const comments = await Reaction.find({ _id: { $in: ids } }).lean();
-  const foundIds = comments.map((comment) => comment._id.toString());
+  // Use lean for finding existing reactions
+  const reactions = await Reaction.find({ _id: { $in: ids } }).lean();
+  const foundIds = reactions.map((reaction) => reaction._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await Reaction.deleteMany({ _id: { $in: foundIds } });
@@ -325,7 +315,7 @@ export const deleteCommentsPermanent = async (
   };
 };
 
-export const restoreSelfComment = async (
+export const restoreSelfReaction = async (
   user: TJwtPayload,
   guest: TGuest,
   id: string,
@@ -334,7 +324,7 @@ export const restoreSelfComment = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const comment = await Reaction.findOneAndUpdate(
+  const reaction = await Reaction.findOneAndUpdate(
     {
       _id: id,
       is_deleted: true,
@@ -344,34 +334,34 @@ export const restoreSelfComment = async (
     { new: true },
   ).lean();
 
-  if (!comment) {
+  if (!reaction) {
     throw new AppError(
       httpStatus.NOT_FOUND,
-      'Comment not found or not deleted',
+      'Reaction not found or not deleted',
     );
   }
 
-  return comment;
+  return reaction;
 };
 
-export const restoreComment = async (id: string): Promise<TReaction> => {
-  const comment = await Reaction.findOneAndUpdate(
+export const restoreReaction = async (id: string): Promise<TReaction> => {
+  const reaction = await Reaction.findOneAndUpdate(
     { _id: id, is_deleted: true },
     { is_deleted: false },
     { new: true },
   ).lean();
 
-  if (!comment) {
+  if (!reaction) {
     throw new AppError(
       httpStatus.NOT_FOUND,
-      'Comment not found or not deleted',
+      'Reaction not found or not deleted',
     );
   }
 
-  return comment;
+  return reaction;
 };
 
-export const restoreSelfComments = async (
+export const restoreSelfReactions = async (
   user: TJwtPayload,
   guest: TGuest,
   ids: string[],
@@ -392,11 +382,13 @@ export const restoreSelfComments = async (
     { is_deleted: false },
   );
 
-  const restoredComments = await Reaction.find({
+  const restoredReactions = await Reaction.find({
     _id: { $in: ids },
     ...(user?._id ? { user: user._id } : { guest: guest._id }),
   }).lean();
-  const restoredIds = restoredComments.map((comment) => comment._id.toString());
+  const restoredIds = restoredReactions.map((reaction) =>
+    reaction._id.toString(),
+  );
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 
   return {
@@ -405,7 +397,7 @@ export const restoreSelfComments = async (
   };
 };
 
-export const restoreComments = async (
+export const restoreReactions = async (
   ids: string[],
 ): Promise<{
   count: number;
@@ -416,8 +408,10 @@ export const restoreComments = async (
     { is_deleted: false },
   );
 
-  const restoredComments = await Reaction.find({ _id: { $in: ids } }).lean();
-  const restoredIds = restoredComments.map((comment) => comment._id.toString());
+  const restoredReactions = await Reaction.find({ _id: { $in: ids } }).lean();
+  const restoredIds = restoredReactions.map((reaction) =>
+    reaction._id.toString(),
+  );
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 
   return {

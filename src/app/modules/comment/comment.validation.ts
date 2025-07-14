@@ -5,7 +5,7 @@ const idSchema = z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), {
   message: 'Invalid ID format',
 });
 
-const statusEnum = z.enum(['active', 'inactive']);
+const statusEnum = z.enum(['pending', 'approved', 'rejected']);
 
 export const createCommentValidationSchema = z.object({
   body: z.object({

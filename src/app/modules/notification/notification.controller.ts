@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
-import * as CategoryServices from './category.service';
+import * as CategoryServices from './notification.service';
 
 export const createCategory = catchAsync(async (req, res) => {
   const result = await CategoryServices.createCategory(req.body);

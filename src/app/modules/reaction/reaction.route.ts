@@ -2,8 +2,8 @@ import express from 'express';
 import auth from '../../middlewares/auth.middleware';
 import guest from '../../middlewares/guest.middleware';
 import validation from '../../middlewares/validation.middleware';
-import * as CommentControllers from './reaction.controller';
-import * as CommentValidations from './reaction.validation';
+import * as ReactionControllers from './reaction.controller';
+import * as ReactionValidations from './reaction.validation';
 
 const router = express.Router();
 
@@ -12,9 +12,9 @@ router.get(
   '/self',
   guest('optional'),
   auth('admin'),
-  CommentControllers.getSelfComments,
+  ReactionControllers.getSelfReactions,
 );
-router.get('/', auth('admin'), CommentControllers.getComments);
+router.get('/', auth('admin'), ReactionControllers.getReactions);
 
 router.get(
   '/:id/self',
@@ -28,15 +28,15 @@ router.get(
     'user',
     'guest',
   ),
-  validation(CommentValidations.commentOperationValidationSchema),
-  CommentControllers.getSelfComment,
+  validation(ReactionValidations.reactionOperationValidationSchema),
+  ReactionControllers.getSelfReaction,
 );
 
 router.get(
   '/:id',
   auth('admin'),
-  validation(CommentValidations.commentOperationValidationSchema),
-  CommentControllers.getComment,
+  validation(ReactionValidations.reactionOperationValidationSchema),
+  ReactionControllers.getReaction,
 );
 
 // PATCH
@@ -52,8 +52,8 @@ router.patch(
     'user',
     'guest',
   ),
-  validation(CommentValidations.updateSelfCommentsValidationSchema),
-  CommentControllers.updateComments,
+  validation(ReactionValidations.updateSelfReactionsValidationSchema),
+  ReactionControllers.updateReactions,
 );
 
 router.patch(
@@ -68,22 +68,22 @@ router.patch(
     'user',
     'guest',
   ),
-  validation(CommentValidations.updateSelfCommentValidationSchema),
-  CommentControllers.updateComment,
+  validation(ReactionValidations.updateSelfReactionValidationSchema),
+  ReactionControllers.updateReaction,
 );
 
 router.patch(
   '/bulk',
   auth('admin'),
-  validation(CommentValidations.updateCommentsValidationSchema),
-  CommentControllers.updateComments,
+  validation(ReactionValidations.updateReactionsValidationSchema),
+  ReactionControllers.updateReactions,
 );
 
 router.patch(
   '/:id',
   auth('admin', 'editor'),
-  validation(CommentValidations.updateCommentValidationSchema),
-  CommentControllers.updateComment,
+  validation(ReactionValidations.updateReactionValidationSchema),
+  ReactionControllers.updateReaction,
 );
 
 // DELETE
@@ -99,22 +99,22 @@ router.delete(
     'user',
     'guest',
   ),
-  validation(CommentValidations.commentOperationValidationSchema),
-  CommentControllers.deleteSelfComments,
+  validation(ReactionValidations.reactionOperationValidationSchema),
+  ReactionControllers.deleteSelfReactions,
 );
 
 router.delete(
   '/bulk/permanent',
   auth('admin'),
-  validation(CommentValidations.commentOperationValidationSchema),
-  CommentControllers.deleteCommentsPermanent,
+  validation(ReactionValidations.reactionOperationValidationSchema),
+  ReactionControllers.deleteReactionsPermanent,
 );
 
 router.delete(
   '/bulk',
   auth('admin'),
-  validation(CommentValidations.commentOperationValidationSchema),
-  CommentControllers.deleteComments,
+  validation(ReactionValidations.reactionOperationValidationSchema),
+  ReactionControllers.deleteReactions,
 );
 
 router.delete(
@@ -129,22 +129,22 @@ router.delete(
     'user',
     'guest',
   ),
-  validation(CommentValidations.commentOperationValidationSchema),
-  CommentControllers.deleteSelfComment,
+  validation(ReactionValidations.reactionOperationValidationSchema),
+  ReactionControllers.deleteSelfReaction,
 );
 
 router.delete(
   '/:id/permanent',
   auth('admin'),
-  validation(CommentValidations.commentOperationValidationSchema),
-  CommentControllers.deleteCommentPermanent,
+  validation(ReactionValidations.reactionOperationValidationSchema),
+  ReactionControllers.deleteReactionPermanent,
 );
 
 router.delete(
   '/:id',
   auth('admin'),
-  validation(CommentValidations.commentOperationValidationSchema),
-  CommentControllers.deleteComment,
+  validation(ReactionValidations.reactionOperationValidationSchema),
+  ReactionControllers.deleteReaction,
 );
 
 // POST
@@ -160,8 +160,8 @@ router.post(
     'user',
     'guest',
   ),
-  validation(CommentValidations.createCommentValidationSchema),
-  CommentControllers.createComment,
+  validation(ReactionValidations.createReactionValidationSchema),
+  ReactionControllers.createReaction,
 );
 
 router.post(
@@ -176,15 +176,15 @@ router.post(
     'user',
     'guest',
   ),
-  validation(CommentValidations.commentOperationValidationSchema),
-  CommentControllers.restoreSelfComments,
+  validation(ReactionValidations.reactionOperationValidationSchema),
+  ReactionControllers.restoreSelfReactions,
 );
 
 router.post(
   '/bulk/restore',
   auth('admin'),
-  validation(CommentValidations.commentOperationValidationSchema),
-  CommentControllers.restoreComments,
+  validation(ReactionValidations.reactionOperationValidationSchema),
+  ReactionControllers.restoreReactions,
 );
 
 router.post(
@@ -199,17 +199,17 @@ router.post(
     'user',
     'guest',
   ),
-  validation(CommentValidations.commentOperationValidationSchema),
-  CommentControllers.restoreSelfComment,
+  validation(ReactionValidations.reactionOperationValidationSchema),
+  ReactionControllers.restoreSelfReaction,
 );
 
 router.post(
   '/:id/restore',
   auth('admin'),
-  validation(CommentValidations.commentOperationValidationSchema),
-  CommentControllers.restoreComment,
+  validation(ReactionValidations.reactionOperationValidationSchema),
+  ReactionControllers.restoreReaction,
 );
 
-const CommentRoutes = router;
+const ReactionRoutes = router;
 
-export default CommentRoutes;
+export default ReactionRoutes;

@@ -3,9 +3,9 @@ import {
   TNotification,
   TNotificationDocument,
   TNotificationModel,
-} from './category.type';
+} from './notification.type';
 
-const categorySchema = new Schema<TNotificationDocument>(
+const notificationSchema = new Schema<TNotificationDocument>(
   {
     title: {
       type: String,
@@ -54,7 +54,7 @@ const categorySchema = new Schema<TNotificationDocument>(
 
     expires_at: {
       type: Date,
-      default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      default: () => new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
     },
 
     status: {
@@ -80,14 +80,14 @@ const categorySchema = new Schema<TNotificationDocument>(
 );
 
 // toJSON override to remove sensitive fields from output
-categorySchema.methods.toJSON = function () {
+notificationSchema.methods.toJSON = function () {
   const category = this.toObject();
   delete category.is_deleted;
   return category;
 };
 
 // Query middleware to exclude deleted categories
-categorySchema.pre(
+notificationSchema.pre(
   /^find/,
   function (this: Query<TNotification, TNotification>, next) {
     this.setQuery({
@@ -98,7 +98,7 @@ categorySchema.pre(
   },
 );
 
-categorySchema.pre(
+notificationSchema.pre(
   /^update/,
   function (this: Query<TNotification, TNotification>, next) {
     this.setQuery({
@@ -110,23 +110,23 @@ categorySchema.pre(
 );
 
 // Aggregation pipeline
-categorySchema.pre('aggregate', function (next) {
+notificationSchema.pre('aggregate', function (next) {
   this.pipeline().unshift({ $match: { is_deleted: { $ne: true } } });
   next();
 });
 
 // Static methods
-categorySchema.statics.isCategoryExist = async function (_id: string) {
+notificationSchema.statics.isCategoryExist = async function (_id: string) {
   return await this.findById(_id);
 };
 
 // Instance methods
-categorySchema.methods.softDelete = async function () {
+notificationSchema.methods.softDelete = async function () {
   this.is_deleted = true;
   return await this.save();
 };
 
-export const Category = mongoose.model<
+export const Notification = mongoose.model<
   TNotificationDocument,
   TNotificationModel
->('Category', categorySchema);
+>('Notification', notificationSchema);
