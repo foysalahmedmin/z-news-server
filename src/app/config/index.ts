@@ -9,6 +9,7 @@ export default {
   node_dev: process.env.NODE_ENV as string,
   port: process.env.PORT as string,
   database_url: process.env.DATABASE_URL as string,
+  front_end_url: process.env.FRONT_END_URL as string,
   bcrypt_salt_rounds: process.env.BCRYPT_SALT_ROUNDS as string,
   default_password: process.env.DEFAULT_PASSWORD as string,
   jwt_access_secret: process.env.JWT_ACCESS_SECRET as string,
