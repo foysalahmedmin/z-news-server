@@ -5,28 +5,28 @@ import AppQuery from '../../builder/AppQuery';
 import { Notification } from './notification.model';
 import { TNotification } from './notification.type';
 
-export const createCategory = async (
+export const createNotification = async (
   data: TNotification,
 ): Promise<TNotification> => {
   const result = await Notification.create(data);
   return result.toObject();
 };
 
-export const getCategory = async (id: string): Promise<TNotification> => {
+export const getNotification = async (id: string): Promise<TNotification> => {
   const result = await Notification.findById(id);
   if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Category not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Notification not found');
   }
   return result;
 };
 
-export const getCategories = async (
+export const getNotifications = async (
   query: Record<string, unknown>,
 ): Promise<{
   data: TNotification[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const categoryQuery = new AppQuery<Document, TNotification>(
+  const notificationQuery = new AppQuery<Document, TNotification>(
     Notification.find().lean(),
     query,
   )
@@ -36,20 +36,20 @@ export const getCategories = async (
     .paginate()
     .fields();
 
-  const result = await categoryQuery.execute();
+  const result = await notificationQuery.execute();
 
   return result;
 };
 
-export const updateCategory = async (
+export const updateNotification = async (
   id: string,
   payload: Partial<
-    Pick<TNotification, 'name' | 'slug' | 'sequence' | 'status'>
+    Pick<TNotification, 'title' | 'message' | 'type' | 'priority'>
   >,
 ): Promise<TNotification> => {
   const data = await Notification.findById(id).lean();
   if (!data) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Category not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Notification not found');
   }
 
   const result = await Notification.findByIdAndUpdate(id, payload, {
@@ -60,15 +60,17 @@ export const updateCategory = async (
   return result!;
 };
 
-export const updateCategories = async (
+export const updateNotifications = async (
   ids: string[],
   payload: Partial<Pick<TNotification, 'status'>>,
 ): Promise<{
   count: number;
   not_found_ids: string[];
 }> => {
-  const categories = await Notification.find({ _id: { $in: ids } }).lean();
-  const foundIds = categories.map((category) => category._id.toString());
+  const notifications = await Notification.find({ _id: { $in: ids } }).lean();
+  const foundIds = notifications.map((notification) =>
+    notification._id.toString(),
+  );
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   const result = await Notification.updateMany(
@@ -82,32 +84,36 @@ export const updateCategories = async (
   };
 };
 
-export const deleteCategory = async (id: string): Promise<void> => {
-  const category = await Notification.findById(id);
-  if (!category) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Category not found');
+export const deleteNotification = async (id: string): Promise<void> => {
+  const notification = await Notification.findById(id);
+  if (!notification) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Notification not found');
   }
 
-  await category.softDelete();
+  await notification.softDelete();
 };
 
-export const deleteCategoryPermanent = async (id: string): Promise<void> => {
-  const category = await Notification.findById(id).lean();
-  if (!category) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Category not found');
+export const deleteNotificationPermanent = async (
+  id: string,
+): Promise<void> => {
+  const notification = await Notification.findById(id).lean();
+  if (!notification) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Notification not found');
   }
 
   await Notification.findByIdAndDelete(id);
 };
 
-export const deleteCategories = async (
+export const deleteNotifications = async (
   ids: string[],
 ): Promise<{
   count: number;
   not_found_ids: string[];
 }> => {
-  const categories = await Notification.find({ _id: { $in: ids } }).lean();
-  const foundIds = categories.map((category) => category._id.toString());
+  const notifications = await Notification.find({ _id: { $in: ids } }).lean();
+  const foundIds = notifications.map((notification) =>
+    notification._id.toString(),
+  );
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await Notification.updateMany(
@@ -121,14 +127,16 @@ export const deleteCategories = async (
   };
 };
 
-export const deleteCategoriesPermanent = async (
+export const deleteNotificationsPermanent = async (
   ids: string[],
 ): Promise<{
   count: number;
   not_found_ids: string[];
 }> => {
-  const categories = await Notification.find({ _id: { $in: ids } }).lean();
-  const foundIds = categories.map((category) => category._id.toString());
+  const notifications = await Notification.find({ _id: { $in: ids } }).lean();
+  const foundIds = notifications.map((notification) =>
+    notification._id.toString(),
+  );
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await Notification.deleteMany({ _id: { $in: foundIds } });
@@ -139,24 +147,26 @@ export const deleteCategoriesPermanent = async (
   };
 };
 
-export const restoreCategory = async (id: string): Promise<TNotification> => {
-  const category = await Notification.findOneAndUpdate(
+export const restoreNotification = async (
+  id: string,
+): Promise<TNotification> => {
+  const notification = await Notification.findOneAndUpdate(
     { _id: id, is_deleted: true },
     { is_deleted: false },
     { new: true },
   );
 
-  if (!category) {
+  if (!notification) {
     throw new AppError(
       httpStatus.NOT_FOUND,
-      'Category not found or not deleted',
+      'Notification not found or not deleted',
     );
   }
 
-  return category;
+  return notification;
 };
 
-export const restoreCategories = async (
+export const restoreNotifications = async (
   ids: string[],
 ): Promise<{
   count: number;
@@ -167,11 +177,11 @@ export const restoreCategories = async (
     { is_deleted: false },
   );
 
-  const restoredCategories = await Notification.find({
+  const restoredNotifications = await Notification.find({
     _id: { $in: ids },
   }).lean();
-  const restoredIds = restoredCategories.map((category) =>
-    category._id.toString(),
+  const restoredIds = restoredNotifications.map((notification) =>
+    notification._id.toString(),
   );
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 

@@ -1,128 +1,128 @@
 import httpStatus from 'http-status';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
-import * as CategoryServices from './notification.service';
+import * as NotificationServices from './notification.service';
 
-export const createCategory = catchAsync(async (req, res) => {
-  const result = await CategoryServices.createCategory(req.body);
+export const createNotification = catchAsync(async (req, res) => {
+  const result = await NotificationServices.createNotification(req.body);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Category created successfully',
+    message: 'Notification created successfully',
     data: result,
   });
 });
 
-export const getCategory = catchAsync(async (req, res) => {
+export const getNotification = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await CategoryServices.getCategory(id);
+  const result = await NotificationServices.getNotification(id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Category retrieved successfully',
+    message: 'Notification retrieved successfully',
     data: result,
   });
 });
 
-export const getCategories = catchAsync(async (req, res) => {
-  const result = await CategoryServices.getCategories(req.query);
+export const getNotifications = catchAsync(async (req, res) => {
+  const result = await NotificationServices.getNotifications(req.query);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Categories retrieved successfully',
+    message: 'Notifications retrieved successfully',
     meta: result.meta,
     data: result.data,
   });
 });
 
-export const updateCategory = catchAsync(async (req, res) => {
+export const updateNotification = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await CategoryServices.updateCategory(id, req.body);
+  const result = await NotificationServices.updateNotification(id, req.body);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Category updated successfully',
+    message: 'Notification updated successfully',
     data: result,
   });
 });
 
-export const updateCategories = catchAsync(async (req, res) => {
+export const updateNotifications = catchAsync(async (req, res) => {
   const { ids, ...payload } = req.body;
-  const result = await CategoryServices.updateCategories(ids, payload);
+  const result = await NotificationServices.updateNotifications(ids, payload);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Categories updated successfully',
+    message: 'Notifications updated successfully',
     data: result,
   });
 });
 
-export const deleteCategory = catchAsync(async (req, res) => {
+export const deleteNotification = catchAsync(async (req, res) => {
   const { id } = req.params;
-  await CategoryServices.deleteCategory(id);
+  await NotificationServices.deleteNotification(id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Category soft deleted successfully',
+    message: 'Notification soft deleted successfully',
     data: null,
   });
 });
 
-export const deleteCategoryPermanent = catchAsync(async (req, res) => {
+export const deleteNotificationPermanent = catchAsync(async (req, res) => {
   const { id } = req.params;
-  await CategoryServices.deleteCategoryPermanent(id);
+  await NotificationServices.deleteNotificationPermanent(id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Category permanently deleted successfully',
+    message: 'Notification permanently deleted successfully',
     data: null,
   });
 });
 
-export const deleteCategories = catchAsync(async (req, res) => {
+export const deleteNotifications = catchAsync(async (req, res) => {
   const { ids } = req.body;
-  const result = await CategoryServices.deleteCategories(ids);
+  const result = await NotificationServices.deleteNotifications(ids);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: `${result.count} categories soft deleted successfully`,
+    message: `${result.count} notifications soft deleted successfully`,
     data: {
       not_found_ids: result.not_found_ids,
     },
   });
 });
 
-export const deleteCategoriesPermanent = catchAsync(async (req, res) => {
+export const deleteNotificationsPermanent = catchAsync(async (req, res) => {
   const { ids } = req.body;
-  const result = await CategoryServices.deleteCategoriesPermanent(ids);
+  const result = await NotificationServices.deleteNotificationsPermanent(ids);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: `${result.count} categories permanently deleted successfully`,
+    message: `${result.count} notifications permanently deleted successfully`,
     data: {
       not_found_ids: result.not_found_ids,
     },
   });
 });
 
-export const restoreCategory = catchAsync(async (req, res) => {
+export const restoreNotification = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await CategoryServices.restoreCategory(id);
+  const result = await NotificationServices.restoreNotification(id);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Category restored successfully',
+    message: 'Notification restored successfully',
     data: result,
   });
 });
 
-export const restoreCategories = catchAsync(async (req, res) => {
+export const restoreNotifications = catchAsync(async (req, res) => {
   const { ids } = req.body;
-  const result = await CategoryServices.restoreCategories(ids);
+  const result = await NotificationServices.restoreNotifications(ids);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: `${result.count} categories restored successfully`,
+    message: `${result.count} notifications restored successfully`,
     data: {
       not_found_ids: result.not_found_ids,
     },

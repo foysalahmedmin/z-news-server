@@ -1,6 +1,5 @@
 import http from 'http';
 import mongoose from 'mongoose';
-import { Server as IOServer } from 'socket.io';
 import app from './app';
 import config from './app/config';
 import { socket } from './app/socket';
@@ -15,14 +14,7 @@ const main = async (): Promise<void> => {
 
     server = http.createServer(app);
 
-    const io = new IOServer(server, {
-      cors: {
-        origin: 'http://localhost:5173',
-        methods: ['GET', 'POST'],
-      },
-    });
-
-    socket(io);
+    socket(server);
 
     server.listen(config.port, () => {
       console.log(`🚀 Server running on http://localhost:${config.port}`);

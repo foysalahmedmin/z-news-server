@@ -26,7 +26,7 @@ export type TResetPassword = {
 };
 
 export type TJwtPayload = {
-  _id?: string | undefined;
+  _id: string;
   name: string;
   email: string;
   role: TRole;
