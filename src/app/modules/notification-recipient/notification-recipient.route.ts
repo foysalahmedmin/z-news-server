@@ -12,6 +12,7 @@ router.get(
   auth('admin'),
   NotificationRecipientControllers.getSelfNotificationRecipients,
 );
+
 router.get(
   '/',
   auth('admin'),
