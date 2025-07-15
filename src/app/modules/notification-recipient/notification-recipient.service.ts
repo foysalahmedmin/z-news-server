@@ -2,77 +2,166 @@ import httpStatus from 'http-status';
 import { Document } from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
+import { TJwtPayload } from '../auth/auth.type';
 import { NotificationRecipient } from './notification-recipient.model';
 import { TNotificationRecipient } from './notification-recipient.type';
 
-export const createCategory = async (
+export const createNotificationRecipient = async (
   data: TNotificationRecipient,
 ): Promise<TNotificationRecipient> => {
   const result = await NotificationRecipient.create(data);
   return result.toObject();
 };
 
-export const getCategory = async (
+export const getSelfNotificationRecipient = async (
+  user: TJwtPayload,
   id: string,
 ): Promise<TNotificationRecipient> => {
-  const result = await NotificationRecipient.findById(id);
+  const result = await NotificationRecipient.findOne({
+    _id: id,
+    author: user._id,
+  }).lean();
+
   if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Category not found');
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      'Notification recipient not found',
+    );
   }
   return result;
 };
 
-export const getCategories = async (
+export const getNotificationRecipient = async (
+  id: string,
+): Promise<TNotificationRecipient> => {
+  const result = await NotificationRecipient.findById(id).lean();
+
+  if (!result) {
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      'Notification recipient not found',
+    );
+  }
+  return result;
+};
+
+export const getSelfNotificationRecipients = async (
+  user: TJwtPayload,
   query: Record<string, unknown>,
 ): Promise<{
   data: TNotificationRecipient[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const categoryQuery = new AppQuery<Document, TNotificationRecipient>(
-    NotificationRecipient.find().lean(),
+  const notificationQuery = new AppQuery<Document, TNotificationRecipient>(
+    NotificationRecipient.find({ author: user._id }).lean(),
     query,
   )
-    .search(['name'])
+    .search(['title', 'summary', 'content'])
     .filter()
     .sort()
     .paginate()
     .fields();
 
-  const result = await categoryQuery.execute();
-
-  return result;
+  return await notificationQuery.execute();
 };
 
-export const updateCategory = async (
+export const getNotificationRecipients = async (
+  query: Record<string, unknown>,
+): Promise<{
+  data: TNotificationRecipient[];
+  meta: { total: number; page: number; limit: number };
+}> => {
+  const notificationQuery = new AppQuery<Document, TNotificationRecipient>(
+    NotificationRecipient.find()
+      .populate([{ path: 'recipient', select: '_id name email' }])
+      .lean(),
+    query,
+  )
+    .search(['title', 'summary', 'content'])
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+
+  return await notificationQuery.execute();
+};
+
+export const updateSelfNotificationRecipient = async (
+  user: TJwtPayload,
   id: string,
-  payload: Partial<
-    Pick<TNotificationRecipient, 'name' | 'slug' | 'sequence' | 'status'>
-  >,
+  payload: Partial<Pick<TNotificationRecipient, 'is_read' | 'read_at'>>,
 ): Promise<TNotificationRecipient> => {
-  const data = await NotificationRecipient.findById(id).lean();
+  const data = await NotificationRecipient.findOne({
+    _id: id,
+    author: user._id,
+  }).lean();
+
   if (!data) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Category not found');
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      'Notification recipient not found',
+    );
   }
 
   const result = await NotificationRecipient.findByIdAndUpdate(id, payload, {
     new: true,
     runValidators: true,
-  });
+  }).lean();
 
   return result!;
 };
 
-export const updateCategories = async (
+export const updateNotificationRecipient = async (
+  id: string,
+  payload: Partial<Pick<TNotificationRecipient, 'is_read' | 'read_at'>>,
+): Promise<TNotificationRecipient> => {
+  const data = await NotificationRecipient.findById(id).lean();
+
+  if (!data) {
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      'Notification recipient not found',
+    );
+  }
+
+  const result = await NotificationRecipient.findByIdAndUpdate(id, payload, {
+    new: true,
+    runValidators: true,
+  }).lean();
+
+  return result!;
+};
+
+export const updateSelfNotificationRecipients = async (
+  user: TJwtPayload,
   ids: string[],
-  payload: Partial<Pick<TNotificationRecipient, 'status'>>,
-): Promise<{
-  count: number;
-  not_found_ids: string[];
-}> => {
-  const categories = await NotificationRecipient.find({
+  payload: Partial<Pick<TNotificationRecipient, 'is_read' | 'read_at'>>,
+): Promise<{ count: number; not_found_ids: string[] }> => {
+  const recipients = await NotificationRecipient.find({
+    _id: { $in: ids },
+    author: user._id,
+  }).lean();
+
+  const foundIds = recipients.map((r) => r._id.toString());
+  const notFoundIds = ids.filter((id) => !foundIds.includes(id));
+
+  const result = await NotificationRecipient.updateMany(
+    { _id: { $in: foundIds }, author: user._id },
+    { ...payload },
+  );
+
+  return { count: result.modifiedCount, not_found_ids: notFoundIds };
+};
+
+export const updateNotificationRecipients = async (
+  ids: string[],
+  payload: Partial<Pick<TNotificationRecipient, 'is_read' | 'read_at'>>,
+): Promise<{ count: number; not_found_ids: string[] }> => {
+  const recipients = await NotificationRecipient.find({
     _id: { $in: ids },
   }).lean();
-  const foundIds = categories.map((category) => category._id.toString());
+
+  const foundIds = recipients.map((r) => r._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   const result = await NotificationRecipient.updateMany(
@@ -80,40 +169,77 @@ export const updateCategories = async (
     { ...payload },
   );
 
-  return {
-    count: result.modifiedCount,
-    not_found_ids: notFoundIds,
-  };
+  return { count: result.modifiedCount, not_found_ids: notFoundIds };
 };
 
-export const deleteCategory = async (id: string): Promise<void> => {
-  const category = await NotificationRecipient.findById(id);
-  if (!category) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Category not found');
-  }
+export const deleteSelfNotificationRecipient = async (
+  user: TJwtPayload,
+  id: string,
+): Promise<void> => {
+  const data = await NotificationRecipient.findOne({
+    _id: id,
+    author: user._id,
+  });
+  if (!data)
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      'Notification recipient not found',
+    );
 
-  await category.softDelete();
+  await data.softDelete();
 };
 
-export const deleteCategoryPermanent = async (id: string): Promise<void> => {
-  const category = await NotificationRecipient.findById(id).lean();
-  if (!category) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Category not found');
-  }
+export const deleteNotificationRecipient = async (
+  id: string,
+): Promise<void> => {
+  const data = await NotificationRecipient.findById(id);
+  if (!data)
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      'Notification recipient not found',
+    );
+
+  await data.softDelete();
+};
+
+export const deleteNotificationRecipientPermanent = async (
+  id: string,
+): Promise<void> => {
+  const data = await NotificationRecipient.findById(id).lean();
+  if (!data)
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      'Notification recipient not found',
+    );
 
   await NotificationRecipient.findByIdAndDelete(id);
 };
 
-export const deleteCategories = async (
+export const deleteSelfNotificationRecipients = async (
+  user: TJwtPayload,
   ids: string[],
-): Promise<{
-  count: number;
-  not_found_ids: string[];
-}> => {
-  const categories = await NotificationRecipient.find({
+): Promise<{ count: number; not_found_ids: string[] }> => {
+  const data = await NotificationRecipient.find({
     _id: { $in: ids },
+    author: user._id,
   }).lean();
-  const foundIds = categories.map((category) => category._id.toString());
+
+  const foundIds = data.map((d) => d._id.toString());
+  const notFoundIds = ids.filter((id) => !foundIds.includes(id));
+
+  await NotificationRecipient.updateMany(
+    { _id: { $in: foundIds }, author: user._id },
+    { is_deleted: true },
+  );
+
+  return { count: foundIds.length, not_found_ids: notFoundIds };
+};
+
+export const deleteNotificationRecipients = async (
+  ids: string[],
+): Promise<{ count: number; not_found_ids: string[] }> => {
+  const data = await NotificationRecipient.find({ _id: { $in: ids } }).lean();
+  const foundIds = data.map((d) => d._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await NotificationRecipient.updateMany(
@@ -121,72 +247,94 @@ export const deleteCategories = async (
     { is_deleted: true },
   );
 
-  return {
-    count: foundIds.length,
-    not_found_ids: notFoundIds,
-  };
+  return { count: foundIds.length, not_found_ids: notFoundIds };
 };
 
-export const deleteCategoriesPermanent = async (
+export const deleteNotificationRecipientsPermanent = async (
   ids: string[],
-): Promise<{
-  count: number;
-  not_found_ids: string[];
-}> => {
-  const categories = await NotificationRecipient.find({
-    _id: { $in: ids },
-  }).lean();
-  const foundIds = categories.map((category) => category._id.toString());
+): Promise<{ count: number; not_found_ids: string[] }> => {
+  const data = await NotificationRecipient.find({ _id: { $in: ids } }).lean();
+  const foundIds = data.map((d) => d._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await NotificationRecipient.deleteMany({ _id: { $in: foundIds } });
 
-  return {
-    count: foundIds.length,
-    not_found_ids: notFoundIds,
-  };
+  return { count: foundIds.length, not_found_ids: notFoundIds };
 };
 
-export const restoreCategory = async (
+export const restoreSelfNotificationRecipient = async (
+  user: TJwtPayload,
   id: string,
 ): Promise<TNotificationRecipient> => {
-  const category = await NotificationRecipient.findOneAndUpdate(
-    { _id: id, is_deleted: true },
+  const data = await NotificationRecipient.findOneAndUpdate(
+    { _id: id, is_deleted: true, author: user._id },
     { is_deleted: false },
     { new: true },
-  );
+  ).lean();
 
-  if (!category) {
+  if (!data) {
     throw new AppError(
       httpStatus.NOT_FOUND,
-      'Category not found or not deleted',
+      'Notification recipient not found or not deleted',
     );
   }
 
-  return category;
+  return data;
 };
 
-export const restoreCategories = async (
+export const restoreNotificationRecipient = async (
+  id: string,
+): Promise<TNotificationRecipient> => {
+  const data = await NotificationRecipient.findOneAndUpdate(
+    { _id: id, is_deleted: true },
+    { is_deleted: false },
+    { new: true },
+  ).lean();
+
+  if (!data) {
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      'Notification recipient not found or not deleted',
+    );
+  }
+
+  return data;
+};
+
+export const restoreSelfNotificationRecipients = async (
+  user: TJwtPayload,
   ids: string[],
-): Promise<{
-  count: number;
-  not_found_ids: string[];
-}> => {
+): Promise<{ count: number; not_found_ids: string[] }> => {
+  const result = await NotificationRecipient.updateMany(
+    { _id: { $in: ids }, is_deleted: true, author: user._id },
+    { is_deleted: false },
+  );
+
+  const restored = await NotificationRecipient.find({
+    _id: { $in: ids },
+    author: user._id,
+  }).lean();
+
+  const restoredIds = restored.map((r) => r._id.toString());
+  const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
+
+  return { count: result.modifiedCount, not_found_ids: notFoundIds };
+};
+
+export const restoreNotificationRecipients = async (
+  ids: string[],
+): Promise<{ count: number; not_found_ids: string[] }> => {
   const result = await NotificationRecipient.updateMany(
     { _id: { $in: ids }, is_deleted: true },
     { is_deleted: false },
   );
 
-  const restoredCategories = await NotificationRecipient.find({
+  const restored = await NotificationRecipient.find({
     _id: { $in: ids },
   }).lean();
-  const restoredIds = restoredCategories.map((category) =>
-    category._id.toString(),
-  );
+
+  const restoredIds = restored.map((r) => r._id.toString());
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 
-  return {
-    count: result.modifiedCount,
-    not_found_ids: notFoundIds,
-  };
+  return { count: result.modifiedCount, not_found_ids: notFoundIds };
 };
