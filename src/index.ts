@@ -69,10 +69,11 @@ process.on('uncaughtException', (error) => {
 
 // Cluster
 const numCPUs = os.cpus().length;
+const workersToUse = Math.max(1, Math.floor(numCPUs * 0.75));
 
 if (cluster.isPrimary) {
   console.log(`👑 Primary ${process.pid} is running`);
-  for (let i = 0; i < numCPUs; i++) {
+  for (let i = 0; i < workersToUse; i++) {
     cluster.fork();
   }
 

@@ -3,7 +3,7 @@ import { Document, Model, Types } from 'mongoose';
 export type TNotificationAction = {
   title: string;
   type: string;
-  url: string;
+  url?: string;
 };
 
 export type TNotificationMetadata = {
@@ -11,7 +11,7 @@ export type TNotificationMetadata = {
   image?: string;
   source?: string;
   reference?: string;
-  actions: TNotificationAction[];
+  actions?: TNotificationAction[];
 };
 
 export type TNotificationRecipient = {
