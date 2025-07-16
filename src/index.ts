@@ -1,5 +1,7 @@
+import cluster from 'cluster';
 import http from 'http';
 import mongoose from 'mongoose';
+import os from 'os';
 import app from './app';
 import config from './app/config';
 import { socket } from './app/socket';
@@ -10,14 +12,13 @@ let server: http.Server | null = null;
 const main = async (): Promise<void> => {
   try {
     await mongoose.connect(config.database_url);
-    console.log('✅ MongoDB connected');
+    console.log(`✅ MongoDB connected - PID: ${process.pid}`);
 
     server = http.createServer(app);
-
-    socket(server);
+    await socket(server);
 
     server.listen(config.port, () => {
-      console.log(`🚀 Server running on http://localhost:${config.port}`);
+      console.log(`🚀 Worker ${process.pid} listening on port ${config.port}`);
     });
   } catch (error) {
     console.error('❌ Error starting server:', error);
@@ -38,7 +39,6 @@ const shutdown = async (reason: string): Promise<void> => {
         process.exit(0);
       });
 
-      // Force exit if server doesn't close in 5 seconds
       setTimeout(() => {
         console.error('⏱ Server shutdown timed out, forcing exit.');
         process.exit(1);
@@ -67,5 +67,19 @@ process.on('uncaughtException', (error) => {
   shutdown('Uncaught Exception');
 });
 
-// Start the server
-main();
+// Cluster
+const numCPUs = os.cpus().length;
+
+if (cluster.isPrimary) {
+  console.log(`👑 Primary ${process.pid} is running`);
+  for (let i = 0; i < numCPUs; i++) {
+    cluster.fork();
+  }
+
+  cluster.on('exit', (worker, _code, _signal) => {
+    console.warn(`⚰️ Worker ${worker.process.pid} died. Restarting...`);
+    cluster.fork();
+  });
+} else {
+  main();
+}

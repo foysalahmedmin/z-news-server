@@ -1,12 +1,14 @@
+import { createAdapter } from '@socket.io/redis-adapter';
 import http from 'http';
 import jwt from 'jsonwebtoken';
+import { createClient } from 'redis';
 import { Server as IOServer, Socket } from 'socket.io';
 import config from '../config';
 import { TJwtPayload } from '../modules/auth/auth.type';
 
 export let io: IOServer;
 
-export const socket = (server: http.Server) => {
+export const socket = async (server: http.Server) => {
   io = new IOServer(server, {
     cors: {
       origin: [
@@ -19,6 +21,19 @@ export const socket = (server: http.Server) => {
       methods: ['GET', 'POST'],
     },
   });
+
+  const pubClient = createClient();
+  const subClient = pubClient.duplicate();
+
+  try {
+    await pubClient.connect();
+    await subClient.connect();
+  } catch (err) {
+    console.error('❌ Redis connection error:', err);
+    throw err;
+  }
+
+  io.adapter(createAdapter(pubClient, subClient));
 
   io.on('connection', (socket: Socket) => {
     const token = socket.handshake.auth?.token;
