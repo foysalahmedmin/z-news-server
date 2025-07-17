@@ -43,7 +43,7 @@ const auth = (...roles: (TRole | 'guest')[]) => {
       } else {
         user = await User.isUserExist(_id);
         if (!user) throw new AppError(httpStatus.NOT_FOUND, 'User not found');
-        await cacheClient.set(redisKey, JSON.stringify(user), { EX: 600 }); // cache 10 mins
+        await cacheClient.set(redisKey, JSON.stringify(user), { EX: 30 * 60 }); // cache 30 mins
       }
 
       if (user.is_deleted) {
