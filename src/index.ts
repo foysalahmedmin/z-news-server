@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import os from 'os';
 import app from './app';
 import config from './app/config';
+import { cacheClient } from './app/redis';
 import { socket } from './app/socket';
 
 let server: http.Server | null = null;
@@ -13,6 +14,9 @@ const main = async (): Promise<void> => {
   try {
     await mongoose.connect(config.database_url);
     console.log(`✅ MongoDB connected - PID: ${process.pid}`);
+
+    await cacheClient.connect();
+    console.log(`🔌 Redis (cache) connected - PID: ${process.pid}`);
 
     server = http.createServer(app);
     await socket(server);
@@ -32,6 +36,8 @@ const shutdown = async (reason: string): Promise<void> => {
   try {
     await mongoose.disconnect();
     console.log('✅ MongoDB disconnected');
+    await cacheClient.quit();
+    console.log('🔌 Redis (cache) disconnected');
 
     if (server) {
       server.close(() => {

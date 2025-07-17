@@ -1,10 +1,10 @@
 import { createAdapter } from '@socket.io/redis-adapter';
 import http from 'http';
 import jwt from 'jsonwebtoken';
-import { createClient } from 'redis';
 import { Server as IOServer, Socket } from 'socket.io';
 import config from '../config';
 import { TJwtPayload } from '../modules/auth/auth.type';
+import { pubClient, subClient } from '../redis';
 
 export let io: IOServer;
 
@@ -21,9 +21,6 @@ export const socket = async (server: http.Server) => {
       methods: ['GET', 'POST'],
     },
   });
-
-  const pubClient = createClient();
-  const subClient = pubClient.duplicate();
 
   try {
     await pubClient.connect();
