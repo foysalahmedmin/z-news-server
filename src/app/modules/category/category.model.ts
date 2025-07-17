@@ -37,6 +37,8 @@ const categorySchema = new Schema<TCategoryDocument>(
       createdAt: 'created_at',
       updatedAt: 'updated_at',
     },
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   },
 );
 
