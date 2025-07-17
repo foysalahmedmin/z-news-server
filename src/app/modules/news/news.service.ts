@@ -112,6 +112,9 @@ export const getSelfNews = async (
 ): Promise<TNews> => {
   const result = await News.findOne({ _id: id, author: user._id })
     .populate([
+      { path: 'like_count' },
+      { path: 'dislike_count' },
+      { path: 'comment_count' },
       { path: 'author', select: '_id name email' },
       { path: 'category', select: '_id name slug' },
       {
@@ -133,6 +136,9 @@ export const getSelfNews = async (
 export const getNews = async (id: string): Promise<TNews> => {
   const result = await News.findById(id)
     .populate([
+      { path: 'like_count' },
+      { path: 'dislike_count' },
+      { path: 'comment_count' },
       { path: 'author', select: '_id name email' },
       { path: 'category', select: '_id name slug' },
       {
@@ -161,6 +167,9 @@ export const getSelfBulkNews = async (
   const NewsQuery = new AppQuery<Document, TNews>(
     News.find({ author: user._id })
       .populate([
+        { path: 'like_count' },
+        { path: 'dislike_count' },
+        { path: 'comment_count' },
         { path: 'author', select: '_id name email' },
         { path: 'category', select: '_id name slug' },
         {
@@ -194,6 +203,9 @@ export const getBulkNews = async (
   const NewsQuery = new AppQuery<Document, TNews>(
     News.find()
       .populate([
+        { path: 'like_count' },
+        { path: 'dislike_count' },
+        { path: 'comment_count' },
         { path: 'author', select: '_id name email' },
         { path: 'category', select: '_id name slug' },
         {

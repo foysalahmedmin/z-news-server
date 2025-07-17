@@ -172,6 +172,14 @@ newsSchema.virtual('dislike_count', {
   match: { type: 'dislike', is_deleted: { $ne: true } },
 });
 
+newsSchema.virtual('comment_count', {
+  ref: 'Comment',
+  localField: '_id',
+  foreignField: 'news',
+  count: true,
+  match: { is_deleted: { $ne: true } },
+});
+
 // toJSON override to remove sensitive fields from output
 newsSchema.methods.toJSON = function () {
   const News = this.toObject();
