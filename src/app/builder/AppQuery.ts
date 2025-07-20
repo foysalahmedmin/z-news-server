@@ -16,6 +16,7 @@ class AppQuery<T extends Document, R = T> {
   public queryFilter: FilterQuery<T>;
   private _page: number | null = null;
   private _limit: number | null = null;
+  private _lean: boolean | null = null;
 
   constructor(query: Query<T[], T>, queryParams: Record<string, unknown>) {
     this.query = query;
@@ -111,6 +112,11 @@ class AppQuery<T extends Document, R = T> {
     return this;
   }
 
+  lean() {
+    this._lean = true;
+    return this;
+  }
+
   async execute(): Promise<{
     data: R[];
     meta: {
@@ -135,8 +141,12 @@ class AppQuery<T extends Document, R = T> {
         },
       };
     }
+
+    // Apply lean if requested before executing query
+    const queryToExecute = this._lean ? this.query.lean() : this.query;
+
     const [data, total] = await Promise.all([
-      this.query,
+      queryToExecute,
       (this.query.model as Model<T>).countDocuments(this.queryFilter),
     ]);
 

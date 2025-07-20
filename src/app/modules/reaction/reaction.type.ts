@@ -17,5 +17,5 @@ export interface TReactionDocument extends TReaction, Document {
 }
 
 export type TReactionModel = Model<TReactionDocument> & {
-  isCommentExist(_id: string): Promise<TReactionDocument | null>;
+  isReactionExist(_id: string): Promise<TReactionDocument | null>;
 };

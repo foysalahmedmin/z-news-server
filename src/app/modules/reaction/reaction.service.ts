@@ -70,14 +70,14 @@ export const getSelfReactions = async (
   const reactionQuery = new AppQuery<Document, TReaction>(
     Reaction.find({
       ...(user?._id ? { user: user._id } : { guest: guest._id }),
-    }).lean(),
+    }),
     query,
   )
-    .search(['name', 'email', 'content'])
     .filter()
     .sort()
     .paginate()
-    .fields();
+    .fields()
+    .lean();
 
   const result = await reactionQuery.execute();
   return result;
@@ -90,14 +90,14 @@ export const getReactions = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const reactionQuery = new AppQuery<Document, TReaction>(
-    Reaction.find().lean(),
+    Reaction.find(),
     query,
   )
-    .search(['name', 'email', 'content'])
     .filter()
     .sort()
     .paginate()
-    .fields();
+    .fields()
+    .lean();
 
   const result = await reactionQuery.execute();
   return result;

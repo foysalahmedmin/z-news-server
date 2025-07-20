@@ -27,14 +27,15 @@ export const getNotifications = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const notificationQuery = new AppQuery<Document, TNotification>(
-    Notification.find().lean(),
+    Notification.find(),
     query,
   )
     .search(['name'])
     .filter()
     .sort()
     .paginate()
-    .fields();
+    .fields()
+    .lean();
 
   const result = await notificationQuery.execute();
 

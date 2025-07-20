@@ -165,30 +165,29 @@ export const getSelfBulkNews = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const NewsQuery = new AppQuery<Document, TNews>(
-    News.find({ author: user._id })
-      .populate([
-        { path: 'like_count' },
-        { path: 'dislike_count' },
-        { path: 'comment_count' },
-        { path: 'author', select: '_id name email' },
-        { path: 'category', select: '_id name slug' },
-        {
-          path: 'news_headline',
-          select: '_id title published_at expired_at status',
-        },
-        {
-          path: 'news_break',
-          select: '_id title published_at expired_at status',
-        },
-      ])
-      .lean(),
+    News.find({ author: user._id }).populate([
+      { path: 'like_count' },
+      { path: 'dislike_count' },
+      { path: 'comment_count' },
+      { path: 'author', select: '_id name email' },
+      { path: 'category', select: '_id name slug' },
+      {
+        path: 'news_headline',
+        select: '_id title published_at expired_at status',
+      },
+      {
+        path: 'news_break',
+        select: '_id title published_at expired_at status',
+      },
+    ]),
     query,
   )
     .search(['title', 'summary', 'content'])
     .filter()
     .sort()
     .paginate()
-    .fields();
+    .fields()
+    .lean();
 
   const result = await NewsQuery.execute();
   return result;
@@ -201,30 +200,29 @@ export const getBulkNews = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const NewsQuery = new AppQuery<Document, TNews>(
-    News.find()
-      .populate([
-        { path: 'like_count' },
-        { path: 'dislike_count' },
-        { path: 'comment_count' },
-        { path: 'author', select: '_id name email' },
-        { path: 'category', select: '_id name slug' },
-        {
-          path: 'news_headline',
-          select: '_id title published_at expired_at status',
-        },
-        {
-          path: 'news_break',
-          select: '_id title published_at expired_at status',
-        },
-      ])
-      .lean(),
+    News.find().populate([
+      { path: 'like_count' },
+      { path: 'dislike_count' },
+      { path: 'comment_count' },
+      { path: 'author', select: '_id name email' },
+      { path: 'category', select: '_id name slug' },
+      {
+        path: 'news_headline',
+        select: '_id title published_at expired_at status',
+      },
+      {
+        path: 'news_break',
+        select: '_id title published_at expired_at status',
+      },
+    ]),
     query,
   )
     .search(['title', 'summary', 'content'])
     .filter()
     .sort()
     .paginate()
-    .fields();
+    .fields()
+    .lean();
 
   const result = await NewsQuery.execute();
   return result;

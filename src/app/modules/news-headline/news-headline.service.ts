@@ -53,14 +53,15 @@ export const getSelfNewsHeadlines = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const NewsQuery = new AppQuery<Document, TNewsHeadline>(
-    NewsHeadline.find({ author: user._id }).lean(),
+    NewsHeadline.find({ author: user._id }),
     query,
   )
     .search(['title', 'summary', 'content'])
     .filter()
     .sort()
     .paginate()
-    .fields();
+    .fields()
+    .lean();
 
   const result = await NewsQuery.execute();
   return result;
@@ -73,14 +74,15 @@ export const getNewsHeadlines = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const NewsQuery = new AppQuery<Document, TNewsHeadline>(
-    NewsHeadline.find().lean(),
+    NewsHeadline.find(),
     query,
   )
     .search(['title', 'summary', 'content'])
     .filter()
     .sort()
     .paginate()
-    .fields();
+    .fields()
+    .lean();
 
   const result = await NewsQuery.execute();
   return result;

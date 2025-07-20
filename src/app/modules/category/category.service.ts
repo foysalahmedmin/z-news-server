@@ -25,14 +25,15 @@ export const getCategories = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const categoryQuery = new AppQuery<Document, TCategory>(
-    Category.find().lean(),
+    Category.find(),
     query,
   )
     .search(['name'])
     .filter()
     .sort()
     .paginate()
-    .fields();
+    .fields()
+    .lean();
 
   const result = await categoryQuery.execute();
 

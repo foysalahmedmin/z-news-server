@@ -1,7 +1,7 @@
 import mongoose, { Query, Schema } from 'mongoose';
-import { TReaction, TReactionDocument, TReactionModel } from './reaction.type';
+import { TView, TViewDocument, TViewModel } from './view.type';
 
-const reactionSchema = new Schema<TReactionDocument>(
+const viewSchema = new Schema<TViewDocument>(
   {
     news: {
       type: Schema.Types.ObjectId,
@@ -25,18 +25,6 @@ const reactionSchema = new Schema<TReactionDocument>(
       default: null,
     },
 
-    type: {
-      type: String,
-      required: true,
-      enum: ['like', 'dislike'],
-    },
-
-    status: {
-      type: String,
-      enum: ['pending', 'approved', 'rejected'],
-      default: 'pending',
-    },
-
     is_deleted: {
       type: Boolean,
       default: false,
@@ -52,17 +40,17 @@ const reactionSchema = new Schema<TReactionDocument>(
   },
 );
 
-reactionSchema.index({ user: 1, news: 1 }, { unique: true });
+viewSchema.index({ user: 1, news: 1 }, { unique: true });
 
 // toJSON override to remove sensitive fields from output
-reactionSchema.methods.toJSON = function () {
+viewSchema.methods.toJSON = function () {
   const comment = this.toObject();
   delete comment.is_deleted;
   return comment;
 };
 
 // Query middleware to exclude deleted categories
-reactionSchema.pre(/^find/, function (this: Query<TReaction, TReaction>, next) {
+viewSchema.pre(/^find/, function (this: Query<TView, TView>, next) {
   this.setQuery({
     ...this.getQuery(),
     is_deleted: { $ne: true },
@@ -70,35 +58,32 @@ reactionSchema.pre(/^find/, function (this: Query<TReaction, TReaction>, next) {
   next();
 });
 
-reactionSchema.pre(
-  /^update/,
-  function (this: Query<TReaction, TReaction>, next) {
-    this.setQuery({
-      ...this.getQuery(),
-      is_deleted: { $ne: true },
-    });
-    next();
-  },
-);
+viewSchema.pre(/^update/, function (this: Query<TView, TView>, next) {
+  this.setQuery({
+    ...this.getQuery(),
+    is_deleted: { $ne: true },
+  });
+  next();
+});
 
 // Aggregation pipeline
-reactionSchema.pre('aggregate', function (next) {
+viewSchema.pre('aggregate', function (next) {
   this.pipeline().unshift({ $match: { is_deleted: { $ne: true } } });
   next();
 });
 
 // Static methods
-reactionSchema.statics.isReactionExist = async function (_id: string) {
+viewSchema.statics.isViewExist = async function (_id: string) {
   return await this.findById(_id);
 };
 
 // Instance methods
-reactionSchema.methods.softDelete = async function () {
+viewSchema.methods.softDelete = async function () {
   this.is_deleted = true;
   return await this.save();
 };
 
-export const Reaction = mongoose.model<TReactionDocument, TReactionModel>(
-  'Reaction',
-  reactionSchema,
+export const View = mongoose.model<TViewDocument, TViewModel>(
+  'View',
+  viewSchema,
 );

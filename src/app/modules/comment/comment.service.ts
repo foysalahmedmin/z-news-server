@@ -70,14 +70,15 @@ export const getSelfComments = async (
   const commentQuery = new AppQuery<Document, TComment>(
     Comment.find({
       ...(user?._id ? { user: user._id } : { guest: guest._id }),
-    }).lean(),
+    }),
     query,
   )
     .search(['name', 'email', 'content'])
     .filter()
     .sort()
     .paginate()
-    .fields();
+    .fields()
+    .lean();
 
   const result = await commentQuery.execute();
   return result;
@@ -89,15 +90,13 @@ export const getComments = async (
   data: TComment[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const commentQuery = new AppQuery<Document, TComment>(
-    Comment.find().lean(),
-    query,
-  )
+  const commentQuery = new AppQuery<Document, TComment>(Comment.find(), query)
     .search(['name', 'email', 'content'])
     .filter()
     .sort()
     .paginate()
-    .fields();
+    .fields()
+    .lean();
 
   const result = await commentQuery.execute();
   return result;

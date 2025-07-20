@@ -33,7 +33,8 @@ export const getUsers = async (
     .filter()
     .sort()
     .paginate()
-    .fields();
+    .fields()
+    .lean();
 
   const result = await userQuery.execute();
 

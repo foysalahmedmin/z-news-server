@@ -53,14 +53,14 @@ export const getSelfNotificationRecipients = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const notificationQuery = new AppQuery<Document, TNotificationRecipient>(
-    NotificationRecipient.find({ author: user._id }).lean(),
+    NotificationRecipient.find({ author: user._id }),
     query,
   )
-    .search(['title', 'summary', 'content'])
     .filter()
     .sort()
     .paginate()
-    .fields();
+    .fields()
+    .lean();
 
   return await notificationQuery.execute();
 };
@@ -72,16 +72,16 @@ export const getNotificationRecipients = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const notificationQuery = new AppQuery<Document, TNotificationRecipient>(
-    NotificationRecipient.find()
-      .populate([{ path: 'recipient', select: '_id name email' }])
-      .lean(),
+    NotificationRecipient.find().populate([
+      { path: 'recipient', select: '_id name email' },
+    ]),
     query,
   )
-    .search(['title', 'summary', 'content'])
     .filter()
     .sort()
     .paginate()
-    .fields();
+    .fields()
+    .lean();
 
   return await notificationQuery.execute();
 };
