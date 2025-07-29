@@ -36,6 +36,24 @@ router.patch(
 router.patch(
   '/:id/self',
   auth('admin', 'author'),
+  file(
+    {
+      name: 'thumbnail',
+      folder: '/news/thumbnail',
+      size: 5_000_000,
+      minCount: 1,
+      maxCount: 1,
+      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+    },
+    {
+      name: 'images',
+      folder: '/news/images',
+      size: 5_000_000,
+      minCount: 1,
+      maxCount: 5,
+      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+    },
+  ),
   validation(NewsValidations.updateSelfNewsValidationSchema),
   NewsControllers.updateSelfNews,
 );
@@ -50,6 +68,24 @@ router.patch(
 router.patch(
   '/:id',
   auth('admin', 'editor'),
+  file(
+    {
+      name: 'thumbnail',
+      folder: '/news/thumbnail',
+      size: 5_000_000,
+      minCount: 1,
+      maxCount: 1,
+      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+    },
+    {
+      name: 'images',
+      folder: '/news/images',
+      size: 5_000_000,
+      minCount: 1,
+      maxCount: 5,
+      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+    },
+  ),
   validation(NewsValidations.updateNewsValidationSchema),
   NewsControllers.updateNews,
 );
@@ -105,14 +141,18 @@ router.post(
     {
       name: 'thumbnail',
       folder: '/news/thumbnail',
-      size: 5000000,
+      size: 5_000_000,
       minCount: 1,
+      maxCount: 1,
+      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
     },
     {
       name: 'images',
-      folder: '/news/file',
-      size: 5000000,
-      minCount: 5,
+      folder: '/news/images',
+      size: 5_000_000,
+      minCount: 1,
+      maxCount: 5,
+      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
     },
   ),
   validation(NewsValidations.createNewsValidationSchema),

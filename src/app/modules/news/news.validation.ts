@@ -1,11 +1,18 @@
 import { z } from 'zod';
 
-// Common schema parts
 const idSchema = z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), {
   message: 'Invalid ID format',
 });
 
 const statusEnum = z.enum(['draft', 'pending', 'published', 'archived']);
+
+const seoSchema = z
+  .object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    keywords: z.array(z.string()).optional(),
+  })
+  .optional();
 
 export const createNewsValidationSchema = z.object({
   body: z.object({
@@ -24,20 +31,12 @@ export const createNewsValidationSchema = z.object({
       }),
     summary: z.string().max(300).optional(),
     content: z.string().min(1),
-    // thumbnail: z.string().url().optional(),
-    // images: z.array(z.string().url()).optional(),
     tags: z.array(z.string().min(1)).optional(),
     category: idSchema.optional(),
     status: statusEnum.optional(),
     is_featured: z.boolean().optional(),
     is_premium: z.boolean().optional(),
-    seo: z
-      .object({
-        title: z.string().optional(),
-        description: z.string().optional(),
-        keywords: z.array(z.string()).optional(),
-      })
-      .optional(),
+    seo: seoSchema,
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
     news_headline: z
@@ -86,20 +85,12 @@ export const updateSelfNewsValidationSchema = z.object({
       .optional(),
     summary: z.string().max(300).optional(),
     content: z.string().min(1).optional(),
-    // thumbnail: z.string().url().optional(),
-    // images: z.array(z.string().url()).optional(),
     tags: z.array(z.string().min(1)).optional(),
     category: idSchema.optional(),
     status: statusEnum.optional(),
     is_featured: z.boolean().optional(),
     is_premium: z.boolean().optional(),
-    seo: z
-      .object({
-        title: z.string().optional(),
-        description: z.string().optional(),
-        keywords: z.array(z.string()).optional(),
-      })
-      .optional(),
+    seo: seoSchema,
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
   }),
@@ -110,7 +101,7 @@ export const updateSelfBulkNewsValidationSchema = z.object({
     ids: z
       .array(idSchema, {
         required_error: 'At least one news ID is required',
-        invalid_type_error: 'News IDs must be an array of valid Mongo IDs',
+        invalid_type_error: 'News IDs must be valid Mongo IDs',
       })
       .nonempty('At least one news ID is required'),
     status: statusEnum.optional(),
@@ -138,21 +129,13 @@ export const updateNewsValidationSchema = z.object({
       .optional(),
     summary: z.string().max(300).optional(),
     content: z.string().min(1).optional(),
-    // thumbnail: z.string().url().optional(),
-    // images: z.array(z.string().url()).optional(),
     tags: z.array(z.string().min(1)).optional(),
     category: idSchema.optional(),
     author: idSchema.optional(),
     status: statusEnum.optional(),
     is_featured: z.boolean().optional(),
     is_premium: z.boolean().optional(),
-    seo: z
-      .object({
-        title: z.string().optional(),
-        description: z.string().optional(),
-        keywords: z.array(z.string()).optional(),
-      })
-      .optional(),
+    seo: seoSchema,
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
   }),
@@ -163,7 +146,7 @@ export const updateBulkNewsValidationSchema = z.object({
     ids: z
       .array(idSchema, {
         required_error: 'At least one news ID is required',
-        invalid_type_error: 'News IDs must be an array of valid Mongo IDs',
+        invalid_type_error: 'News IDs must be valid Mongo IDs',
       })
       .nonempty('At least one news ID is required'),
     status: statusEnum.optional(),
