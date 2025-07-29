@@ -1,22 +1,25 @@
-import { NextFunction, Request, Response } from "express";
-import fs from "fs";
-import httpStatus from "http-status";
-import multer from "multer";
-import path from "path";
-import AppError from "../builder/AppError";
-import catchAsync from "../utils/catchAsync";
+import { NextFunction, Request, Response } from 'express';
+import fs from 'fs';
+import httpStatus from 'http-status';
+import multer from 'multer';
+import path from 'path';
+import AppError from '../builder/AppError';
+import catchAsync from '../utils/catchAsync';
 
 type TFile = {
   name: string;
   folder: string;
+  size?: number;
+  maxCount?: number;
+  minCount?: number;
 };
 
 const file = (...files: TFile[]) => {
   const storage = multer.diskStorage({
     destination: (_req, file, cb) => {
       const folder =
-        files.find((item) => item.name === file.fieldname)?.folder || "";
-      const dir = path.join("uploads", folder);
+        files.find((item) => item.name === file.fieldname)?.folder || '';
+      const dir = path.join('uploads', folder);
       fs.mkdirSync(dir, { recursive: true });
       cb(null, dir);
     },
@@ -31,7 +34,7 @@ const file = (...files: TFile[]) => {
   const upload = multer({ storage }).fields(
     files.map((item) => ({
       name: item.name,
-      maxCount: 1,
+      maxCount: item.maxCount || 1,
     })),
   );
 
@@ -41,7 +44,7 @@ const file = (...files: TFile[]) => {
         return next(
           new AppError(
             httpStatus.BAD_REQUEST,
-            err.message || "File upload error",
+            err.message || 'File upload error',
           ),
         );
       }
@@ -55,7 +58,7 @@ const file = (...files: TFile[]) => {
         );
 
         if (missingFields.length > 0) {
-          const fieldNames = missingFields.map((f) => `"${f.name}"`).join(", ");
+          const fieldNames = missingFields.map((f) => `"${f.name}"`).join(', ');
           throw new AppError(
             httpStatus.BAD_REQUEST,
             `Missing file(s) in field(s): ${fieldNames}`,
@@ -67,7 +70,7 @@ const file = (...files: TFile[]) => {
         if (oldFilePath) {
           const fullPath = path.resolve(oldFilePath);
           fs.unlink(fullPath, (err) => {
-            if (err && err.code !== "ENOENT") {
+            if (err && err.code !== 'ENOENT') {
               console.warn(
                 `Failed to delete old file: ${fullPath}`,
                 err.message,

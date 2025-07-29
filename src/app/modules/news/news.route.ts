@@ -1,5 +1,6 @@
 import express from 'express';
 import auth from '../../middlewares/auth.middleware';
+import file from '../../middlewares/file.middleware';
 import validation from '../../middlewares/validation.middleware';
 import * as NewsControllers from './news.controller';
 import * as NewsValidations from './news.validation';
@@ -100,6 +101,20 @@ router.delete(
 router.post(
   '/',
   auth('admin', 'author'),
+  file(
+    {
+      name: 'thumbnail',
+      folder: '/news/thumbnail',
+      size: 5000000,
+      minCount: 1,
+    },
+    {
+      name: 'images',
+      folder: '/news/file',
+      size: 5000000,
+      minCount: 5,
+    },
+  ),
   validation(NewsValidations.createNewsValidationSchema),
   NewsControllers.createNews,
 );
