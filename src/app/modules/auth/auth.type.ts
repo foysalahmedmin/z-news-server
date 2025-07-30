@@ -6,10 +6,10 @@ export type TSignin = {
 };
 
 export type TSignup = {
+  image?: string;
   name: string;
   email: string;
   password: string;
-  role?: TRole;
 };
 
 export type TChangePassword = {
@@ -27,6 +27,7 @@ export type TResetPassword = {
 
 export type TJwtPayload = {
   _id: string;
+  image?: string;
   name: string;
   email: string;
   role: TRole;

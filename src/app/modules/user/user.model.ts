@@ -5,6 +5,9 @@ import { TUser, TUserDocument, TUserModel } from './user.type';
 
 const userSchema = new Schema<TUserDocument>(
   {
+    image: {
+      type: String,
+    },
     name: {
       type: String,
       required: [true, 'Name is required'],

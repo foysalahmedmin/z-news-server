@@ -9,6 +9,8 @@ declare global {
       user: JwtPayload & TJwtPayload;
       guest: TGuest;
       session: Session & Partial<SessionData>;
+      files?: Record<string, Express.Multer.File[] | Express.Multer.File>;
+      file?: Express.Multer.File;
     }
   }
 }

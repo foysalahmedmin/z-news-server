@@ -12,6 +12,7 @@ export type TRole =
 export type TStatus = 'in-progress' | 'blocked';
 
 export type TUser = {
+  image?: string;
   name: string;
   email: string;
   password: string;

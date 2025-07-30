@@ -26,9 +26,14 @@ export const signin = catchAsync(async (req, res) => {
 });
 
 export const signup = catchAsync(async (req, res) => {
-  const { refresh_token, access_token, info } = await AuthServices.signup(
-    req.body,
-  );
+  const files = req.files as Record<string, Express.Multer.File[]>;
+  const image = files.image?.[0]?.filename || '';
+  const payload = {
+    ...req.body,
+    image,
+  };
+  const { refresh_token, access_token, info } =
+    await AuthServices.signup(payload);
 
   res.cookie('refresh_token', refresh_token, {
     secure: config.node_dev === 'production',

@@ -1,5 +1,6 @@
 import express from 'express';
 import auth from '../../middlewares/auth.middleware';
+import file from '../../middlewares/file.middleware';
 import validation from '../../middlewares/validation.middleware';
 import * as AuthControllers from './auth.controller';
 import * as AuthValidations from './auth.validation';
@@ -14,6 +15,13 @@ router.post(
 
 router.post(
   '/signup',
+  file({
+    name: 'image',
+    folder: '/user',
+    size: 5_000_000,
+    maxCount: 1,
+    allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+  }),
   validation(AuthValidations.signupValidationSchema),
   AuthControllers.signup,
 );
