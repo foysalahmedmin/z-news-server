@@ -27,7 +27,6 @@ export const socket = async (server: http.Server) => {
     await subClient.connect();
   } catch (err) {
     console.error('❌ Redis connection error:', err);
-    throw err;
   }
 
   io.adapter(createAdapter(pubClient, subClient));

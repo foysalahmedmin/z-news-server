@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node ./dist/index.js",
     "start:dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "start-redis:wsl": "wsl sudo service redis-server start",
+    "stop-redis:wsl": "wsl sudo service redis-server stop",
     "build": "tsc",
     "lint": "eslint src --ignore-path .eslintignore --ext .js,.ts",
     "lint:fix": "npx eslint src --fix",

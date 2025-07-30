@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 import os from 'os';
 import app from './app';
 import config from './app/config';
-import { cacheClient } from './app/redis';
+import { cacheClient, pubClient, subClient } from './app/redis';
 import { socket } from './app/socket';
 
 let server: http.Server | null = null;
@@ -15,11 +15,23 @@ const main = async (): Promise<void> => {
     await mongoose.connect(config.database_url);
     console.log(`✅ MongoDB connected - PID: ${process.pid}`);
 
-    await cacheClient.connect();
-    console.log(`🔌 Redis (cache) connected - PID: ${process.pid}`);
+    try {
+      await cacheClient.connect();
+      console.log(`🔌 Redis (cache) connected - PID: ${process.pid}`);
+    } catch (redisErr) {
+      console.warn(`⚠️ Redis not available - PID: ${process.pid}`, redisErr);
+    }
 
     server = http.createServer(app);
-    await socket(server);
+
+    try {
+      await socket(server);
+    } catch (socketErr) {
+      console.warn(
+        `⚠️ Socket.io not available - PID: ${process.pid}`,
+        socketErr,
+      );
+    }
 
     server.listen(config.port, () => {
       console.log(`🚀 Worker ${process.pid} listening on port ${config.port}`);
@@ -34,17 +46,35 @@ const main = async (): Promise<void> => {
 const shutdown = async (reason: string): Promise<void> => {
   console.log(`🛑 Shutdown initiated: ${reason}`);
   try {
+    // Disconnect MongoDB
     await mongoose.disconnect();
     console.log('✅ MongoDB disconnected');
-    await cacheClient.quit();
-    console.log('🔌 Redis (cache) disconnected');
 
+    // Disconnect Redis cache
+    if (cacheClient.isOpen) {
+      await cacheClient.quit();
+      console.log('🔌 Redis (cache) disconnected');
+    }
+
+    // Disconnect Socket.io Redis clients
+    if (pubClient.isOpen) {
+      await pubClient.quit();
+      console.log('🔌 Redis (pub) disconnected');
+    }
+
+    if (subClient.isOpen) {
+      await subClient.quit();
+      console.log('🔌 Redis (sub) disconnected');
+    }
+
+    // Close HTTP server
     if (server) {
       server.close(() => {
         console.log('🔒 HTTP server closed');
         process.exit(0);
       });
 
+      // Fallback if server doesn't close in time
       setTimeout(() => {
         console.error('⏱ Server shutdown timed out, forcing exit.');
         process.exit(1);
@@ -83,9 +113,29 @@ if (cluster.isPrimary) {
     cluster.fork();
   }
 
-  cluster.on('exit', (worker, _code, _signal) => {
-    console.warn(`⚰️ Worker ${worker.process.pid} died. Restarting...`);
-    cluster.fork();
+  let restartCount = 0;
+  const MAX_RESTARTS = 5;
+  const RESTART_WINDOW = 60000; // 1 min
+  let firstRestartTime = Date.now();
+
+  cluster.on('exit', (worker) => {
+    const now = Date.now();
+
+    if (now - firstRestartTime > RESTART_WINDOW) {
+      // Reset restart window
+      firstRestartTime = now;
+      restartCount = 0;
+    }
+
+    if (restartCount < MAX_RESTARTS) {
+      console.warn(`⚰️ Worker ${worker.process.pid} died. Restarting...`);
+      cluster.fork();
+      restartCount++;
+    } else {
+      console.error(
+        `❌ Too many restarts (${restartCount}) in 1 minute. Not restarting further.`,
+      );
+    }
   });
 } else {
   main();
