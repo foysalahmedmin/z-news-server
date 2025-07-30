@@ -132,6 +132,6 @@ router.post(
   NewsBreakControllers.restoreNewsBreak,
 );
 
-const NewsRoutes = router;
+const NewsBreakRoutes = router;
 
-export default NewsRoutes;
+export default NewsBreakRoutes;

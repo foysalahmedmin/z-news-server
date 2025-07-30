@@ -1,4 +1,4 @@
-import { Document, Model, Types } from 'mongoose';
+import mongoose, { Document, Model, Types } from 'mongoose';
 
 export type TStatus = 'active' | 'inactive';
 
@@ -7,7 +7,13 @@ export type TCategory = {
   slug: string;
   sequence: number;
   status: TStatus;
-  is_deleted: boolean;
+  category?: mongoose.Types.ObjectId | null;
+  is_deleted?: boolean;
+};
+
+export type TCategoryTree = TCategory & {
+  _id: string;
+  children?: TCategoryTree[];
 };
 
 export interface TCategoryDocument extends TCategory, Document {

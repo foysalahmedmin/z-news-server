@@ -3,6 +3,10 @@ import { TCategory, TCategoryDocument, TCategoryModel } from './category.type';
 
 const categorySchema = new Schema<TCategoryDocument>(
   {
+    category: {
+      type: Schema.Types.ObjectId,
+      ref: 'Category',
+    },
     name: {
       type: String,
       required: [true, 'Name is required'],
@@ -41,6 +45,14 @@ const categorySchema = new Schema<TCategoryDocument>(
     toObject: { virtuals: true },
   },
 );
+
+// Virtual field for children
+categorySchema.virtual('children', {
+  ref: 'Category',
+  localField: '_id',
+  foreignField: 'category',
+  match: { is_deleted: { $ne: true } },
+});
 
 // toJSON override to remove sensitive fields from output
 categorySchema.methods.toJSON = function () {

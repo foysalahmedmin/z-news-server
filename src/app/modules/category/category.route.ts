@@ -8,6 +8,7 @@ const router = express.Router();
 
 // GET
 router.get('/', auth('admin'), CategoryControllers.getCategories);
+router.get('/tree', auth('admin'), CategoryControllers.getCategoriesTree);
 
 router.get(
   '/:id',

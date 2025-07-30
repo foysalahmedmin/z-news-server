@@ -132,6 +132,6 @@ router.post(
   NewsControllers.restoreNewsHeadline,
 );
 
-const NewsRoutes = router;
+const NewsHeadlineRoutes = router;
 
-export default NewsRoutes;
+export default NewsHeadlineRoutes;

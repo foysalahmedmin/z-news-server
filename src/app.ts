@@ -33,7 +33,7 @@ app.use(
     },
   }),
 );
-app.use('/api/v1', router);
+app.use('/api', router);
 
 app.get('/', (_req: Request, res: Response) => {
   res.send('Welcome to z-news server!');

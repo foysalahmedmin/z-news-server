@@ -35,6 +35,21 @@ export const getCategories = catchAsync(async (req, res) => {
   });
 });
 
+export const getCategoriesTree = catchAsync(async (req, res) => {
+  const { category, ...query } = req.query;
+  const result = await CategoryServices.getCategoriesTree(
+    category as string,
+    query,
+  );
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'Categories retrieved successfully',
+    meta: result.meta,
+    data: result.data,
+  });
+});
+
 export const updateCategory = catchAsync(async (req, res) => {
   const { id } = req.params;
   const result = await CategoryServices.updateCategory(id, req.body);

@@ -3,7 +3,8 @@ import { Document } from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
 import { Category } from './category.model';
-import { TCategory } from './category.type';
+import { TCategory, TCategoryTree } from './category.type';
+import { buildTree } from './category.utils';
 
 export const createCategory = async (data: TCategory): Promise<TCategory> => {
   const result = await Category.create(data);
@@ -24,9 +25,18 @@ export const getCategories = async (
   data: TCategory[];
   meta: { total: number; page: number; limit: number };
 }> => {
+  const { all = false, category, ...rest } = query;
+
+  const filter: Record<string, unknown> = {};
+  if (category) {
+    filter.category = category;
+  } else if (!all) {
+    filter.category = { $not: { $type: 'objectId' } };
+  }
+
   const categoryQuery = new AppQuery<Document, TCategory>(
-    Category.find(),
-    query,
+    Category.find(filter).populate([{ path: 'children' }]),
+    rest,
   )
     .search(['name'])
     .filter()
@@ -38,6 +48,82 @@ export const getCategories = async (
   const result = await categoryQuery.execute();
 
   return result;
+};
+
+// export const getCategoryTree = async (
+//   categoryId: string | null = null,
+// ): Promise<{
+//   data: TCategoryTree[];
+//   meta: { total: number; page?: number; limit?: number };
+// }> => {
+//   const filter = categoryId
+//     ? { category: categoryId }
+//     : { category: { $not: { $type: 'objectId' } } };
+
+//   const categories = await Category.find(filter).lean();
+
+//   const data = await Promise.all(
+//     categories.map(async (cat) => {
+//       const childrenResult = await getCategoryTree(String(cat._id));
+//       return {
+//         ...cat,
+//         children: childrenResult.data,
+//       };
+//     }),
+//   );
+
+//   return {
+//     data,
+//     meta: {
+//       total: data.length,
+//     },
+//   };
+// };
+
+export const getCategoriesTree = async (
+  categoryId?: string,
+  query: { page?: number; limit?: number } = {},
+): Promise<{
+  data: TCategoryTree[];
+  meta: { total: number; page: number; limit: number };
+}> => {
+  const { page = 1, limit = 10 } = query;
+
+  const matchStage = categoryId
+    ? { category: categoryId }
+    : { category: { $not: { $type: 'objectId' } } };
+
+  // First count total roots for meta
+  const total = await Category.countDocuments(matchStage);
+
+  // Aggregation with pagination on root categories
+  const rawRoots = await Category.aggregate([
+    { $match: matchStage },
+    { $skip: (page - 1) * limit },
+    { $limit: limit },
+    {
+      $graphLookup: {
+        from: 'categories',
+        startWith: '$_id',
+        connectFromField: '_id',
+        connectToField: 'category',
+        as: 'descendants',
+      },
+    },
+  ]);
+
+  const allNodes = rawRoots.flatMap((root) => [
+    root,
+    ...(root.descendants || []),
+  ]);
+  const uniqueNodes = Array.from(
+    new Map(allNodes.map((n) => [String(n._id), n])).values(),
+  );
+
+  return {
+    data: buildTree(rawRoots, uniqueNodes),
+    meta: { total, page, limit },
+  };
 };
 
 export const updateCategory = async (
