@@ -1,6 +1,5 @@
 ﻿<!--
-wsl hostname -I
-wsl sudo grep ^bind /etc/redis/redis.conf
+wsl redis-cli ping
 -->
 
 # Z NEWS
