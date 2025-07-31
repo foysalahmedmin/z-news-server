@@ -4,6 +4,7 @@ export type TStatus = 'active' | 'inactive';
 
 export type TCategory = {
   name: string;
+  icon: string;
   slug: string;
   sequence: number;
   status: TStatus;

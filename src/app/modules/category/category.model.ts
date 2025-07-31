@@ -7,6 +7,9 @@ const categorySchema = new Schema<TCategoryDocument>(
       type: Schema.Types.ObjectId,
       ref: 'Category',
     },
+    icon: {
+      type: String,
+    },
     name: {
       type: String,
       required: [true, 'Name is required'],
