@@ -39,7 +39,7 @@ router.patch(
   file(
     {
       name: 'thumbnail',
-      folder: '/news/thumbnail',
+      folder: '/news/thumbnails',
       size: 5_000_000,
       maxCount: 1,
       allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],

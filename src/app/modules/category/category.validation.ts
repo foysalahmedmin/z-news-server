@@ -9,6 +9,8 @@ const statusEnum = z.enum(['active', 'inactive']);
 
 export const createCategoryValidationSchema = z.object({
   body: z.object({
+    category: idSchema.optional(),
+    icon: z.string().optional(),
     name: z
       .string()
       .trim()
@@ -31,6 +33,8 @@ export const updateCategoryValidationSchema = z.object({
     id: idSchema,
   }),
   body: z.object({
+    category: idSchema.optional(),
+    icon: z.string().optional(),
     name: z
       .string()
       .min(2, 'Name must be at least 2 characters')

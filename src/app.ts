@@ -16,7 +16,14 @@ app.set('trust proxy', 1);
 
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors());
+app.use(
+  cors({
+    origin: 'http://localhost:8080', // or "*" for all origins
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  }),
+);
 app.use(
   session({
     secret: config.session_secret,

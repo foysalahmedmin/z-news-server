@@ -37,13 +37,27 @@ const auth = (...roles: (TRole | 'guest')[]) => {
       const redisKey = `auth:user:${_id}`;
       let user;
 
-      const cachedUser = await cacheClient.get(redisKey);
-      if (cachedUser) {
-        user = JSON.parse(cachedUser);
-      } else {
+      try {
+        const cachedUser = await cacheClient.get(redisKey);
+
+        if (cachedUser) {
+          user = JSON.parse(cachedUser);
+        } else {
+          user = await User.isUserExist(_id);
+          if (!user) throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+
+          try {
+            await cacheClient.set(redisKey, JSON.stringify(user), {
+              EX: 30 * 60,
+            });
+          } catch (cacheErr) {
+            console.warn('Redis set failed:', cacheErr);
+          }
+        }
+      } catch (redisErr) {
+        console.warn('Redis get failed, falling back to DB:', redisErr);
         user = await User.isUserExist(_id);
         if (!user) throw new AppError(httpStatus.NOT_FOUND, 'User not found');
-        await cacheClient.set(redisKey, JSON.stringify(user), { EX: 30 * 60 }); // cache 30 mins
       }
 
       if (user.is_deleted) {

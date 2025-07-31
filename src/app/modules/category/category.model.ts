@@ -9,6 +9,7 @@ const categorySchema = new Schema<TCategoryDocument>(
     },
     icon: {
       type: String,
+      default: 'blocks',
     },
     name: {
       type: String,
