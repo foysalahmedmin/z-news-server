@@ -77,6 +77,7 @@ export const initializeSocket = async (server: http.Server) => {
   // Try to setup Redis adapter, but don't fail if Redis is unavailable
   await connectRedisAdapter();
 
+  // Socket.io event listeners
   io.on('connection', (socket: Socket) => {
     const token = socket.handshake.auth?.token;
     const decoded = verifyToken(token);

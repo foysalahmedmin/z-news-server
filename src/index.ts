@@ -128,7 +128,7 @@ if (cluster.isPrimary) {
 
   let restartCount = 0;
   const MAX_RESTARTS = 5;
-  const RESTART_WINDOW = 60000; // 1 min
+  const RESTART_WINDOW = 60000;
   let firstRestartTime = Date.now();
 
   cluster.on('exit', (worker) => {

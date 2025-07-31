@@ -11,8 +11,8 @@ const redisOptions = {
     connectTimeout: 5000, // 5 seconds timeout
     lazyConnect: true, // Don't auto-connect
     reconnectStrategy: (retries: number) => {
-      console.log(`🔄 Redis reconnection attempt: ${retries}`);
-      if (retries > 10) {
+      console.log(`🔄 Redis reconnection attempt: ${retries + 1}`);
+      if (retries > 5) {
         console.error('❌ Max Redis reconnection attempts reached');
         return false; // Stop retrying
       }
