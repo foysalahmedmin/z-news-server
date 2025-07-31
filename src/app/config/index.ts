@@ -8,6 +8,7 @@ dotenv.config({ path: path.join(process.cwd(), '.env') });
 export default {
   node_dev: process.env.NODE_ENV as string,
   port: process.env.PORT as string,
+  redis_enabled: process.env.REDIS_ENABLED === 'false' ? false : true,
   redis_url: process.env.REDIS_URL as string,
   database_url: process.env.DATABASE_URL as string,
   front_end_url: process.env.FRONT_END_URL as string,

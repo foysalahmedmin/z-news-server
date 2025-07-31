@@ -4,8 +4,13 @@ import mongoose from 'mongoose';
 import os from 'os';
 import app from './app';
 import config from './app/config';
-import { cacheClient, pubClient, subClient } from './app/redis';
-import { socket } from './app/socket';
+import {
+  cacheClient,
+  initializeRedis,
+  pubClient,
+  subClient,
+} from './app/redis';
+import { initializeSocket } from './app/socket';
 
 let server: http.Server | null = null;
 
@@ -14,6 +19,13 @@ const main = async (): Promise<void> => {
   try {
     await mongoose.connect(config.database_url);
     console.log(`✅ MongoDB connected - PID: ${process.pid}`);
+
+    try {
+      await initializeRedis();
+      console.log(`🔌 Redis initialized - PID: ${process.pid}`);
+    } catch (redisErr) {
+      console.warn(`⚠️ Redis setup failed - PID: ${process.pid}`, redisErr);
+    }
 
     try {
       await cacheClient.connect();
@@ -25,10 +37,11 @@ const main = async (): Promise<void> => {
     server = http.createServer(app);
 
     try {
-      await socket(server);
+      await initializeSocket(server);
+      console.log(`🔌 Socket.io initialized - PID: ${process.pid}`);
     } catch (socketErr) {
       console.warn(
-        `⚠️ Socket.io not available - PID: ${process.pid}`,
+        `⚠️ Socket.io setup failed - PID: ${process.pid}`,
         socketErr,
       );
     }

@@ -9,7 +9,7 @@ import { pubClient, subClient } from '../redis';
 export let io: IOServer;
 
 // Socket.io
-export const socket = async (server: http.Server) => {
+export const initializeSocket = async (server: http.Server) => {
   io = new IOServer(server, {
     cors: {
       origin: [
@@ -24,20 +24,58 @@ export const socket = async (server: http.Server) => {
   });
 
   const connectRedisAdapter = async () => {
-    try {
-      if (!pubClient.isOpen) await pubClient.connect();
-      if (!subClient.isOpen) await subClient.connect();
+    // Check if Redis is enabled in config
+    if (!config.redis_enabled) {
+      console.log('🔕 Redis adapter disabled by configuration');
+      return;
+    }
 
-      io.adapter(createAdapter(pubClient, subClient));
-      console.log('✅ Redis adapter connected');
+    try {
+      // Check if Redis is available before connecting
+      const pubConnected =
+        pubClient.isOpen || (await connectWithTimeout(pubClient, 5000));
+      const subConnected =
+        subClient.isOpen || (await connectWithTimeout(subClient, 5000));
+
+      if (pubConnected && subConnected) {
+        io.adapter(createAdapter(pubClient, subClient));
+        console.log('✅ Redis adapter connected successfully');
+      } else {
+        console.warn(
+          '⚠️ Redis not available, running without adapter (single instance mode)',
+        );
+      }
     } catch (err) {
       console.warn('⚠️ Redis adapter connection failed:', err);
-
-      setTimeout(connectRedisAdapter, 10000);
+      console.log(
+        '📝 Socket.io running in single instance mode (no clustering)',
+      );
     }
   };
 
-  connectRedisAdapter();
+  // Helper function to connect with timeout
+  const connectWithTimeout = async (
+    client: any,
+    timeout: number,
+  ): Promise<boolean> => {
+    try {
+      if (client.isOpen) return true;
+
+      await Promise.race([
+        client.connect(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Connection timeout')), timeout),
+        ),
+      ]);
+      return true;
+    } catch (error) {
+      console.warn(`Redis client connection failed: ${error}`);
+      return false;
+    }
+  };
+
+  // Try to setup Redis adapter, but don't fail if Redis is unavailable
+  await connectRedisAdapter();
 
   io.on('connection', (socket: Socket) => {
     const token = socket.handshake.auth?.token;
@@ -60,6 +98,8 @@ export const socket = async (server: http.Server) => {
       console.log(`🔌 Socket disconnected | ${socket.id}`);
     });
   });
+
+  return io;
 };
 
 // JWT verification
