@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { Application, Request, Response } from 'express';
 import session from 'express-session';
+import path from 'path';
 import config from './app/config';
 import error from './app/middlewares/error.middleware';
 import notfound from './app/middlewares/not-found.middleware';
@@ -40,6 +41,10 @@ app.use(
     },
   }),
 );
+
+// ✅ static serve first
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 app.use('/api', router);
 
 app.get('/', (_req: Request, res: Response) => {

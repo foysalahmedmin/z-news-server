@@ -93,6 +93,11 @@ export const checkRedis = async (): Promise<boolean> => {
 };
 
 export const initializeRedis = async () => {
+  if (!redisEnabled) {
+    console.log('🔕 Redis disabled by configuration');
+    return;
+  }
+
   const redisConnected = await connectRedis();
   if (redisConnected) {
     const isHealthy = await checkRedis();
