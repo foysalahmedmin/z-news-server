@@ -8,6 +8,7 @@ import { pubClient, subClient } from '../redis';
 
 export let io: IOServer;
 
+// Socket.io
 export const socket = async (server: http.Server) => {
   io = new IOServer(server, {
     cors: {
@@ -22,14 +23,21 @@ export const socket = async (server: http.Server) => {
     },
   });
 
-  try {
-    await pubClient.connect();
-    await subClient.connect();
-  } catch (err) {
-    console.error('❌ Redis connection error:', err);
-  }
+  const connectRedisAdapter = async () => {
+    try {
+      if (!pubClient.isOpen) await pubClient.connect();
+      if (!subClient.isOpen) await subClient.connect();
 
-  io.adapter(createAdapter(pubClient, subClient));
+      io.adapter(createAdapter(pubClient, subClient));
+      console.log('✅ Redis adapter connected');
+    } catch (err) {
+      console.warn('⚠️ Redis adapter connection failed:', err);
+
+      setTimeout(connectRedisAdapter, 10000);
+    }
+  };
+
+  connectRedisAdapter();
 
   io.on('connection', (socket: Socket) => {
     const token = socket.handshake.auth?.token;
