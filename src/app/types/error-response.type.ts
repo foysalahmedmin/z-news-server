@@ -1,4 +1,4 @@
-export type TSources = {
+export type TErrorSources = {
   path: string | number;
   message: string;
 }[];
@@ -6,5 +6,5 @@ export type TSources = {
 export type TErrorResponse = {
   status: number;
   message: string;
-  sources: TSources;
+  sources: TErrorSources;
 };

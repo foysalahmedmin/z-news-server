@@ -1,8 +1,8 @@
 import { MongoServerError } from 'mongodb';
-import { TErrorResponse, TSources } from '../types/error-response.type';
+import { TErrorResponse, TErrorSources } from '../types/error-response.type';
 
 const handleDuplicateError = (err: MongoServerError): TErrorResponse => {
-  const sources: TSources = Object.entries(err.keyValue ?? {}).map(
+  const sources: TErrorSources = Object.entries(err.keyValue ?? {}).map(
     ([key, value]) => ({
       path: key,
       message: `${value} already exists`,

@@ -12,7 +12,7 @@ export const createCategory = async (data: TCategory): Promise<TCategory> => {
 };
 
 export const getCategory = async (id: string): Promise<TCategory> => {
-  const result = await Category.findById(id);
+  const result = await Category.findById(id).populate('children');
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'Category not found');
   }

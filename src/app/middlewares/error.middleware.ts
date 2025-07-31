@@ -6,12 +6,12 @@ import handleCastError from '../errors/handleCastError';
 import handleDuplicateError from '../errors/handleDuplicateError';
 import handleValidationError from '../errors/handleValidationError';
 import handleZodError from '../errors/handleZodError';
-import { TSources } from '../types/error-response.type';
+import { TErrorSources } from '../types/error-response.type';
 
 const error: ErrorRequestHandler = (error, _req, res, _next) => {
   let status = 500;
   let message = 'Something went wrong!';
-  let sources: TSources = [
+  let sources: TErrorSources = [
     {
       path: '',
       message: 'Something went wrong',

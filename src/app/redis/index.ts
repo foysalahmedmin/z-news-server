@@ -2,7 +2,7 @@ import { createClient } from 'redis';
 import config from '../config';
 
 const redisUrl = config.redis_url || 'redis://localhost:6379';
-const redisEnabled = config.redis_enabled !== false; // Default true, unless explicitly disabled
+const redisEnabled = config.redis_enabled !== false;
 
 // Redis client options with timeout and retry settings
 const redisOptions = {
@@ -11,8 +11,8 @@ const redisOptions = {
     connectTimeout: 5000, // 5 seconds timeout
     lazyConnect: true, // Don't auto-connect
     reconnectStrategy: (retries: number) => {
-      console.log(`🔄 Redis reconnection attempt: ${retries + 1}`);
-      if (retries > 5) {
+      console.log(`🔄 Redis reconnection attempt: ${retries}`);
+      if (retries > 0) {
         console.error('❌ Max Redis reconnection attempts reached');
         return false; // Stop retrying
       }
