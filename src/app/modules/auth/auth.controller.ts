@@ -30,6 +30,7 @@ export const signup = catchAsync(async (req, res) => {
   const image = files.image?.[0]?.filename || '';
   const payload = {
     ...req.body,
+    role: 'user',
     image,
   };
   const { refresh_token, access_token, info } =
