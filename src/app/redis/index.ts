@@ -29,38 +29,37 @@ const cacheClient = createClient(redisOptions);
 const pubClient = createClient(redisOptions);
 const subClient = pubClient.duplicate();
 
-// Enhanced error handling
-cacheClient.on('error', (err) => {
-  console.warn('⚠️ CacheClient Redis error:', err.message);
-});
+// Redis client event listeners
+(function () {
+  if (!redisEnabled) {
+    console.log('🔕 Redis disabled by configuration');
+    return;
+  }
 
-cacheClient.on('connect', () => {
-  console.log('✅ CacheClient Redis connected');
-});
+  const clients = [
+    { client: cacheClient, name: 'CacheClient' },
+    { client: pubClient, name: 'PubClient' },
+    { client: subClient, name: 'SubClient' },
+  ];
 
-cacheClient.on('ready', () => {
-  console.log('🟢 CacheClient Redis ready');
-});
+  clients.forEach(({ client, name }) => {
+    client.on('error', (err) => {
+      console.warn(`⚠️ ${name} Redis error:`, err.message);
+    });
 
-cacheClient.on('end', () => {
-  console.log('🔴 CacheClient Redis connection ended');
-});
+    client.on('connect', () => {
+      console.log(`✅ ${name} Redis connected`);
+    });
 
-pubClient.on('error', (err) => {
-  console.warn('⚠️ PubClient Redis error:', err.message);
-});
+    client.on('ready', () => {
+      console.log(`🟢 ${name} Redis ready`);
+    });
 
-pubClient.on('connect', () => {
-  console.log('✅ PubClient Redis connected');
-});
-
-subClient.on('error', (err) => {
-  console.warn('⚠️ SubClient Redis error:', err.message);
-});
-
-subClient.on('connect', () => {
-  console.log('✅ SubClient Redis connected');
-});
+    client.on('end', () => {
+      console.log(`🔴 ${name} Redis connection ended`);
+    });
+  });
+})();
 
 // Helper function to safely connect Redis
 export const connectRedis = async () => {
@@ -83,6 +82,7 @@ export const connectRedis = async () => {
 // Helper function to check Redis connectivity
 export const checkRedis = async (): Promise<boolean> => {
   if (!redisEnabled) {
+    console.log('🔕 Redis disabled by configuration');
     return false;
   }
 
