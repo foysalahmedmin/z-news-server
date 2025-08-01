@@ -8,112 +8,255 @@ import { pubClient, subClient } from '../redis';
 
 export let io: IOServer;
 
-// Socket.io
-export const initializeSocket = async (server: http.Server) => {
-  io = new IOServer(server, {
-    cors: {
-      origin: [
-        'http://localhost:5173',
-        'http://localhost:5174',
-        'http://localhost:5175',
-        'http://localhost:8080',
-        'http://localhost:8081',
-      ],
-      methods: ['GET', 'POST'],
-    },
-  });
+// Initialize Socket.io server
+export const initializeSocket = async (
+  server: http.Server,
+): Promise<IOServer> => {
+  try {
+    // Create Socket.io server
+    io = new IOServer(server, {
+      cors: {
+        origin: [
+          'http://localhost:5173',
+          'http://localhost:5174',
+          'http://localhost:5175',
+          'http://localhost:8080',
+          'http://localhost:8081',
+        ],
+        methods: ['GET', 'POST'],
+        credentials: true,
+      },
+      pingTimeout: 60000,
+      pingInterval: 25000,
+    });
 
-  const connectRedisAdapter = async () => {
-    // Check if Redis is enabled in config
+    // Setup Redis adapter if available
+    await setupRedisAdapter();
+
+    // Setup authentication middleware
+    setupAuthMiddleware();
+
+    // Setup connection handlers
+    setupConnectionHandlers();
+
+    console.log(`🔌 Socket.io initialized - PID: ${process.pid}`);
+    return io;
+  } catch (error) {
+    console.error('❌ Socket.io initialization failed:', error);
+    throw error;
+  }
+};
+
+// Setup Redis adapter for clustering
+const setupRedisAdapter = async (): Promise<void> => {
+  try {
     if (!config.redis_enabled) {
-      console.log('🔕 Redis adapter disabled by configuration');
+      console.log('🔕 Redis disabled by configuration');
       return;
     }
 
-    try {
-      // Check if Redis is available before connecting
-      const pubConnected =
-        pubClient.isOpen || (await connectWithTimeout(pubClient, 5000));
-      const subConnected =
-        subClient.isOpen || (await connectWithTimeout(subClient, 5000));
-
-      if (pubConnected && subConnected) {
-        io.adapter(createAdapter(pubClient, subClient));
-        console.log('✅ Redis adapter connected successfully');
-      } else {
-        console.warn(
-          '⚠️ Redis not available, running without adapter (single instance mode)',
-        );
-      }
-    } catch (err) {
-      console.warn('⚠️ Redis adapter connection failed:', err);
+    if (pubClient && subClient && pubClient.isOpen && subClient.isOpen) {
+      io.adapter(createAdapter(pubClient, subClient));
+      console.log('✅ Socket.io Redis adapter enabled (clustering support)');
+    } else {
       console.log(
-        '📝 Socket.io running in single instance mode (no clustering)',
+        'ℹ️ Socket.io running in single-instance mode (Redis unavailable)',
       );
     }
-  };
+  } catch (error) {
+    console.warn(
+      '⚠️ Redis adapter setup failed:',
+      error instanceof Error ? error.message : 'Unknown error',
+    );
+    console.log('ℹ️ Socket.io running in single-instance mode');
+  }
+};
 
-  // Helper function to connect with timeout
-  const connectWithTimeout = async (
-    client: any,
-    timeout: number,
-  ): Promise<boolean> => {
+// Setup authentication middleware
+const setupAuthMiddleware = (): void => {
+  io.use((socket, next) => {
     try {
-      if (client.isOpen) return true;
+      const token = socket.handshake.auth?.token;
 
-      await Promise.race([
-        client.connect(),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Connection timeout')), timeout),
-        ),
-      ]);
-      return true;
-    } catch (error) {
-      console.warn(`Redis client connection failed: ${error}`);
-      return false;
-    }
-  };
-
-  // Try to setup Redis adapter, but don't fail if Redis is unavailable
-  await connectRedisAdapter();
-
-  // Socket.io event listeners
-  io.on('connection', (socket: Socket) => {
-    const token = socket.handshake.auth?.token;
-    const decoded = verifyToken(token);
-
-    if (decoded) {
-      const { _id, role } = decoded;
-      if (_id && role) {
-        socket.join(_id);
-        socket.join(`role:${role}`);
-        console.log(
-          `✅ Authenticated socket | ${socket.id} | user: ${_id}, role: ${role}`,
-        );
+      if (token) {
+        const decoded = verifyToken(token);
+        if (decoded) {
+          socket.data.user = decoded;
+          console.log(
+            `🔐 Authenticated socket connection: ${socket.id} (User: ${decoded._id})`,
+          );
+        } else {
+          console.log(`🔒 Invalid token for socket: ${socket.id}`);
+        }
+      } else {
+        console.log(`🟡 Guest connection: ${socket.id}`);
       }
-    } else {
-      console.log(`🟡 Guest/unauthenticated socket | ${socket.id}`);
+
+      next();
+    } catch (error) {
+      console.error('❌ Socket authentication error:', error);
+      next(new Error('Authentication failed'));
+    }
+  });
+};
+
+// Setup connection event handlers
+const setupConnectionHandlers = (): void => {
+  io.on('connection', (socket: Socket) => {
+    handleConnection(socket);
+  });
+};
+
+// Handle individual socket connections
+const handleConnection = (socket: Socket): void => {
+  const user = socket.data.user as TJwtPayload | undefined;
+
+  // Join user-specific rooms if authenticated
+  if (user?._id) {
+    socket.join(`user:${user._id}`);
+
+    if (user.role) {
+      socket.join(`role:${user.role}`);
     }
 
-    socket.on('disconnect', () => {
-      console.log(`🔌 Socket disconnected | ${socket.id}`);
-    });
+    console.log(
+      `✅ User joined rooms - Socket: ${socket.id}, User: ${user._id}, Role: ${user.role || 'none'}`,
+    );
+  }
+
+  // Handle custom events
+  setupSocketEvents(socket);
+
+  // Handle disconnection
+  socket.on('disconnect', (reason) => {
+    console.log(`🔌 Socket disconnected: ${socket.id} (${reason})`);
   });
 
+  // Handle connection errors
+  socket.on('error', (error) => {
+    console.error(`❌ Socket error: ${socket.id}`, error);
+  });
+};
+
+// Setup custom socket event handlers
+const setupSocketEvents = (socket: Socket): void => {
+  // Example: Join custom room
+  socket.on('join-room', (roomId: string) => {
+    if (typeof roomId === 'string' && roomId.length > 0) {
+      socket.join(roomId);
+      socket.emit('room-joined', roomId);
+      console.log(`📡 Socket ${socket.id} joined room: ${roomId}`);
+    }
+  });
+
+  // Example: Leave custom room
+  socket.on('leave-room', (roomId: string) => {
+    if (typeof roomId === 'string') {
+      socket.leave(roomId);
+      socket.emit('room-left', roomId);
+      console.log(`📡 Socket ${socket.id} left room: ${roomId}`);
+    }
+  });
+
+  // Example: Send message to room
+  socket.on('room-message', (data: { roomId: string; message: string }) => {
+    if (data.roomId && data.message) {
+      socket.to(data.roomId).emit('room-message', {
+        from: socket.id,
+        message: data.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+};
+
+// JWT token verification
+const verifyToken = (token: string): TJwtPayload | null => {
+  try {
+    if (!token || !config.jwt_access_secret) {
+      return null;
+    }
+
+    return jwt.verify(token, config.jwt_access_secret) as TJwtPayload;
+  } catch (error) {
+    console.warn(
+      '⚠️ JWT verification failed:',
+      error instanceof Error ? error.message : 'Invalid token',
+    );
+    return null;
+  }
+};
+
+// Utility functions for emitting events
+
+// Emit to specific user
+export const emitToUser = (userId: string, event: string, data: any): void => {
+  if (io) {
+    io.to(`user:${userId}`).emit(event, data);
+  }
+};
+
+// Emit to users with specific role
+export const emitToRole = (role: string, event: string, data: any): void => {
+  if (io) {
+    io.to(`role:${role}`).emit(event, data);
+  }
+};
+
+// Emit to custom room
+export const emitToRoom = (roomId: string, event: string, data: any): void => {
+  if (io) {
+    io.to(roomId).emit(event, data);
+  }
+};
+
+// Broadcast to all connected clients
+export const broadcast = (event: string, data: any): void => {
+  if (io) {
+    io.emit(event, data);
+  }
+};
+
+// Get Socket.io instance (throws if not initialized)
+export const getIO = (): IOServer => {
+  if (!io) {
+    throw new Error(
+      'Socket.io not initialized. Call initializeSocket() first.',
+    );
+  }
   return io;
 };
 
-// JWT verification
-function verifyToken(token: string): TJwtPayload | null {
-  try {
-    return jwt.verify(token, config.jwt_access_secret) as TJwtPayload;
-  } catch {
-    return null;
-  }
-}
+// Get connection count
+export const getConnectionCount = async (): Promise<number> => {
+  if (!io) return 0;
 
-// Optional: Getter for global io access
-export const getIO = (): IOServer => {
-  if (!io) throw new Error('Socket.IO not initialized');
-  return io;
+  try {
+    const sockets = await io.fetchSockets();
+    return sockets.length;
+  } catch (error) {
+    console.warn('⚠️ Failed to get connection count:', error);
+    return 0;
+  }
+};
+
+// Close all connections gracefully
+export const closeConnections = async (): Promise<void> => {
+  if (io) {
+    console.log('🔌 Closing all socket connections...');
+
+    try {
+      const sockets = await io.fetchSockets();
+      console.log(`📊 Closing ${sockets.length} active connections`);
+
+      // Emit shutdown notice to all clients
+      io.emit('server-shutdown', { message: 'Server is shutting down' });
+
+      // Close server
+      io.close();
+      console.log('✅ Socket.io server closed');
+    } catch (error) {
+      console.warn('⚠️ Error closing socket connections:', error);
+    }
+  }
 };

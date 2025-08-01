@@ -10,6 +10,7 @@ export default {
   port: process.env.PORT as string,
   redis_enabled: process.env.REDIS_ENABLED === 'false' ? false : true,
   redis_url: process.env.REDIS_URL as string,
+  redis_password: process.env.REDIS_PASSWORD as string,
   database_url: process.env.DATABASE_URL as string,
   front_end_url: process.env.FRONT_END_URL as string,
   bcrypt_salt_rounds: process.env.BCRYPT_SALT_ROUNDS as string,

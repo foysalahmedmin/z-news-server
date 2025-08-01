@@ -27,13 +27,6 @@ const main = async (): Promise<void> => {
       console.warn(`⚠️ Redis setup failed - PID: ${process.pid}`, redisErr);
     }
 
-    try {
-      await cacheClient.connect();
-      console.log(`🔌 Redis (cache) connected - PID: ${process.pid}`);
-    } catch (redisErr) {
-      console.warn(`⚠️ Redis not available - PID: ${process.pid}`, redisErr);
-    }
-
     server = http.createServer(app);
 
     try {
