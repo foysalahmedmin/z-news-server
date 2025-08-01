@@ -10,6 +10,30 @@ import { TRole } from '../modules/user/user.type';
 import { cacheClient } from '../redis';
 import catchAsync from '../utils/catchAsync';
 
+const getUser = async (_id: string) => {
+  const redisKey = `auth:user:${_id}`;
+
+  if (!config.redis_enabled) return await User.isUserExist(_id);
+
+  try {
+    const cachedUser = await cacheClient.get(redisKey);
+    if (cachedUser) return JSON.parse(cachedUser);
+
+    const user = await User.isUserExist(_id);
+    if (user) {
+      try {
+        await cacheClient.set(redisKey, JSON.stringify(user), { EX: 30 * 60 });
+      } catch (err) {
+        console.warn('Redis set failed:', err);
+      }
+    }
+    return user;
+  } catch (err) {
+    console.warn('Redis get failed, falling back to DB:', err);
+    return await User.isUserExist(_id);
+  }
+};
+
 const auth = (...roles: (TRole | 'guest')[]) => {
   return catchAsync(
     async (req: Request, _res: Response, next: NextFunction) => {
@@ -34,48 +58,24 @@ const auth = (...roles: (TRole | 'guest')[]) => {
         throw new AppError(httpStatus.UNAUTHORIZED, 'Invalid token.');
       }
 
-      const redisKey = `auth:user:${_id}`;
-      let user;
-
-      try {
-        const cachedUser = await cacheClient.get(redisKey);
-
-        if (cachedUser) {
-          user = JSON.parse(cachedUser);
-        } else {
-          user = await User.isUserExist(_id);
-          if (!user) throw new AppError(httpStatus.NOT_FOUND, 'User not found');
-
-          try {
-            await cacheClient.set(redisKey, JSON.stringify(user), {
-              EX: 30 * 60,
-            });
-          } catch (cacheErr) {
-            console.warn('Redis set failed:', cacheErr);
-          }
-        }
-      } catch (redisErr) {
-        console.warn('Redis get failed, falling back to DB:', redisErr);
-        user = await User.isUserExist(_id);
-        if (!user) throw new AppError(httpStatus.NOT_FOUND, 'User not found');
-      }
+      const user = await getUser(_id);
 
       if (user.is_deleted) {
         throw new AppError(httpStatus.FORBIDDEN, 'User is deleted');
       }
 
-      if (user.status === 'blocked') {
+      if (user?.status === 'blocked') {
         throw new AppError(httpStatus.FORBIDDEN, 'User is blocked');
       }
 
-      if (user.password_changed_at && user.isPasswordChanged(iat)) {
+      if (user?.password_changed_at && user?.isPasswordChanged(iat)) {
         throw new AppError(
           httpStatus.UNAUTHORIZED,
           'Password recently changed',
         );
       }
 
-      if (!roles.includes(role)) {
+      if (!roles.includes(role) || !roles.includes(user?.role)) {
         throw new AppError(httpStatus.UNAUTHORIZED, 'Access denied');
       }
 
