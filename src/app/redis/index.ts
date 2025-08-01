@@ -1,12 +1,11 @@
 import { createClient, RedisClientOptions } from 'redis';
 import config from '../config';
 
-const redisUrl = config.redis_url || 'redis://localhost:6379';
-const redisEnabled = config.redis_enabled !== false;
+const url = config.redis_url || 'redis://localhost:6379';
 
 // Redis client options with timeout and retry settings
 const redisOptions: RedisClientOptions = {
-  url: redisUrl,
+  url: url,
   socket: {
     connectTimeout: 5000, // 5 seconds timeout
     reconnectStrategy: (retries: number) => {
@@ -31,7 +30,7 @@ const subClient = pubClient.duplicate();
 
 // Redis client event listeners
 (function () {
-  if (!redisEnabled) {
+  if (!config.redis_enabled) {
     console.log('🔕 Redis disabled by configuration');
     return;
   }
@@ -63,7 +62,7 @@ const subClient = pubClient.duplicate();
 
 // Helper function to safely connect Redis
 export const connectRedis = async () => {
-  if (!redisEnabled) {
+  if (!config.redis_enabled) {
     console.log('🔕 Redis disabled by configuration');
     return false;
   }
@@ -81,7 +80,7 @@ export const connectRedis = async () => {
 
 // Helper function to check Redis connectivity
 export const checkRedis = async (): Promise<boolean> => {
-  if (!redisEnabled) {
+  if (!config.redis_enabled) {
     console.log('🔕 Redis disabled by configuration');
     return false;
   }
@@ -96,7 +95,7 @@ export const checkRedis = async (): Promise<boolean> => {
 };
 
 export const initializeRedis = async () => {
-  if (!redisEnabled) {
+  if (!config.redis_enabled) {
     console.log('🔕 Redis disabled by configuration');
     return;
   }
