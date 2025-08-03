@@ -3,12 +3,16 @@ import mongoose, { Document, Model, Types } from 'mongoose';
 export type TStatus = 'active' | 'inactive';
 
 export type TCategory = {
+  icon?: string;
+  thumbnail?: string;
   name: string;
-  icon: string;
   slug: string;
+  description?: string;
   sequence: number;
   status: TStatus;
+  tags: string[];
   category?: mongoose.Types.ObjectId | null;
+  layout?: string;
   is_deleted?: boolean;
 };
 

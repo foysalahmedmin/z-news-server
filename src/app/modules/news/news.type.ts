@@ -8,7 +8,7 @@ export type TNews = {
   sequence: number;
   title: string;
   slug: string;
-  summary?: string;
+  description?: string;
   content: string;
   thumbnail?: string;
   images?: string[];

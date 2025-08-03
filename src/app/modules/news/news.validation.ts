@@ -29,7 +29,7 @@ export const createNewsValidationSchema = z.object({
       .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
         message: 'Slug must be lowercase and kebab-case',
       }),
-    summary: z.string().max(300).optional(),
+    description: z.string().max(300).optional(),
     content: z.string().min(1),
     tags: z.array(z.string().min(1)).optional(),
     category: idSchema.optional(),
@@ -42,7 +42,7 @@ export const createNewsValidationSchema = z.object({
     news_headline: z
       .object({
         title: z.string().trim().min(1),
-        summary: z.string().max(300).optional(),
+        description: z.string().max(300).optional(),
         tags: z.array(z.string().min(1)).optional(),
         category: idSchema.optional(),
         status: statusEnum.optional(),
@@ -53,7 +53,7 @@ export const createNewsValidationSchema = z.object({
     news_break: z
       .object({
         title: z.string().trim().min(1),
-        summary: z.string().max(300).optional(),
+        description: z.string().max(300).optional(),
         tags: z.array(z.string().min(1)).optional(),
         category: idSchema.optional(),
         status: statusEnum.optional(),
@@ -83,7 +83,7 @@ export const updateSelfNewsValidationSchema = z.object({
         message: 'Slug must be lowercase and kebab-case',
       })
       .optional(),
-    summary: z.string().max(300).optional(),
+    description: z.string().max(300).optional(),
     content: z.string().min(1).optional(),
     tags: z.array(z.string().min(1)).optional(),
     category: idSchema.optional(),
@@ -127,7 +127,7 @@ export const updateNewsValidationSchema = z.object({
         message: 'Slug must be lowercase and kebab-case',
       })
       .optional(),
-    summary: z.string().max(300).optional(),
+    description: z.string().max(300).optional(),
     content: z.string().min(1).optional(),
     tags: z.array(z.string().min(1)).optional(),
     category: idSchema.optional(),

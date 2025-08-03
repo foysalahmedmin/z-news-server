@@ -5,7 +5,7 @@ export type TStatus = 'draft' | 'pending' | 'published' | 'archived';
 export type TNewsBreak = {
   sequence: number;
   title: string;
-  summary?: string;
+  description?: string;
   tags?: string[];
   category: Types.ObjectId;
   author: Types.ObjectId;

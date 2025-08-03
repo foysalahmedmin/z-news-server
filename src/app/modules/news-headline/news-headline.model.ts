@@ -18,7 +18,7 @@ const newsHeadlineSchema = new Schema<TNewsHeadlineDocument>(
       trim: true,
     },
 
-    summary: {
+    description: {
       type: String,
       trim: true,
       maxlength: 300,

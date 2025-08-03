@@ -21,7 +21,7 @@ const newsSchema = new Schema<TNewsDocument>(
       lowercase: true,
     },
 
-    summary: {
+    description: {
       type: String,
       trim: true,
       maxlength: 300,

@@ -56,7 +56,7 @@ export const getSelfNewsHeadlines = async (
     NewsHeadline.find({ author: user._id }),
     query,
   )
-    .search(['title', 'summary', 'content'])
+    .search(['title', 'description', 'content'])
     .filter()
     .sort()
     .paginate()
@@ -77,7 +77,7 @@ export const getNewsHeadlines = async (
     NewsHeadline.find(),
     query,
   )
-    .search(['title', 'summary', 'content'])
+    .search(['title', 'description', 'content'])
     .filter()
     .sort()
     .paginate()
@@ -91,7 +91,7 @@ export const getNewsHeadlines = async (
 export const updateSelfNewsHeadline = async (
   user: TJwtPayload,
   id: string,
-  payload: Partial<Pick<TNewsHeadline, 'title' | 'summary'>>,
+  payload: Partial<Pick<TNewsHeadline, 'title' | 'description'>>,
 ): Promise<TNewsHeadline> => {
   const data = await NewsHeadline.findOne({ _id: id, author: user._id }).lean();
   if (!data) {
@@ -115,7 +115,7 @@ export const updateSelfNewsHeadline = async (
 
 export const updateNewsHeadline = async (
   id: string,
-  payload: Partial<Pick<TNewsHeadline, 'title' | 'summary'>>,
+  payload: Partial<Pick<TNewsHeadline, 'title' | 'description'>>,
 ): Promise<TNewsHeadline> => {
   const data = await NewsHeadline.findById(id).lean();
   if (!data) {

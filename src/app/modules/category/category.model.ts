@@ -27,6 +27,11 @@ const categorySchema = new Schema<TCategoryDocument>(
       minlength: [1, 'Code must be at least 1 character'],
       maxlength: [20, 'Code cannot exceed 20 characters'],
     },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: [500, 'Description cannot exceed 500 characters'],
+    },
     sequence: {
       type: Number,
       required: [true, 'Sequence is required'],
@@ -37,6 +42,14 @@ const categorySchema = new Schema<TCategoryDocument>(
       type: String,
       enum: ['active', 'inactive'],
       default: 'active',
+    },
+    tags: {
+      type: [String],
+      default: [],
+    },
+    layout: {
+      type: String,
+      default: 'default',
     },
     is_deleted: { type: Boolean, default: false, select: false },
   },

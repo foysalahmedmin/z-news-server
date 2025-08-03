@@ -56,7 +56,7 @@ export const getSelfNewsBreaks = async (
     NewsBreak.find({ author: user._id }),
     query,
   )
-    .search(['title', 'summary', 'content'])
+    .search(['title', 'description', 'content'])
     .filter()
     .sort()
     .paginate()
@@ -74,7 +74,7 @@ export const getNewsBreaks = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const NewsQuery = new AppQuery<Document, TNewsBreak>(NewsBreak.find(), query)
-    .search(['title', 'summary', 'content'])
+    .search(['title', 'description', 'content'])
     .filter()
     .sort()
     .paginate()
@@ -88,7 +88,7 @@ export const getNewsBreaks = async (
 export const updateSelfNewsBreak = async (
   user: TJwtPayload,
   id: string,
-  payload: Partial<Pick<TNewsBreak, 'title' | 'summary'>>,
+  payload: Partial<Pick<TNewsBreak, 'title' | 'description'>>,
 ): Promise<TNewsBreak> => {
   const data = await NewsBreak.findOne({ _id: id, author: user._id }).lean();
   if (!data) {
@@ -112,7 +112,7 @@ export const updateSelfNewsBreak = async (
 
 export const updateNewsBreak = async (
   id: string,
-  payload: Partial<Pick<TNewsBreak, 'title' | 'summary'>>,
+  payload: Partial<Pick<TNewsBreak, 'title' | 'description'>>,
 ): Promise<TNewsBreak> => {
   const data = await NewsBreak.findById(id).lean();
   if (!data) {

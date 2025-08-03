@@ -20,11 +20,18 @@ export const createCategoryValidationSchema = z.object({
       .string()
       .min(1, 'Slug is required')
       .max(50, 'Slug cannot exceed 50 characters'),
+    description: z
+      .string()
+      .trim()
+      .max(500, 'Description cannot exceed 500 characters')
+      .optional(),
     sequence: z
       .number({ invalid_type_error: 'Sequence must be a number' })
       .int('Sequence must be an integer')
       .nonnegative('Sequence must be 0 or greater'),
     status: statusEnum.optional(),
+    tags: z.array(z.string().min(1)).optional(),
+    layout: z.string().optional().default('default').optional(),
   }),
 });
 
@@ -45,12 +52,19 @@ export const updateCategoryValidationSchema = z.object({
       .min(1, 'Slug is required')
       .max(50, 'Slug cannot exceed 50 characters')
       .optional(),
+    description: z
+      .string()
+      .trim()
+      .max(500, 'Description cannot exceed 500 characters')
+      .optional(),
     sequence: z
       .number({ invalid_type_error: 'Sequence must be a number' })
       .int('Sequence must be an integer')
       .nonnegative('Sequence must be 0 or greater')
       .optional(),
     status: statusEnum.optional(),
+    tags: z.array(z.string().min(1)).optional(),
+    layout: z.string().optional().default('default').optional(),
   }),
 });
 

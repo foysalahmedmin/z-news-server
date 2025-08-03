@@ -15,7 +15,7 @@ export const createNewsHeadlineValidationSchema = z.object({
       .nonnegative('Sequence must be 0 or greater')
       .optional(),
     title: z.string().trim().min(1),
-    summary: z.string().max(300).optional(),
+    description: z.string().max(300).optional(),
     tags: z.array(z.string().min(1)).optional(),
     category: idSchema.optional(),
     news: idSchema.optional(),
@@ -36,7 +36,7 @@ export const updateSelfNewsHeadlineValidationSchema = z.object({
       .nonnegative('Sequence must be 0 or greater')
       .optional(),
     title: z.string().trim().min(1),
-    summary: z.string().max(300).optional(),
+    description: z.string().max(300).optional(),
     tags: z.array(z.string().min(1)).optional(),
     category: idSchema.optional(),
     news: idSchema.optional(),
@@ -69,7 +69,7 @@ export const updateNewsHeadlineValidationSchema = z.object({
       .nonnegative('Sequence must be 0 or greater')
       .optional(),
     title: z.string().trim().min(1),
-    summary: z.string().max(300).optional(),
+    description: z.string().max(300).optional(),
     tags: z.array(z.string().min(1)).optional(),
     category: idSchema.optional(),
     news: idSchema.optional(),

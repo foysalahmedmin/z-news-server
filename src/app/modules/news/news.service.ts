@@ -40,7 +40,7 @@ export const createNews = async (
       const {
         sequence,
         title,
-        summary,
+        description,
         tags,
         category,
         published_at,
@@ -54,7 +54,7 @@ export const createNews = async (
             author: user._id,
             news: created_news._id,
             title: title || created_news.title,
-            summary: summary || created_news.summary,
+            description: description || created_news.description,
             tags: tags || created_news.tags,
             category: category || created_news.category,
             published_at: published_at || created_news.published_at,
@@ -70,7 +70,7 @@ export const createNews = async (
       const {
         sequence,
         title,
-        summary,
+        description,
         tags,
         category,
         published_at,
@@ -84,7 +84,7 @@ export const createNews = async (
             author: user._id,
             news: created_news._id,
             title: title || created_news.title,
-            summary: summary || created_news.summary,
+            description: description || created_news.description,
             tags: tags || created_news.tags,
             category: category || created_news.category,
             published_at: published_at || created_news.published_at,
@@ -182,7 +182,7 @@ export const getSelfBulkNews = async (
     ]),
     query,
   )
-    .search(['title', 'summary', 'content'])
+    .search(['title', 'description', 'content'])
     .filter()
     .sort()
     .paginate()
@@ -217,7 +217,7 @@ export const getBulkNews = async (
     ]),
     query,
   )
-    .search(['title', 'summary', 'content'])
+    .search(['title', 'description', 'content'])
     .filter()
     .sort()
     .paginate()
@@ -231,7 +231,7 @@ export const getBulkNews = async (
 export const updateSelfNews = async (
   user: TJwtPayload,
   id: string,
-  payload: Partial<Pick<TNews, 'title' | 'summary' | 'content'>>,
+  payload: Partial<Pick<TNews, 'title' | 'description' | 'content'>>,
 ): Promise<TNews> => {
   const data = await News.findOne({ _id: id, author: user._id }).lean();
   if (!data) {
@@ -255,7 +255,7 @@ export const updateSelfNews = async (
 
 export const updateNews = async (
   id: string,
-  payload: Partial<Pick<TNews, 'title' | 'summary' | 'content'>>,
+  payload: Partial<Pick<TNews, 'title' | 'description' | 'content'>>,
 ): Promise<TNews> => {
   const data = await News.findById(id).lean();
   if (!data) {

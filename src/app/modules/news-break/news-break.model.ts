@@ -18,7 +18,7 @@ const newsBreakSchema = new Schema<TNewsBreakDocument>(
       trim: true,
     },
 
-    summary: {
+    description: {
       type: String,
       trim: true,
       maxlength: 300,
