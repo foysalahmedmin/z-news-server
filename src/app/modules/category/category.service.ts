@@ -1,5 +1,5 @@
 import httpStatus from 'http-status';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
 import { Category } from './category.model';
@@ -50,36 +50,6 @@ export const getCategories = async (
   return result;
 };
 
-// export const getCategoryTree = async (
-//   categoryId: string | null = null,
-// ): Promise<{
-//   data: TCategoryTree[];
-//   meta: { total: number; page?: number; limit?: number };
-// }> => {
-//   const filter = categoryId
-//     ? { category: categoryId }
-//     : { category: { $not: { $type: 'objectId' } } };
-
-//   const categories = await Category.find(filter).lean();
-
-//   const data = await Promise.all(
-//     categories.map(async (cat) => {
-//       const childrenResult = await getCategoryTree(String(cat._id));
-//       return {
-//         ...cat,
-//         children: childrenResult.data,
-//       };
-//     }),
-//   );
-
-//   return {
-//     data,
-//     meta: {
-//       total: data.length,
-//     },
-//   };
-// };
-
 export const getCategoriesTree = async (
   categoryId?: string,
   query: { page?: number; limit?: number } = {},
@@ -124,6 +94,67 @@ export const getCategoriesTree = async (
     data: buildTree(rawRoots, uniqueNodes),
     meta: { total, page, limit },
   };
+};
+
+export const getCategoriesTreePublic = async (
+  categoryId?: string,
+  query: { page?: number | string; limit?: number | string } = {},
+): Promise<{
+  data: TCategoryTree[];
+  meta: { total: number; page: number; limit: number };
+}> => {
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
+
+  const baseMatch = {
+    status: 'active',
+    is_deleted: { $ne: true },
+  };
+
+  const matchStage =
+    categoryId && Types.ObjectId.isValid(categoryId)
+      ? { ...baseMatch, category: new Types.ObjectId(categoryId) }
+      : {
+          ...baseMatch,
+          $or: [{ category: { $exists: false } }, { category: null }],
+        };
+
+  try {
+    const total = await Category.countDocuments(matchStage);
+
+    const rawRoots = await Category.aggregate([
+      { $match: matchStage },
+      { $skip: (page - 1) * limit },
+      { $limit: limit }, // ✅ now a number
+      {
+        $graphLookup: {
+          from: 'categories',
+          startWith: '$_id',
+          connectFromField: '_id',
+          connectToField: 'category',
+          as: 'descendants',
+          restrictSearchWithMatch: baseMatch,
+          depthField: 'level',
+        },
+      },
+    ]);
+
+    const allNodes = rawRoots.flatMap((root) => [
+      root,
+      ...(root.descendants || []),
+    ]);
+    const uniqueNodes = Array.from(
+      new Map(allNodes.map((n) => [String(n._id), n])).values(),
+    );
+
+    return {
+      data: buildTree(rawRoots, uniqueNodes),
+      meta: { total, page, limit },
+    };
+  } catch (err) {
+    console.error('🔥 Error in getCategoriesTreePublic:', err);
+    throw new Error('Failed to fetch category tree');
+  }
 };
 
 export const updateCategory = async (
