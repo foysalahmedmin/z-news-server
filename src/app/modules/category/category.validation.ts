@@ -7,6 +7,14 @@ const idSchema = z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), {
 
 const statusEnum = z.enum(['active', 'inactive']);
 
+const seoSchema = z
+  .object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    keywords: z.array(z.string()).optional(),
+  })
+  .optional();
+
 export const createCategoryValidationSchema = z.object({
   body: z.object({
     category: idSchema.optional(),
@@ -32,6 +40,7 @@ export const createCategoryValidationSchema = z.object({
     status: statusEnum.optional(),
     tags: z.array(z.string().min(1)).optional(),
     layout: z.string().optional().default('default').optional(),
+    seo: seoSchema,
   }),
 });
 
@@ -65,6 +74,7 @@ export const updateCategoryValidationSchema = z.object({
     status: statusEnum.optional(),
     tags: z.array(z.string().min(1)).optional(),
     layout: z.string().optional().default('default').optional(),
+    seo: seoSchema,
   }),
 });
 

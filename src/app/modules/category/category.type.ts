@@ -13,6 +13,11 @@ export type TCategory = {
   tags: string[];
   category?: mongoose.Types.ObjectId | null;
   layout?: string;
+  seo?: {
+    title?: string;
+    description?: string;
+    keywords?: string[];
+  };
   is_deleted?: boolean;
 };
 
