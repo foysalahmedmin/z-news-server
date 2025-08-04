@@ -1,5 +1,4 @@
 import httpStatus from 'http-status';
-import { Document } from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
 import { TJwtPayload } from '../auth/auth.type';
@@ -52,7 +51,7 @@ export const getSelfNewsHeadlines = async (
   data: TNewsHeadline[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const NewsQuery = new AppQuery<Document, TNewsHeadline>(
+  const NewsQuery = new AppQuery<TNewsHeadline>(
     NewsHeadline.find({ author: user._id }),
     query,
   )
@@ -61,7 +60,7 @@ export const getSelfNewsHeadlines = async (
     .sort()
     .paginate()
     .fields()
-    .lean();
+    .tap((q) => q.lean());
 
   const result = await NewsQuery.execute();
   return result;
@@ -73,16 +72,13 @@ export const getNewsHeadlines = async (
   data: TNewsHeadline[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const NewsQuery = new AppQuery<Document, TNewsHeadline>(
-    NewsHeadline.find(),
-    query,
-  )
+  const NewsQuery = new AppQuery<TNewsHeadline>(NewsHeadline.find(), query)
     .search(['title', 'description', 'content'])
     .filter()
     .sort()
     .paginate()
     .fields()
-    .lean();
+    .tap((q) => q.lean());
 
   const result = await NewsQuery.execute();
   return result;

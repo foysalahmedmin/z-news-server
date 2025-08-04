@@ -1,5 +1,4 @@
 import httpStatus from 'http-status';
-import { Document } from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
 import { TJwtPayload } from '../auth/auth.type';
@@ -52,7 +51,7 @@ export const getSelfNewsBreaks = async (
   data: TNewsBreak[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const NewsQuery = new AppQuery<Document, TNewsBreak>(
+  const NewsQuery = new AppQuery<TNewsBreak>(
     NewsBreak.find({ author: user._id }),
     query,
   )
@@ -61,7 +60,7 @@ export const getSelfNewsBreaks = async (
     .sort()
     .paginate()
     .fields()
-    .lean();
+    .tap((q) => q.lean());
 
   const result = await NewsQuery.execute();
   return result;
@@ -73,13 +72,13 @@ export const getNewsBreaks = async (
   data: TNewsBreak[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const NewsQuery = new AppQuery<Document, TNewsBreak>(NewsBreak.find(), query)
+  const NewsQuery = new AppQuery<TNewsBreak>(NewsBreak.find(), query)
     .search(['title', 'description', 'content'])
     .filter()
     .sort()
     .paginate()
     .fields()
-    .lean();
+    .tap((q) => q.lean());
 
   const result = await NewsQuery.execute();
   return result;

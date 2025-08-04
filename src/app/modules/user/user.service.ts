@@ -1,5 +1,4 @@
 import httpStatus from 'http-status';
-import { Document } from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
 import { TJwtPayload } from '../auth/auth.type';
@@ -28,13 +27,13 @@ export const getUsers = async (
   data: TUser[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const userQuery = new AppQuery<Document, TUser>(User.find().lean(), query)
+  const userQuery = new AppQuery<TUser>(User.find().lean(), query)
     .search(['name', 'email'])
     .filter()
     .sort()
     .paginate()
     .fields()
-    .lean();
+    .tap((q) => q.lean());
 
   const result = await userQuery.execute();
 

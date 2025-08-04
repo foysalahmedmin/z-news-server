@@ -10,46 +10,42 @@ interface QueryParams {
   [key: string]: unknown;
 }
 
-type LeanOptions =
-  | boolean
-  | {
-      virtuals?: boolean;
-      getters?: boolean;
-      defaults?: boolean;
-    };
+// Internal type to extend the result type with Document properties
+type DocumentType<T> = T & Document;
 
-class AppQuery<T extends Document, R = T> {
-  public query: Query<T[], T>;
+class AppQuery<T = any> {
+  public query: Query<DocumentType<T>[], DocumentType<T>>;
   public queryParams: QueryParams;
-  public queryFilter: FilterQuery<T>;
-  private _page: number | null = null;
-  private _limit: number | null = null;
-  private _lean = false;
-  private _leanArguments: [LeanOptions?] = [];
+  public queryFilter: FilterQuery<DocumentType<T>>;
+  private pageNumber = 1;
+  private pageLimit = 0;
 
-  constructor(query: Query<T[], T>, queryParams: Record<string, unknown>) {
+  constructor(
+    query: Query<DocumentType<T>[], DocumentType<T>>,
+    queryParams: Record<string, unknown>,
+  ) {
     this.query = query;
     this.queryParams = queryParams;
     this.queryFilter = {};
   }
 
-  search(applicableFields: string[]) {
-    const search = this.queryParams?.search;
-    if (search) {
-      const searchCondition: FilterQuery<T> = {
+  search(applicableFields: (keyof T)[]): this {
+    const searchValue = this.queryParams.search;
+    if (searchValue) {
+      const searchConditions: FilterQuery<DocumentType<T>> = {
         $or: applicableFields.map((field) => ({
-          [field]: { $regex: search, $options: 'i' },
-        })) as FilterQuery<T>[],
+          [field]: { $regex: searchValue, $options: 'i' },
+        })) as FilterQuery<DocumentType<T>>[],
       };
-      this.queryFilter = { ...this.queryFilter, ...searchCondition };
-      this.query = this.query.find(searchCondition);
+      this.queryFilter = { ...this.queryFilter, ...searchConditions };
+      this.query = this.query.find(searchConditions);
     }
     return this;
   }
 
-  filter(applicableFields?: string[]) {
+  filter(applicableFields?: (keyof T)[]): this {
     const queryObj = { ...this.queryParams };
-    const excludeFields = [
+    const excludedFields = [
       'search',
       'sort',
       'limit',
@@ -57,102 +53,107 @@ class AppQuery<T extends Document, R = T> {
       'fields',
       'is_count_only',
     ];
-    excludeFields.forEach((el) => delete queryObj[el]);
+    excludedFields.forEach((field) => delete queryObj[field]);
 
     if (applicableFields?.length) {
       Object.keys(queryObj).forEach((key) => {
-        if (!applicableFields.includes(key)) {
+        if (!applicableFields.includes(key as keyof T)) {
           delete queryObj[key];
         }
       });
     }
 
-    this.queryFilter = { ...this.queryFilter, ...(queryObj as FilterQuery<T>) };
-    this.query = this.query.find(queryObj as FilterQuery<T>);
+    const filterQuery = queryObj as FilterQuery<DocumentType<T>>;
+    this.queryFilter = { ...this.queryFilter, ...filterQuery };
+    this.query = this.query.find(filterQuery);
     return this;
   }
 
-  sort(applicableFields?: string[]) {
-    const rawSort = (this.queryParams?.sort as string) || '';
+  sort(applicableFields?: (keyof T)[]): this {
+    const rawSort = this.queryParams.sort ?? '';
     let fields = rawSort.split(',').filter(Boolean);
 
     if (applicableFields?.length) {
       fields = fields.filter((field) => {
-        const plainField = field.startsWith('-') ? field.slice(1) : field;
-        return applicableFields.includes(plainField);
+        const fieldName = field.startsWith('-') ? field.slice(1) : field;
+        return applicableFields.includes(fieldName as keyof T);
       });
     }
 
-    const sortString = fields.length > 0 ? fields.join(' ') : '-createdAt';
-    this.query = this.query.sort(sortString);
+    const sortOrder = fields.length > 0 ? fields.join(' ') : '-createdAt';
+    this.query = this.query.sort(sortOrder);
     return this;
   }
 
-  paginate() {
-    const hasLimit = 'limit' in this.queryParams;
-    const hasPage = 'page' in this.queryParams;
+  paginate(): this {
+    const { page, limit } = this.queryParams;
 
-    if (hasLimit && hasPage) {
-      this._page = Number(this.queryParams.page) || 1;
-      this._limit = Number(this.queryParams.limit) || 10;
-      const skip = (this._page - 1) * this._limit;
-      this.query = this.query.skip(skip).limit(this._limit);
+    if (limit && page) {
+      this.pageNumber = Number(page) || 1;
+      this.pageLimit = Number(limit) || 10;
+      const skip = (this.pageNumber - 1) * this.pageLimit;
+      this.query = this.query.skip(skip).limit(this.pageLimit);
     }
 
     return this;
   }
 
-  fields(applicableFields?: string[]) {
-    const rawFields = (this.queryParams?.fields as string) || '';
-    let fields = rawFields.split(',').filter(Boolean);
+  fields(applicableFields?: (keyof T)[]): this {
+    const rawFields = this.queryParams.fields ?? '';
+    let selectedFields = rawFields.split(',').filter(Boolean);
 
     if (applicableFields?.length) {
-      fields = fields.filter((field) => {
-        const cleanField = field.startsWith('-') ? field.slice(1) : field;
-        return applicableFields.includes(cleanField);
+      selectedFields = selectedFields.filter((field) => {
+        const fieldName = field.startsWith('-') ? field.slice(1) : field;
+        return applicableFields.includes(fieldName as keyof T);
       });
     }
 
-    const parseFields =
-      fields.length > 0
-        ? fields.join(' ')
-        : applicableFields?.join(' ') || '-__v';
-    this.query = this.query.select(parseFields);
+    const fieldSelection =
+      selectedFields.length > 0
+        ? selectedFields.join(' ')
+        : (applicableFields?.join(' ') ?? '-__v');
+
+    this.query = this.query.select(fieldSelection);
     return this;
   }
 
-  lean(options?: LeanOptions) {
-    this._lean = true;
-    this._leanArguments = options !== undefined ? [options] : [];
+  tap(
+    callback: (
+      query: Query<DocumentType<T>[], DocumentType<T>>,
+    ) => Query<any, DocumentType<T>>,
+  ): this {
+    this.query = callback(this.query) as Query<
+      DocumentType<T>[],
+      DocumentType<T>
+    >;
     return this;
   }
 
   async execute(): Promise<{
-    data: R[];
+    data: T[];
     meta: { total: number; page: number; limit: number };
   }> {
     if (Boolean(this.queryParams.is_count_only)) {
-      const total = await (this.query.model as Model<T>).countDocuments(
-        this.queryFilter,
-      );
+      const total = await (
+        this.query.model as Model<DocumentType<T>>
+      ).countDocuments(this.queryFilter);
       return {
         data: [],
-        meta: { total, page: this._page ?? 1, limit: this._limit ?? 0 },
+        meta: { total, page: this.pageNumber, limit: this.pageLimit },
       };
     }
 
-    const queryToExecute = this._lean
-      ? this.query.lean(...this._leanArguments)
-      : this.query;
-
     const [data, total] = await Promise.all([
-      queryToExecute,
-      (this.query.model as Model<T>).countDocuments(this.queryFilter),
+      this.query,
+      (this.query.model as Model<DocumentType<T>>).countDocuments(
+        this.queryFilter,
+      ),
     ]);
 
     return {
-      data: data as unknown as R[],
-      meta: { total, page: this._page ?? 1, limit: this._limit ?? 0 },
+      data: data as unknown as T[],
+      meta: { total, page: this.pageNumber, limit: this.pageLimit },
     };
   }
 }

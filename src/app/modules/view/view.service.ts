@@ -1,5 +1,4 @@
 import httpStatus from 'http-status';
-import { Document } from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
 import { TGuest } from '../../types/express-session.type';
@@ -67,7 +66,7 @@ export const getSelfViews = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const viewQuery = new AppQuery<Document, TView>(
+  const viewQuery = new AppQuery<TView>(
     View.find({
       ...(user?._id ? { user: user._id } : { guest: guest._id }),
     }),
@@ -77,7 +76,7 @@ export const getSelfViews = async (
     .sort()
     .paginate()
     .fields()
-    .lean();
+    .tap((q) => q.lean());
 
   const result = await viewQuery.execute();
   return result;
@@ -89,12 +88,12 @@ export const getViews = async (
   data: TView[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const viewQuery = new AppQuery<Document, TView>(View.find(), query)
+  const viewQuery = new AppQuery<TView>(View.find(), query)
     .filter()
     .sort()
     .paginate()
     .fields()
-    .lean();
+    .tap((q) => q.lean());
 
   const result = await viewQuery.execute();
   return result;

@@ -1,5 +1,5 @@
 import httpStatus from 'http-status';
-import { Document, Types } from 'mongoose';
+import { Types } from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
 import { Category } from './category.model';
@@ -34,7 +34,7 @@ export const getCategories = async (
     filter.category = { $not: { $type: 'objectId' } };
   }
 
-  const categoryQuery = new AppQuery<Document, TCategory>(
+  const categoryQuery = new AppQuery<TCategory>(
     Category.find(filter).populate([{ path: 'children' }]),
     rest,
   )
@@ -43,7 +43,7 @@ export const getCategories = async (
     .sort()
     .paginate()
     .fields()
-    .lean();
+    .tap((q) => q.lean());
 
   const result = await categoryQuery.execute();
 

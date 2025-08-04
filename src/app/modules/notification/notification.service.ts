@@ -1,5 +1,4 @@
 import httpStatus from 'http-status';
-import { Document } from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
 import { Notification } from './notification.model';
@@ -26,16 +25,16 @@ export const getNotifications = async (
   data: TNotification[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const notificationQuery = new AppQuery<Document, TNotification>(
+  const notificationQuery = new AppQuery<TNotification>(
     Notification.find(),
     query,
   )
-    .search(['name'])
+    .search(['title', 'message', 'type', 'priority'])
     .filter()
     .sort()
     .paginate()
     .fields()
-    .lean();
+    .tap((q) => q.lean());
 
   const result = await notificationQuery.execute();
 

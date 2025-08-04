@@ -1,5 +1,4 @@
 import httpStatus from 'http-status';
-import { Document } from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
 import { TGuest } from '../../types/express-session.type';
@@ -67,7 +66,7 @@ export const getSelfReactions = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const reactionQuery = new AppQuery<Document, TReaction>(
+  const reactionQuery = new AppQuery<TReaction>(
     Reaction.find({
       ...(user?._id ? { user: user._id } : { guest: guest._id }),
     }),
@@ -77,7 +76,7 @@ export const getSelfReactions = async (
     .sort()
     .paginate()
     .fields()
-    .lean();
+    .tap((q) => q.lean());
 
   const result = await reactionQuery.execute();
   return result;
@@ -89,15 +88,12 @@ export const getReactions = async (
   data: TReaction[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const reactionQuery = new AppQuery<Document, TReaction>(
-    Reaction.find(),
-    query,
-  )
+  const reactionQuery = new AppQuery<TReaction>(Reaction.find(), query)
     .filter()
     .sort()
     .paginate()
     .fields()
-    .lean();
+    .tap((q) => q.lean());
 
   const result = await reactionQuery.execute();
   return result;

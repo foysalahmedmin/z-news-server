@@ -1,5 +1,5 @@
 import httpStatus from 'http-status';
-import mongoose, { Document } from 'mongoose';
+import mongoose from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
 import { TJwtPayload } from '../auth/auth.type';
@@ -216,7 +216,7 @@ export const getSelfBulkNews = async (
   data: TNews[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const NewsQuery = new AppQuery<Document, TNews>(
+  const NewsQuery = new AppQuery<TNews>(
     News.find({ author: user._id }).populate([
       { path: 'like_count' },
       { path: 'dislike_count' },
@@ -239,7 +239,7 @@ export const getSelfBulkNews = async (
     .sort()
     .paginate()
     .fields()
-    .lean();
+    .tap((q) => q.lean());
 
   const result = await NewsQuery.execute();
   return result;
@@ -251,7 +251,7 @@ export const getBulkNews = async (
   data: TNews[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const NewsQuery = new AppQuery<Document, TNews>(
+  const NewsQuery = new AppQuery<TNews>(
     News.find().populate([
       { path: 'like_count' },
       { path: 'dislike_count' },
@@ -274,7 +274,7 @@ export const getBulkNews = async (
     .sort()
     .paginate()
     .fields()
-    .lean();
+    .tap((q) => q.lean());
 
   const result = await NewsQuery.execute();
   return result;
@@ -301,7 +301,7 @@ export const getBulkNewsPublic = async (
     rest.category = { $in: categories_ids };
   }
 
-  const NewsQuery = new AppQuery<Document, TNews>(
+  const NewsQuery = new AppQuery<TNews>(
     News.find().populate([
       { path: 'author', select: '_id name email' },
       { path: 'category', select: '_id name slug' },
@@ -312,8 +312,9 @@ export const getBulkNewsPublic = async (
     .filter()
     .sort()
     .paginate()
-    .fields(['_id', 'title', 'slug', 'description', 'content', 'author'])
-    .lean({ virtuals: false });
+    .fields(['title', 'slug', 'description', 'content', 'author'])
+    .fields()
+    .tap((q) => q.lean());
 
   const result = await NewsQuery.execute();
   return result;

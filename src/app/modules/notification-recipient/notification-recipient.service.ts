@@ -1,5 +1,4 @@
 import httpStatus from 'http-status';
-import { Document } from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
 import { TJwtPayload } from '../auth/auth.type';
@@ -52,7 +51,7 @@ export const getSelfNotificationRecipients = async (
   data: TNotificationRecipient[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const notificationQuery = new AppQuery<Document, TNotificationRecipient>(
+  const notificationQuery = new AppQuery<TNotificationRecipient>(
     NotificationRecipient.find({ author: user._id }),
     query,
   )
@@ -60,7 +59,7 @@ export const getSelfNotificationRecipients = async (
     .sort()
     .paginate()
     .fields()
-    .lean();
+    .tap((q) => q.lean());
 
   return await notificationQuery.execute();
 };
@@ -71,7 +70,7 @@ export const getNotificationRecipients = async (
   data: TNotificationRecipient[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const notificationQuery = new AppQuery<Document, TNotificationRecipient>(
+  const notificationQuery = new AppQuery<TNotificationRecipient>(
     NotificationRecipient.find().populate([
       { path: 'recipient', select: '_id name email' },
     ]),
@@ -81,7 +80,7 @@ export const getNotificationRecipients = async (
     .sort()
     .paginate()
     .fields()
-    .lean();
+    .tap((q) => q.lean());
 
   return await notificationQuery.execute();
 };
