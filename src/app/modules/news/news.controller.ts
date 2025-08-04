@@ -57,6 +57,17 @@ export const getBulkNews = catchAsync(async (req, res) => {
   });
 });
 
+export const getBulkNewsPublic = catchAsync(async (req, res) => {
+  const result = await NewsServices.getBulkNewsPublic(req.query);
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'All News are retrieved successfully',
+    meta: result.meta,
+    data: result.data,
+  });
+});
+
 export const updateSelfNews = catchAsync(async (req, res) => {
   const { id } = req.params;
   const result = await NewsServices.updateSelfNews(req.user, id, req.body);

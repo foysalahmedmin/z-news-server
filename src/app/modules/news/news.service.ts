@@ -312,8 +312,8 @@ export const getBulkNewsPublic = async (
     .filter()
     .sort()
     .paginate()
-    .fields(['title', 'description', 'content', 'author', 'slug'])
-    .lean();
+    .fields(['_id', 'title', 'slug', 'description', 'content', 'author'])
+    .lean({ virtuals: false });
 
   const result = await NewsQuery.execute();
   return result;

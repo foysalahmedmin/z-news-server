@@ -10,6 +10,7 @@ const router = express.Router();
 // GET
 router.get('/self', auth('admin'), NewsControllers.getSelfBulkNews);
 router.get('/', auth('admin'), NewsControllers.getBulkNews);
+router.get('/public', NewsControllers.getBulkNewsPublic);
 
 router.get(
   '/:id/self',

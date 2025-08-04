@@ -10,13 +10,22 @@ interface QueryParams {
   [key: string]: unknown;
 }
 
+type LeanOptions =
+  | boolean
+  | {
+      virtuals?: boolean;
+      getters?: boolean;
+      defaults?: boolean;
+    };
+
 class AppQuery<T extends Document, R = T> {
   public query: Query<T[], T>;
   public queryParams: QueryParams;
   public queryFilter: FilterQuery<T>;
   private _page: number | null = null;
   private _limit: number | null = null;
-  private _lean: boolean | null = null;
+  private _lean = false;
+  private _leanArguments: [LeanOptions?] = [];
 
   constructor(query: Query<T[], T>, queryParams: Record<string, unknown>) {
     this.query = query;
@@ -25,17 +34,14 @@ class AppQuery<T extends Document, R = T> {
   }
 
   search(applicableFields: string[]) {
-    const search = this?.queryParams?.search;
+    const search = this.queryParams?.search;
     if (search) {
       const searchCondition: FilterQuery<T> = {
         $or: applicableFields.map((field) => ({
           [field]: { $regex: search, $options: 'i' },
         })) as FilterQuery<T>[],
       };
-      this.queryFilter = {
-        ...this.queryFilter,
-        ...searchCondition,
-      };
+      this.queryFilter = { ...this.queryFilter, ...searchCondition };
       this.query = this.query.find(searchCondition);
     }
     return this;
@@ -53,7 +59,7 @@ class AppQuery<T extends Document, R = T> {
     ];
     excludeFields.forEach((el) => delete queryObj[el]);
 
-    if (applicableFields && applicableFields?.length > 0) {
+    if (applicableFields?.length) {
       Object.keys(queryObj).forEach((key) => {
         if (!applicableFields.includes(key)) {
           delete queryObj[key];
@@ -61,10 +67,7 @@ class AppQuery<T extends Document, R = T> {
       });
     }
 
-    this.queryFilter = {
-      ...this.queryFilter,
-      ...(queryObj as FilterQuery<T>),
-    };
+    this.queryFilter = { ...this.queryFilter, ...(queryObj as FilterQuery<T>) };
     this.query = this.query.find(queryObj as FilterQuery<T>);
     return this;
   }
@@ -73,7 +76,7 @@ class AppQuery<T extends Document, R = T> {
     const rawSort = (this.queryParams?.sort as string) || '';
     let fields = rawSort.split(',').filter(Boolean);
 
-    if (applicableFields && applicableFields?.length > 0) {
+    if (applicableFields?.length) {
       fields = fields.filter((field) => {
         const plainField = field.startsWith('-') ? field.slice(1) : field;
         return applicableFields.includes(plainField);
@@ -103,47 +106,44 @@ class AppQuery<T extends Document, R = T> {
     const rawFields = (this.queryParams?.fields as string) || '';
     let fields = rawFields.split(',').filter(Boolean);
 
-    if (applicableFields && applicableFields?.length > 0) {
-      fields = fields.filter((field) => applicableFields.includes(field));
+    if (applicableFields?.length) {
+      fields = fields.filter((field) => {
+        const cleanField = field.startsWith('-') ? field.slice(1) : field;
+        return applicableFields.includes(cleanField);
+      });
     }
 
-    const parseFields = fields.length > 0 ? fields.join(' ') : '-__v';
+    const parseFields =
+      fields.length > 0
+        ? fields.join(' ')
+        : applicableFields?.join(' ') || '-__v';
     this.query = this.query.select(parseFields);
     return this;
   }
 
-  lean() {
+  lean(options?: LeanOptions) {
     this._lean = true;
+    this._leanArguments = options !== undefined ? [options] : [];
     return this;
   }
 
   async execute(): Promise<{
     data: R[];
-    meta: {
-      total: number;
-      page: number;
-      limit: number;
-    };
+    meta: { total: number; page: number; limit: number };
   }> {
-    const isCountOnly = Boolean(this.queryParams.is_count_only);
-
-    if (isCountOnly) {
+    if (Boolean(this.queryParams.is_count_only)) {
       const total = await (this.query.model as Model<T>).countDocuments(
         this.queryFilter,
       );
-
       return {
         data: [],
-        meta: {
-          total,
-          page: this._page ?? 1,
-          limit: this._limit ?? 0,
-        },
+        meta: { total, page: this._page ?? 1, limit: this._limit ?? 0 },
       };
     }
 
-    // Apply lean if requested before executing query
-    const queryToExecute = this._lean ? this.query.lean() : this.query;
+    const queryToExecute = this._lean
+      ? this.query.lean(...this._leanArguments)
+      : this.query;
 
     const [data, total] = await Promise.all([
       queryToExecute,
@@ -152,11 +152,7 @@ class AppQuery<T extends Document, R = T> {
 
     return {
       data: data as unknown as R[],
-      meta: {
-        total,
-        page: this._page ?? 1,
-        limit: this._limit ?? 0,
-      },
+      meta: { total, page: this._page ?? 1, limit: this._limit ?? 0 },
     };
   }
 }
