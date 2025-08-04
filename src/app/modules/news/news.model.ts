@@ -127,6 +127,11 @@ const newsSchema = new Schema<TNewsDocument>(
       type: Date,
     },
 
+    layout: {
+      type: String,
+      default: 'default',
+    },
+
     is_deleted: {
       type: Boolean,
       default: false,

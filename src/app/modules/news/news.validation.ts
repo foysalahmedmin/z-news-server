@@ -39,6 +39,7 @@ export const createNewsValidationSchema = z.object({
     seo: seoSchema,
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
+    layout: z.string().optional(),
     news_headline: z
       .object({
         title: z.string().trim().min(1),
@@ -93,6 +94,7 @@ export const updateSelfNewsValidationSchema = z.object({
     seo: seoSchema,
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
+    layout: z.string().optional(),
   }),
 });
 
