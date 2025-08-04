@@ -57,17 +57,23 @@ export const getCategoriesTree = async (
   data: TCategoryTree[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const { page = 1, limit = 10 } = query;
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
 
-  const matchStage = categoryId
-    ? { category: categoryId }
-    : { category: { $not: { $type: 'objectId' } } };
+  const baseMatch = {
+    is_deleted: { $ne: true },
+  };
 
-  // First count total roots for meta
+  const matchStage =
+    categoryId && Types.ObjectId.isValid(categoryId)
+      ? { ...baseMatch, category: new Types.ObjectId(categoryId) }
+      : {
+          ...baseMatch,
+          $or: [{ category: { $exists: false } }, { category: null }],
+        };
   const total = await Category.countDocuments(matchStage);
 
-  // Aggregation with pagination on root categories
-  const rawRoots = await Category.aggregate([
+  const categories = await Category.aggregate([
     { $match: matchStage },
     { $skip: (page - 1) * limit },
     { $limit: limit },
@@ -78,27 +84,41 @@ export const getCategoriesTree = async (
         connectFromField: '_id',
         connectToField: 'category',
         as: 'descendants',
+        restrictSearchWithMatch: baseMatch,
+        depthField: 'level',
       },
+    },
+    {
+      $project: {
+        combinedNodes: {
+          $concatArrays: [['$$ROOT'], '$descendants'],
+        },
+      },
+    },
+    { $unwind: '$combinedNodes' },
+    {
+      $replaceRoot: { newRoot: '$combinedNodes' },
+    },
+    {
+      $group: {
+        _id: '$_id',
+        doc: { $first: '$$ROOT' }, // deduplicate nodes
+      },
+    },
+    {
+      $replaceRoot: { newRoot: '$doc' },
     },
   ]);
 
-  const allNodes = rawRoots.flatMap((root) => [
-    root,
-    ...(root.descendants || []),
-  ]);
-  const uniqueNodes = Array.from(
-    new Map(allNodes.map((n) => [String(n._id), n])).values(),
-  );
-
   return {
-    data: buildTree(rawRoots, uniqueNodes),
+    data: buildTree(categories, categories),
     meta: { total, page, limit },
   };
 };
 
 export const getCategoriesTreePublic = async (
   categoryId?: string,
-  query: { page?: number | string; limit?: number | string } = {},
+  query: { page?: number; limit?: number } = {},
 ): Promise<{
   data: TCategoryTree[];
   meta: { total: number; page: number; limit: number };
@@ -118,43 +138,49 @@ export const getCategoriesTreePublic = async (
           ...baseMatch,
           $or: [{ category: { $exists: false } }, { category: null }],
         };
+  const total = await Category.countDocuments(matchStage);
 
-  try {
-    const total = await Category.countDocuments(matchStage);
-
-    const rawRoots = await Category.aggregate([
-      { $match: matchStage },
-      { $skip: (page - 1) * limit },
-      { $limit: limit }, // ✅ now a number
-      {
-        $graphLookup: {
-          from: 'categories',
-          startWith: '$_id',
-          connectFromField: '_id',
-          connectToField: 'category',
-          as: 'descendants',
-          restrictSearchWithMatch: baseMatch,
-          depthField: 'level',
+  const categories = await Category.aggregate([
+    { $match: matchStage },
+    { $skip: (page - 1) * limit },
+    { $limit: limit },
+    {
+      $graphLookup: {
+        from: 'categories',
+        startWith: '$_id',
+        connectFromField: '_id',
+        connectToField: 'category',
+        as: 'descendants',
+        restrictSearchWithMatch: baseMatch,
+        depthField: 'level',
+      },
+    },
+    {
+      $project: {
+        combinedNodes: {
+          $concatArrays: [['$$ROOT'], '$descendants'],
         },
       },
-    ]);
+    },
+    { $unwind: '$combinedNodes' },
+    {
+      $replaceRoot: { newRoot: '$combinedNodes' },
+    },
+    {
+      $group: {
+        _id: '$_id',
+        doc: { $first: '$$ROOT' }, // deduplicate nodes
+      },
+    },
+    {
+      $replaceRoot: { newRoot: '$doc' },
+    },
+  ]);
 
-    const allNodes = rawRoots.flatMap((root) => [
-      root,
-      ...(root.descendants || []),
-    ]);
-    const uniqueNodes = Array.from(
-      new Map(allNodes.map((n) => [String(n._id), n])).values(),
-    );
-
-    return {
-      data: buildTree(rawRoots, uniqueNodes),
-      meta: { total, page, limit },
-    };
-  } catch (err) {
-    console.error('🔥 Error in getCategoriesTreePublic:', err);
-    throw new Error('Failed to fetch category tree');
-  }
+  return {
+    data: buildTree(categories, categories),
+    meta: { total, page, limit },
+  };
 };
 
 export const updateCategory = async (

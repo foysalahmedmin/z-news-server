@@ -3,12 +3,64 @@ import mongoose, { Document } from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
 import { TJwtPayload } from '../auth/auth.type';
+import { Category } from '../category/category.model';
 import { NewsBreak } from '../news-break/news-break.model';
 import { TNewsBreak } from '../news-break/news-break.type';
 import { NewsHeadline } from '../news-headline/news-headline.model';
 import { TNewsHeadline } from '../news-headline/news-headline.type';
 import { News } from './news.model';
 import { TNews } from './news.type';
+
+const getCategoryIds = async ({
+  category,
+  category_slug,
+}: {
+  category?: string;
+  category_slug?: string;
+}) => {
+  if (category || category_slug) {
+    const categories = await Category.aggregate([
+      {
+        $match: {
+          $or: [
+            ...(category
+              ? [{ _id: new mongoose.Types.ObjectId(category) }]
+              : []),
+            ...(category_slug ? [{ slug: category_slug }] : []),
+          ],
+        },
+      },
+      {
+        $graphLookup: {
+          from: 'categories',
+          startWith: '$_id',
+          connectFromField: '_id',
+          connectToField: 'parent',
+          as: 'descendants',
+        },
+      },
+      {
+        $project: {
+          ids: {
+            $concatArrays: [
+              ['$_id'],
+              { $map: { input: '$descendants', as: 'd', in: '$$d._id' } },
+            ],
+          },
+        },
+      },
+    ]);
+
+    if (!categories.length) return [];
+
+    const categoryIds =
+      (categories?.[0]?.ids as mongoose.Types.ObjectId[]) || [];
+
+    return categoryIds;
+  }
+
+  return [];
+};
 
 export const createNews = async (
   user: TJwtPayload,
@@ -222,6 +274,45 @@ export const getBulkNews = async (
     .sort()
     .paginate()
     .fields()
+    .lean();
+
+  const result = await NewsQuery.execute();
+  return result;
+};
+
+export const getBulkNewsPublic = async (
+  query: Record<string, unknown>,
+): Promise<{
+  data: TNews[];
+  meta: { total: number; page: number; limit: number };
+}> => {
+  const {
+    category: q_category,
+    category_slug: q_category_slug,
+    ...rest
+  } = query;
+
+  const category = q_category as string;
+  const category_slug = q_category_slug as string;
+
+  const categories_ids = await getCategoryIds({ category, category_slug });
+
+  if (categories_ids.length > 0) {
+    rest.category = { $in: categories_ids };
+  }
+
+  const NewsQuery = new AppQuery<Document, TNews>(
+    News.find().populate([
+      { path: 'author', select: '_id name email' },
+      { path: 'category', select: '_id name slug' },
+    ]),
+    rest,
+  )
+    .search(['title', 'description', 'content'])
+    .filter()
+    .sort()
+    .paginate()
+    .fields(['title', 'description', 'content', 'author', 'slug'])
     .lean();
 
   const result = await NewsQuery.execute();
