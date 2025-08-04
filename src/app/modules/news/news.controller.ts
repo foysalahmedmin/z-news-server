@@ -13,6 +13,17 @@ export const createNews = catchAsync(async (req, res) => {
   });
 });
 
+export const getNewsPublic = catchAsync(async (req, res) => {
+  const { slug } = req.params;
+  const result = await NewsServices.getNews(slug);
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'News retrieved successfully',
+    data: result,
+  });
+});
+
 export const getSelfNews = catchAsync(async (req, res) => {
   const { id } = req.params;
   const result = await NewsServices.getSelfNews(req.user, id);
@@ -35,6 +46,17 @@ export const getNews = catchAsync(async (req, res) => {
   });
 });
 
+export const getBulkNewsPublic = catchAsync(async (req, res) => {
+  const result = await NewsServices.getBulkNewsPublic(req.query);
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'All News are retrieved successfully',
+    meta: result.meta,
+    data: result.data,
+  });
+});
+
 export const getSelfBulkNews = catchAsync(async (req, res) => {
   const result = await NewsServices.getSelfBulkNews(req.user, req.query);
   sendResponse(res, {
@@ -48,17 +70,6 @@ export const getSelfBulkNews = catchAsync(async (req, res) => {
 
 export const getBulkNews = catchAsync(async (req, res) => {
   const result = await NewsServices.getBulkNews(req.query);
-  sendResponse(res, {
-    status: httpStatus.OK,
-    success: true,
-    message: 'All News are retrieved successfully',
-    meta: result.meta,
-    data: result.data,
-  });
-});
-
-export const getBulkNewsPublic = catchAsync(async (req, res) => {
-  const result = await NewsServices.getBulkNewsPublic(req.query);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,

@@ -1,3 +1,4 @@
+import { Flattener } from 'flattener-kit';
 import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import AppError from '../../builder/AppError';
@@ -158,6 +159,22 @@ export const createNews = async (
   }
 };
 
+export const getNewsPublic = async (slug: string): Promise<TNews> => {
+  const result = await News.findOne({ slug: slug })
+    .populate([
+      { path: 'like_count' },
+      { path: 'dislike_count' },
+      { path: 'comment_count' },
+      { path: 'author', select: '_id name email' },
+      { path: 'category', select: '_id name slug' },
+    ])
+    .lean();
+  if (!result) {
+    throw new AppError(httpStatus.NOT_FOUND, 'News not found');
+  }
+  return result;
+};
+
 export const getSelfNews = async (
   user: TJwtPayload,
   id: string,
@@ -206,6 +223,58 @@ export const getNews = async (id: string): Promise<TNews> => {
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'News not found');
   }
+  return result;
+};
+
+export const getBulkNewsPublic = async (
+  query: Record<string, unknown>,
+): Promise<{
+  data: TNews[];
+  meta: { total: number; page: number; limit: number };
+}> => {
+  const {
+    category: q_category,
+    category_slug: q_category_slug,
+    ...rest
+  } = query;
+
+  const category = q_category as string;
+  const category_slug = q_category_slug as string;
+
+  const categories_ids = await getCategoryIds({ category, category_slug });
+
+  if (categories_ids.length > 0) {
+    rest.category = { $in: categories_ids };
+  }
+
+  const NewsQuery = new AppQuery<TNews>(
+    News.find().populate([
+      { path: 'author', select: '_id name email' },
+      { path: 'category', select: '_id name slug' },
+    ]),
+    rest,
+  )
+    .search(['title', 'description', 'content'])
+    .filter()
+    .sort()
+    .paginate()
+    .fields([
+      'title',
+      'slug',
+      'description',
+      'content',
+      'thumbnail',
+      'author',
+      'category',
+      'tags',
+      'sequence',
+      'status',
+      'published_at',
+    ])
+    .fields()
+    .tap((q) => q.lean());
+
+  const result = await NewsQuery.execute();
   return result;
 };
 
@@ -280,46 +349,6 @@ export const getBulkNews = async (
   return result;
 };
 
-export const getBulkNewsPublic = async (
-  query: Record<string, unknown>,
-): Promise<{
-  data: TNews[];
-  meta: { total: number; page: number; limit: number };
-}> => {
-  const {
-    category: q_category,
-    category_slug: q_category_slug,
-    ...rest
-  } = query;
-
-  const category = q_category as string;
-  const category_slug = q_category_slug as string;
-
-  const categories_ids = await getCategoryIds({ category, category_slug });
-
-  if (categories_ids.length > 0) {
-    rest.category = { $in: categories_ids };
-  }
-
-  const NewsQuery = new AppQuery<TNews>(
-    News.find().populate([
-      { path: 'author', select: '_id name email' },
-      { path: 'category', select: '_id name slug' },
-    ]),
-    rest,
-  )
-    .search(['title', 'description', 'content'])
-    .filter()
-    .sort()
-    .paginate()
-    .fields(['title', 'slug', 'description', 'content', 'author'])
-    .fields()
-    .tap((q) => q.lean());
-
-  const result = await NewsQuery.execute();
-  return result;
-};
-
 export const updateSelfNews = async (
   user: TJwtPayload,
   id: string,
@@ -332,12 +361,18 @@ export const updateSelfNews = async (
 
   const update: Partial<TNews> = { ...payload };
 
-  if (Object.keys(payload).includes('content')) {
+  if (
+    Object.keys(payload).includes('slug') ||
+    Object.keys(payload).includes('title') ||
+    Object.keys(payload).includes('content')
+  ) {
     update.is_edited = true;
     update.edited_at = new Date();
   }
 
-  const result = await News.findByIdAndUpdate(id, update, {
+  const flatten = Flattener.flatten(update);
+
+  const result = await News.findByIdAndUpdate(id, flatten, {
     new: true,
     runValidators: true,
   }).lean();
@@ -356,12 +391,18 @@ export const updateNews = async (
 
   const update: Partial<TNews> = { ...payload };
 
-  if (Object.keys(payload).includes('content')) {
+  if (
+    Object.keys(payload).includes('slug') ||
+    Object.keys(payload).includes('title') ||
+    Object.keys(payload).includes('content')
+  ) {
     update.is_edited = true;
     update.edited_at = new Date();
   }
 
-  const result = await News.findByIdAndUpdate(id, update, {
+  const flatten = Flattener.flatten(update);
+
+  const result = await News.findByIdAndUpdate(id, flatten, {
     new: true,
     runValidators: true,
   }).lean();

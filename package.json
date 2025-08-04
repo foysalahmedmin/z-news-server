@@ -39,6 +39,7 @@
     "dotenv": "^17.0.0",
     "express": "^5.1.0",
     "express-session": "^1.18.1",
+    "flattener-kit": "^1.0.1",
     "http-status": "^2.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.17.0",

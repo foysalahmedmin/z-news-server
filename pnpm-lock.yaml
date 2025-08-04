@@ -32,6 +32,9 @@ importers:
       express-session:
         specifier: ^1.18.1
         version: 1.18.1
+      flattener-kit:
+        specifier: ^1.0.1
+        version: 1.0.1
       http-status:
         specifier: ^2.1.0
         version: 2.1.0
@@ -771,6 +774,9 @@ packages:
 
   flatted@3.3.3:
     resolution: {integrity: sha512-GX+ysw4PBCz0PzosHDepZGANEuFCMLrnRTiEy9McGjmkCQYwRq4A/X786G/fjM/+OjsWSU1ZrY5qyARZmO/uwg==}
+
+  flattener-kit@1.0.1:
+    resolution: {integrity: sha512-/6n75R94cuUCFt53MWunJjIVdC94xnkksnT6MnmdzMlbJwW2jqdsTGTlO8Zmx4tc9jx16jt4o6lqNLcmG/opjQ==}
 
   forwarded@0.2.0:
     resolution: {integrity: sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow==}
@@ -2262,6 +2268,8 @@ snapshots:
       keyv: 4.5.4
 
   flatted@3.3.3: {}
+
+  flattener-kit@1.0.1: {}
 
   forwarded@0.2.0: {}
 
