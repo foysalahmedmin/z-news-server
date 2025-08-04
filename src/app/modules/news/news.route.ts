@@ -13,14 +13,12 @@ router.get('/self', auth('admin'), NewsControllers.getSelfBulkNews);
 router.get('/', auth('admin'), NewsControllers.getBulkNews);
 
 router.get('/:slug/public', NewsControllers.getNewsPublic);
-
 router.get(
   '/:id/self',
   auth('admin', 'author'),
   validation(NewsValidations.newsOperationValidationSchema),
   NewsControllers.getSelfNews,
 );
-
 router.get(
   '/:id',
   auth('admin'),

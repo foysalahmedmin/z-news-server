@@ -13,6 +13,17 @@ export const createCategory = catchAsync(async (req, res) => {
   });
 });
 
+export const getCategoryPublic = catchAsync(async (req, res) => {
+  const { slug } = req.params;
+  const result = await CategoryServices.getCategoryPublic(slug);
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'Category retrieved successfully',
+    data: result,
+  });
+});
+
 export const getCategory = catchAsync(async (req, res) => {
   const { id } = req.params;
   const result = await CategoryServices.getCategory(id);
@@ -21,6 +32,17 @@ export const getCategory = catchAsync(async (req, res) => {
     success: true,
     message: 'Category retrieved successfully',
     data: result,
+  });
+});
+
+export const getCategoriesPublic = catchAsync(async (req, res) => {
+  const result = await CategoryServices.getCategoriesPublic(req.query);
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'Categories retrieved successfully',
+    meta: result.meta,
+    data: result.data,
   });
 });
 
@@ -35,9 +57,9 @@ export const getCategories = catchAsync(async (req, res) => {
   });
 });
 
-export const getCategoriesTree = catchAsync(async (req, res) => {
+export const getCategoriesTreePublic = catchAsync(async (req, res) => {
   const { category, ...query } = req.query;
-  const result = await CategoryServices.getCategoriesTree(
+  const result = await CategoryServices.getCategoriesTreePublic(
     category as string,
     query,
   );
@@ -50,9 +72,9 @@ export const getCategoriesTree = catchAsync(async (req, res) => {
   });
 });
 
-export const getCategoriesTreePublic = catchAsync(async (req, res) => {
+export const getCategoriesTree = catchAsync(async (req, res) => {
   const { category, ...query } = req.query;
-  const result = await CategoryServices.getCategoriesTreePublic(
+  const result = await CategoryServices.getCategoriesTree(
     category as string,
     query,
   );

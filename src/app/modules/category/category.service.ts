@@ -11,11 +11,55 @@ export const createCategory = async (data: TCategory): Promise<TCategory> => {
   return result.toObject();
 };
 
+export const getCategoryPublic = async (slug: string): Promise<TCategory> => {
+  const result = await Category.findOne({
+    slug: slug,
+    status: 'active',
+  }).populate('children');
+  if (!result) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Category not found');
+  }
+  return result;
+};
+
 export const getCategory = async (id: string): Promise<TCategory> => {
   const result = await Category.findById(id).populate('children');
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'Category not found');
   }
+  return result;
+};
+
+export const getCategoriesPublic = async (
+  query: Record<string, unknown>,
+): Promise<{
+  data: TCategory[];
+  meta: { total: number; page: number; limit: number };
+}> => {
+  const { all = false, category, ...rest } = query;
+
+  const filter: Record<string, unknown> = {};
+  if (category) {
+    filter.status = 'active';
+    filter.category = category;
+  } else if (!all) {
+    filter.status = 'active';
+    filter.category = { $not: { $type: 'objectId' } };
+  }
+
+  const categoryQuery = new AppQuery<TCategory>(
+    Category.find(filter).populate([{ path: 'children' }]),
+    rest,
+  )
+    .search(['name'])
+    .filter()
+    .sort()
+    .paginate()
+    .fields()
+    .tap((q) => q.lean());
+
+  const result = await categoryQuery.execute();
+
   return result;
 };
 
@@ -50,8 +94,8 @@ export const getCategories = async (
   return result;
 };
 
-export const getCategoriesTree = async (
-  categoryId?: string,
+export const getCategoriesTreePublic = async (
+  category?: string,
   query: { page?: number; limit?: number } = {},
 ): Promise<{
   data: TCategoryTree[];
@@ -61,12 +105,13 @@ export const getCategoriesTree = async (
   const limit = Number(query.limit) || 10;
 
   const baseMatch = {
+    status: 'active',
     is_deleted: { $ne: true },
   };
 
   const matchStage =
-    categoryId && Types.ObjectId.isValid(categoryId)
-      ? { ...baseMatch, category: new Types.ObjectId(categoryId) }
+    category && Types.ObjectId.isValid(category)
+      ? { ...baseMatch, category: new Types.ObjectId(category) }
       : {
           ...baseMatch,
           $or: [{ category: { $exists: false } }, { category: null }],
@@ -116,8 +161,8 @@ export const getCategoriesTree = async (
   };
 };
 
-export const getCategoriesTreePublic = async (
-  categoryId?: string,
+export const getCategoriesTree = async (
+  category?: string,
   query: { page?: number; limit?: number } = {},
 ): Promise<{
   data: TCategoryTree[];
@@ -127,13 +172,12 @@ export const getCategoriesTreePublic = async (
   const limit = Number(query.limit) || 10;
 
   const baseMatch = {
-    status: 'active',
     is_deleted: { $ne: true },
   };
 
   const matchStage =
-    categoryId && Types.ObjectId.isValid(categoryId)
-      ? { ...baseMatch, category: new Types.ObjectId(categoryId) }
+    category && Types.ObjectId.isValid(category)
+      ? { ...baseMatch, category: new Types.ObjectId(category) }
       : {
           ...baseMatch,
           $or: [{ category: { $exists: false } }, { category: null }],

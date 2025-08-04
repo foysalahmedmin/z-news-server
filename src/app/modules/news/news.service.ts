@@ -160,7 +160,7 @@ export const createNews = async (
 };
 
 export const getNewsPublic = async (slug: string): Promise<TNews> => {
-  const result = await News.findOne({ slug: slug })
+  const result = await News.findOne({ slug: slug, status: 'published' })
     .populate([
       { path: 'like_count' },
       { path: 'dislike_count' },
@@ -248,7 +248,7 @@ export const getBulkNewsPublic = async (
   }
 
   const NewsQuery = new AppQuery<TNews>(
-    News.find().populate([
+    News.find({ status: 'published' }).populate([
       { path: 'author', select: '_id name email' },
       { path: 'category', select: '_id name slug' },
     ]),

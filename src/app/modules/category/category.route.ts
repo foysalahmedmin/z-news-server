@@ -7,10 +7,14 @@ import * as CategoryValidations from './category.validation';
 const router = express.Router();
 
 // GET
-router.get('/', auth('admin'), CategoryControllers.getCategories);
-router.get('/tree', auth('admin'), CategoryControllers.getCategoriesTree);
-router.get('/tree/public', CategoryControllers.getCategoriesTreePublic);
 
+router.get('/public', CategoryControllers.getCategoriesPublic);
+router.get('/', auth('admin'), CategoryControllers.getCategories);
+
+router.get('/tree/public', CategoryControllers.getCategoriesTreePublic);
+router.get('/tree', auth('admin'), CategoryControllers.getCategoriesTree);
+
+router.get('/:slug/public', CategoryControllers.getCategoryPublic);
 router.get(
   '/:id',
   auth('admin'),
