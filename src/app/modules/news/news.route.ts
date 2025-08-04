@@ -1,6 +1,7 @@
 import express from 'express';
 import auth from '../../middlewares/auth.middleware';
 import file from '../../middlewares/file.middleware';
+import guest from '../../middlewares/guest.middleware';
 import validation from '../../middlewares/validation.middleware';
 import * as NewsControllers from './news.controller';
 import * as NewsValidations from './news.validation';
@@ -11,6 +12,12 @@ const router = express.Router();
 router.get('/public', NewsControllers.getBulkNewsPublic);
 router.get('/self', auth('admin'), NewsControllers.getSelfBulkNews);
 router.get('/', auth('admin'), NewsControllers.getBulkNews);
+
+router.get(
+  '/:slug/comments/public',
+  guest('optional'),
+  NewsControllers.getNewsCommentsPublic,
+);
 
 router.get('/:slug/public', NewsControllers.getNewsPublic);
 router.get(

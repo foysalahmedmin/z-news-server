@@ -13,6 +13,21 @@ export const createNews = catchAsync(async (req, res) => {
   });
 });
 
+export const getNewsCommentsPublic = catchAsync(async (req, res) => {
+  const { slug } = req.params;
+  const result = await NewsServices.getNewsCommentsPublic(
+    slug,
+    req.query,
+    req.guest,
+  );
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'News retrieved successfully',
+    data: result,
+  });
+});
+
 export const getNewsPublic = catchAsync(async (req, res) => {
   const { slug } = req.params;
   const result = await NewsServices.getNews(slug);

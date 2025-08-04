@@ -3,8 +3,11 @@ import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
+import { TGuest } from '../../types/express-session.type';
 import { TJwtPayload } from '../auth/auth.type';
 import { Category } from '../category/category.model';
+import { Comment } from '../comment/comment.model';
+import { TComment } from '../comment/comment.type';
 import { NewsBreak } from '../news-break/news-break.model';
 import { TNewsBreak } from '../news-break/news-break.type';
 import { NewsHeadline } from '../news-headline/news-headline.model';
@@ -157,6 +160,46 @@ export const createNews = async (
     session.endSession();
     throw error;
   }
+};
+
+export const getNewsCommentsPublic = async (
+  id: string,
+  query: {
+    page?: number;
+    limit?: number;
+  },
+  guest: TGuest,
+): Promise<{
+  data: TComment[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+  };
+  guest: TGuest;
+}> => {
+  const page = Number(query.page ?? 1);
+  const limit = Number(query.limit ?? 10);
+  const skip = (page - 1) * limit;
+
+  const [data, total] = await Promise.all([
+    Comment.find({ news: new mongoose.Types.ObjectId(id) })
+      .sort({ created_at: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Comment.countDocuments({ news: new mongoose.Types.ObjectId(id) }),
+  ]);
+
+  return {
+    data,
+    meta: {
+      total,
+      page,
+      limit,
+    },
+    guest,
+  };
 };
 
 export const getNewsPublic = async (slug: string): Promise<TNews> => {
