@@ -57,6 +57,12 @@ const newsSchema = new Schema<TNewsDocument>(
       required: true,
     },
 
+    collaborators: {
+      type: [Schema.Types.ObjectId],
+      ref: 'User',
+      default: [],
+    },
+
     status: {
       type: String,
       enum: ['draft', 'pending', 'published', 'archived'],
