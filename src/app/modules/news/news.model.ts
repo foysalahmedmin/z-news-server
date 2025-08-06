@@ -74,6 +74,11 @@ const newsSchema = new Schema<TNewsDocument>(
       default: false,
     },
 
+    is_top_featured: {
+      type: Boolean,
+      default: false,
+    },
+
     is_premium: {
       type: Boolean,
       default: false,

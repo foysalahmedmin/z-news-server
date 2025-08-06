@@ -17,7 +17,8 @@ export type TNews = {
   author: Types.ObjectId;
   collaborators?: Types.ObjectId[];
   status: TStatus;
-  is_featured: boolean;
+  is_featured?: boolean;
+  is_top_featured?: boolean;
   is_premium: boolean;
   seo?: {
     title?: string;
