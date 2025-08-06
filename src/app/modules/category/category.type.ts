@@ -18,6 +18,7 @@ export type TCategory = {
     description?: string;
     keywords?: string[];
   };
+  is_featured: boolean;
   is_deleted?: boolean;
 };
 

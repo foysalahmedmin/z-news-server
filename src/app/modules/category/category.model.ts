@@ -56,6 +56,7 @@ const categorySchema = new Schema<TCategoryDocument>(
       description: String,
       keywords: [String],
     },
+    is_featured: { type: Boolean, default: false },
     is_deleted: { type: Boolean, default: false, select: false },
   },
   {

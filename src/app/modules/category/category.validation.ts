@@ -41,6 +41,7 @@ export const createCategoryValidationSchema = z.object({
     tags: z.array(z.string().min(1)).optional(),
     layout: z.string().optional().default('default').optional(),
     seo: seoSchema,
+    is_featured: z.boolean().optional(),
   }),
 });
 
@@ -75,6 +76,7 @@ export const updateCategoryValidationSchema = z.object({
     tags: z.array(z.string().min(1)).optional(),
     layout: z.string().optional().default('default').optional(),
     seo: seoSchema,
+    is_featured: z.boolean().optional(),
   }),
 });
 
