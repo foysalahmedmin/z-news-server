@@ -279,8 +279,8 @@ export const getBulkNewsPublic = async (
     category: q_category,
     category_slug: q_category_slug,
     published_at: q_published_at,
-    published_at_start: q_published_at_start,
-    published_at_end: q_published_at_end,
+    published_at_gte: q_published_at_gte,
+    published_at_lte: q_published_at_lte,
     date: q_date,
     ...rest
   } = query;
@@ -302,17 +302,17 @@ export const getBulkNewsPublic = async (
     end.setHours(23, 59, 59, 999);
 
     rest.published_at = { $gte: start, $lte: end };
-  } else if (q_published_at_start || q_published_at_end) {
+  } else if (q_published_at_gte || q_published_at_lte) {
     const filter: Record<string, Date> = {};
 
-    if (q_published_at_start) {
-      const start = new Date(q_published_at_start as string);
+    if (q_published_at_gte) {
+      const start = new Date(q_published_at_gte as string);
       start.setHours(0, 0, 0, 0);
       filter.$gte = start;
     }
 
-    if (q_published_at_end) {
-      const end = new Date(q_published_at_end as string);
+    if (q_published_at_lte) {
+      const end = new Date(q_published_at_lte as string);
       end.setHours(23, 59, 59, 999);
       filter.$lte = end;
     }
