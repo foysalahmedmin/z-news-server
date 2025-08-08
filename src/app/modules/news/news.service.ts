@@ -278,6 +278,10 @@ export const getBulkNewsPublic = async (
   const {
     category: q_category,
     category_slug: q_category_slug,
+    published_at: q_published_at,
+    published_at_start: q_published_at_start,
+    published_at_end: q_published_at_end,
+    date: q_date,
     ...rest
   } = query;
 
@@ -290,6 +294,41 @@ export const getBulkNewsPublic = async (
     rest.category = { $in: categories_ids };
   }
 
+  if (q_published_at) {
+    const start = new Date(q_published_at as string);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(q_published_at as string);
+    end.setHours(23, 59, 59, 999);
+
+    rest.published_at = { $gte: start, $lte: end };
+  } else if (q_published_at_start || q_published_at_end) {
+    const filter: Record<string, Date> = {};
+
+    if (q_published_at_start) {
+      const start = new Date(q_published_at_start as string);
+      start.setHours(0, 0, 0, 0);
+      filter.$gte = start;
+    }
+
+    if (q_published_at_end) {
+      const end = new Date(q_published_at_end as string);
+      end.setHours(23, 59, 59, 999);
+      filter.$lte = end;
+    }
+
+    rest.published_at = filter;
+  } else if (q_date) {
+    const end = new Date(q_date as string);
+    end.setHours(23, 59, 59, 999);
+
+    rest.published_at = { $lte: end };
+  } else {
+    const end = new Date();
+
+    rest.published_at = { $lte: end };
+  }
+
   const NewsQuery = new AppQuery<TNews>(
     News.find({ status: 'published' }).populate([
       { path: 'author', select: '_id name email' },
@@ -297,7 +336,7 @@ export const getBulkNewsPublic = async (
     ]),
     rest,
   )
-    .search(['title', 'description', 'content'])
+    .search(['title', 'description'])
     .filter()
     .sort()
     .paginate()
