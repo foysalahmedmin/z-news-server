@@ -30,7 +30,7 @@ export const getNewsCommentsPublic = catchAsync(async (req, res) => {
 
 export const getNewsPublic = catchAsync(async (req, res) => {
   const { slug } = req.params;
-  const result = await NewsServices.getNews(slug);
+  const result = await NewsServices.getNewsPublic(slug);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
