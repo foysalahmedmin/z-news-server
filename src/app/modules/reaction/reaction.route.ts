@@ -11,7 +11,15 @@ const router = express.Router();
 router.get(
   '/self',
   guest('optional'),
-  auth('admin'),
+  auth(
+    'admin',
+    'editor',
+    'author',
+    'contributor',
+    'subscriber',
+    'user',
+    'guest',
+  ),
   ReactionControllers.getSelfReactions,
 );
 router.get('/', auth('admin'), ReactionControllers.getReactions);
