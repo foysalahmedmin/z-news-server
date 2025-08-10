@@ -62,6 +62,7 @@ export const getSelfReactions = async (
   data: TReaction[];
   meta: { total: number; page: number; limit: number };
 }> => {
+  console.log(user, guest);
   if (!user?._id && !guest?._id) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }

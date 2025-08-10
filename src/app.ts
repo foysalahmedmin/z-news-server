@@ -32,12 +32,12 @@ app.use(
     saveUninitialized: false,
     store: MongoStore.create({
       mongoUrl: config.database_url,
-      ttl: (1000 * 60 * 60 * 24) / 1000,
+      ttl: 60 * 60 * 24 * 30,
     }),
     cookie: {
       secure: config.node_dev === 'production',
       httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24,
+      maxAge: 1000 * 60 * 60 * 24 * 30,
     },
   }),
 );
