@@ -34,6 +34,8 @@ export const getSelfNewsReaction = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
+  console.log(guest, news_id);
+
   const result = await Reaction.findOne({
     news: news_id,
     ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
@@ -234,27 +236,13 @@ export const deleteSelfReaction = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const reaction = await Reaction.findOne({
+  await Reaction.findOneAndDelete({
     _id: id,
     ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
   });
-  if (!reaction) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
-  }
-
-  await reaction.softDelete();
 };
 
 export const deleteReaction = async (id: string): Promise<void> => {
-  const reaction = await Reaction.findById(id);
-  if (!reaction) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
-  }
-
-  await reaction.softDelete();
-};
-
-export const deleteReactionPermanent = async (id: string): Promise<void> => {
   const reaction = await Reaction.findById(id).lean();
   if (!reaction) {
     throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
@@ -282,13 +270,10 @@ export const deleteSelfReactions = async (
   const foundIds = reactions.map((reaction) => reaction._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Reaction.updateMany(
-    {
-      _id: { $in: foundIds },
-      ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
-    },
-    { is_deleted: true },
-  );
+  await Reaction.deleteMany({
+    _id: { $in: foundIds },
+    ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
+  });
 
   return {
     count: foundIds.length,
@@ -306,134 +291,10 @@ export const deleteReactions = async (
   const foundIds = reactions.map((reaction) => reaction._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Reaction.updateMany({ _id: { $in: foundIds } }, { is_deleted: true });
-
-  return {
-    count: foundIds.length,
-    not_found_ids: notFoundIds,
-  };
-};
-
-export const deleteReactionsPermanent = async (
-  ids: string[],
-): Promise<{
-  count: number;
-  not_found_ids: string[];
-}> => {
-  // Use lean for finding existing reactions
-  const reactions = await Reaction.find({ _id: { $in: ids } }).lean();
-  const foundIds = reactions.map((reaction) => reaction._id.toString());
-  const notFoundIds = ids.filter((id) => !foundIds.includes(id));
-
   await Reaction.deleteMany({ _id: { $in: foundIds } });
 
   return {
     count: foundIds.length,
-    not_found_ids: notFoundIds,
-  };
-};
-
-export const restoreSelfReaction = async (
-  user: TJwtPayload,
-  guest: TGuest,
-  id: string,
-): Promise<TReaction> => {
-  if (!user?._id && !guest?.guest_token) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
-  }
-
-  const reaction = await Reaction.findOneAndUpdate(
-    {
-      _id: id,
-      is_deleted: true,
-      ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
-    },
-    { is_deleted: false },
-    { new: true },
-  ).lean();
-
-  if (!reaction) {
-    throw new AppError(
-      httpStatus.NOT_FOUND,
-      'Reaction not found or not deleted',
-    );
-  }
-
-  return reaction;
-};
-
-export const restoreReaction = async (id: string): Promise<TReaction> => {
-  const reaction = await Reaction.findOneAndUpdate(
-    { _id: id, is_deleted: true },
-    { is_deleted: false },
-    { new: true },
-  ).lean();
-
-  if (!reaction) {
-    throw new AppError(
-      httpStatus.NOT_FOUND,
-      'Reaction not found or not deleted',
-    );
-  }
-
-  return reaction;
-};
-
-export const restoreSelfReactions = async (
-  user: TJwtPayload,
-  guest: TGuest,
-  ids: string[],
-): Promise<{
-  count: number;
-  not_found_ids: string[];
-}> => {
-  if (!user?._id && !guest?.guest_token) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
-  }
-
-  const result = await Reaction.updateMany(
-    {
-      _id: { $in: ids },
-      is_deleted: true,
-      ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
-    },
-    { is_deleted: false },
-  );
-
-  const restoredReactions = await Reaction.find({
-    _id: { $in: ids },
-    ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
-  }).lean();
-  const restoredIds = restoredReactions.map((reaction) =>
-    reaction._id.toString(),
-  );
-  const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
-
-  return {
-    count: result.modifiedCount,
-    not_found_ids: notFoundIds,
-  };
-};
-
-export const restoreReactions = async (
-  ids: string[],
-): Promise<{
-  count: number;
-  not_found_ids: string[];
-}> => {
-  const result = await Reaction.updateMany(
-    { _id: { $in: ids }, is_deleted: true },
-    { is_deleted: false },
-  );
-
-  const restoredReactions = await Reaction.find({ _id: { $in: ids } }).lean();
-  const restoredIds = restoredReactions.map((reaction) =>
-    reaction._id.toString(),
-  );
-  const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
-
-  return {
-    count: result.modifiedCount,
     not_found_ids: notFoundIds,
   };
 };

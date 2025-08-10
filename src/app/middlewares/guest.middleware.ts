@@ -44,7 +44,7 @@ const initialize = async (req: Request, res: Response): Promise<TGuest> => {
   }
 
   // Attach to session
-  req.session.guest = guest as unknown as TGuest;
+  req.session.guest = guest.toObject();
 
   return guest as unknown as TGuest;
 };
@@ -76,12 +76,12 @@ const guest = (status: 'mandatory' | 'optional') =>
     let guest: TGuest | undefined = req.session?.guest;
 
     // Initialize guest if missing or invalid
-    if (!guest || !guest._id) {
+    if (!guest || !guest?._id) {
       guest = await initialize(req, res);
     }
 
     // Check mandatory status
-    if ((!guest || !guest._id) && status === 'mandatory') {
+    if ((!guest || !guest?._id) && status === 'mandatory') {
       throw new AppError(
         httpStatus.UNAUTHORIZED,
         'Unable to establish guest session.',

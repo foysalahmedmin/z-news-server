@@ -128,13 +128,6 @@ router.delete(
 );
 
 router.delete(
-  '/bulk/permanent',
-  auth('admin'),
-  validation(ReactionValidations.reactionOperationValidationSchema),
-  ReactionControllers.deleteReactionsPermanent,
-);
-
-router.delete(
   '/bulk',
   auth('admin'),
   validation(ReactionValidations.reactionOperationValidationSchema),
@@ -155,13 +148,6 @@ router.delete(
   ),
   validation(ReactionValidations.reactionOperationValidationSchema),
   ReactionControllers.deleteSelfReaction,
-);
-
-router.delete(
-  '/:id/permanent',
-  auth('admin'),
-  validation(ReactionValidations.reactionOperationValidationSchema),
-  ReactionControllers.deleteReactionPermanent,
 );
 
 router.delete(
@@ -186,52 +172,6 @@ router.post(
   ),
   validation(ReactionValidations.createReactionValidationSchema),
   ReactionControllers.createReaction,
-);
-
-router.post(
-  '/bulk/restore/self',
-  guest('optional'),
-  auth(
-    'admin',
-    'editor',
-    'author',
-    'contributor',
-    'subscriber',
-    'user',
-    'guest',
-  ),
-  validation(ReactionValidations.reactionOperationValidationSchema),
-  ReactionControllers.restoreSelfReactions,
-);
-
-router.post(
-  '/bulk/restore',
-  auth('admin'),
-  validation(ReactionValidations.reactionOperationValidationSchema),
-  ReactionControllers.restoreReactions,
-);
-
-router.post(
-  '/:id/restore/self',
-  guest('optional'),
-  auth(
-    'admin',
-    'editor',
-    'author',
-    'contributor',
-    'subscriber',
-    'user',
-    'guest',
-  ),
-  validation(ReactionValidations.reactionOperationValidationSchema),
-  ReactionControllers.restoreSelfReaction,
-);
-
-router.post(
-  '/:id/restore',
-  auth('admin'),
-  validation(ReactionValidations.reactionOperationValidationSchema),
-  ReactionControllers.restoreReaction,
 );
 
 const ReactionRoutes = router;

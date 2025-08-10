@@ -160,17 +160,6 @@ export const deleteReaction = catchAsync(async (req, res) => {
   });
 });
 
-export const deleteReactionPermanent = catchAsync(async (req, res) => {
-  const { id } = req.params;
-  await ReactionServices.deleteReactionPermanent(id);
-  sendResponse(res, {
-    status: httpStatus.OK,
-    success: true,
-    message: 'Reaction permanently deleted successfully',
-    data: null,
-  });
-});
-
 export const deleteSelfReactions = catchAsync(async (req, res) => {
   const { ids } = req.body;
   const result = await ReactionServices.deleteSelfReactions(
@@ -195,75 +184,6 @@ export const deleteReactions = catchAsync(async (req, res) => {
     status: httpStatus.OK,
     success: true,
     message: `${result.count} Reactions soft deleted successfully`,
-    data: {
-      not_found_ids: result.not_found_ids,
-    },
-  });
-});
-
-export const deleteReactionsPermanent = catchAsync(async (req, res) => {
-  const { ids } = req.body;
-  const result = await ReactionServices.deleteReactionsPermanent(ids);
-  sendResponse(res, {
-    status: httpStatus.OK,
-    success: true,
-    message: `${result.count} Reactions permanently deleted successfully`,
-    data: {
-      not_found_ids: result.not_found_ids,
-    },
-  });
-});
-
-export const restoreSelfReaction = catchAsync(async (req, res) => {
-  const { id } = req.params;
-  const result = await ReactionServices.restoreSelfReaction(
-    req.user,
-    req.guest,
-    id,
-  );
-  sendResponse(res, {
-    status: httpStatus.OK,
-    success: true,
-    message: 'Reaction restored successfully',
-    data: result,
-  });
-});
-
-export const restoreReaction = catchAsync(async (req, res) => {
-  const { id } = req.params;
-  const result = await ReactionServices.restoreReaction(id);
-  sendResponse(res, {
-    status: httpStatus.OK,
-    success: true,
-    message: 'Reaction restored successfully',
-    data: result,
-  });
-});
-
-export const restoreSelfReactions = catchAsync(async (req, res) => {
-  const { ids } = req.body;
-  const result = await ReactionServices.restoreSelfReactions(
-    req.user,
-    req.guest,
-    ids,
-  );
-  sendResponse(res, {
-    status: httpStatus.OK,
-    success: true,
-    message: `${result.count} Reactions restored successfully`,
-    data: {
-      not_found_ids: result.not_found_ids,
-    },
-  });
-});
-
-export const restoreReactions = catchAsync(async (req, res) => {
-  const { ids } = req.body;
-  const result = await ReactionServices.restoreReactions(ids);
-  sendResponse(res, {
-    status: httpStatus.OK,
-    success: true,
-    message: `${result.count} Reactions restored successfully`,
     data: {
       not_found_ids: result.not_found_ids,
     },

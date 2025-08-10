@@ -16,15 +16,18 @@ const app: Application = express();
 app.set('trust proxy', true);
 
 app.use(express.json({ limit: '1mb' }));
+
 app.use(cookieParser());
+
 app.use(
   cors({
-    origin: '*',
+    origin: 'http://localhost:3001',
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   }),
 );
+
 app.use(
   session({
     secret: config.session_secret,

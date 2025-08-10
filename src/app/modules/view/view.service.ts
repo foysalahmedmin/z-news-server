@@ -108,27 +108,13 @@ export const deleteSelfView = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const view = await View.findOne({
+  await View.findOneAndDelete({
     _id: id,
     ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
   });
-  if (!view) {
-    throw new AppError(httpStatus.NOT_FOUND, 'View not found');
-  }
-
-  await view.softDelete();
 };
 
 export const deleteView = async (id: string): Promise<void> => {
-  const view = await View.findById(id);
-  if (!view) {
-    throw new AppError(httpStatus.NOT_FOUND, 'View not found');
-  }
-
-  await view.softDelete();
-};
-
-export const deleteViewPermanent = async (id: string): Promise<void> => {
   const view = await View.findById(id).lean();
   if (!view) {
     throw new AppError(httpStatus.NOT_FOUND, 'View not found');
@@ -156,7 +142,7 @@ export const deleteSelfViews = async (
   const foundIds = views.map((view) => view._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await View.updateMany(
+  await View.deleteMany(
     {
       _id: { $in: foundIds },
       ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
@@ -180,123 +166,10 @@ export const deleteViews = async (
   const foundIds = views.map((view) => view._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await View.updateMany({ _id: { $in: foundIds } }, { is_deleted: true });
-
-  return {
-    count: foundIds.length,
-    not_found_ids: notFoundIds,
-  };
-};
-
-export const deleteViewsPermanent = async (
-  ids: string[],
-): Promise<{
-  count: number;
-  not_found_ids: string[];
-}> => {
-  const views = await View.find({ _id: { $in: ids } }).lean();
-  const foundIds = views.map((view) => view._id.toString());
-  const notFoundIds = ids.filter((id) => !foundIds.includes(id));
-
   await View.deleteMany({ _id: { $in: foundIds } });
 
   return {
     count: foundIds.length,
-    not_found_ids: notFoundIds,
-  };
-};
-
-export const restoreSelfView = async (
-  user: TJwtPayload,
-  guest: TGuest,
-  id: string,
-): Promise<TView> => {
-  if (!user?._id && !guest?.guest_token) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
-  }
-
-  const view = await View.findOneAndUpdate(
-    {
-      _id: id,
-      is_deleted: true,
-      ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
-    },
-    { is_deleted: false },
-    { new: true },
-  ).lean();
-
-  if (!view) {
-    throw new AppError(httpStatus.NOT_FOUND, 'View not found or not deleted');
-  }
-
-  return view;
-};
-
-export const restoreView = async (id: string): Promise<TView> => {
-  const view = await View.findOneAndUpdate(
-    { _id: id, is_deleted: true },
-    { is_deleted: false },
-    { new: true },
-  ).lean();
-
-  if (!view) {
-    throw new AppError(httpStatus.NOT_FOUND, 'View not found or not deleted');
-  }
-
-  return view;
-};
-
-export const restoreSelfViews = async (
-  user: TJwtPayload,
-  guest: TGuest,
-  ids: string[],
-): Promise<{
-  count: number;
-  not_found_ids: string[];
-}> => {
-  if (!user?._id && !guest?.guest_token) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
-  }
-
-  const result = await View.updateMany(
-    {
-      _id: { $in: ids },
-      is_deleted: true,
-      ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
-    },
-    { is_deleted: false },
-  );
-
-  const restoredViews = await View.find({
-    _id: { $in: ids },
-    ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
-  }).lean();
-  const restoredIds = restoredViews.map((view) => view._id.toString());
-  const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
-
-  return {
-    count: result.modifiedCount,
-    not_found_ids: notFoundIds,
-  };
-};
-
-export const restoreViews = async (
-  ids: string[],
-): Promise<{
-  count: number;
-  not_found_ids: string[];
-}> => {
-  const result = await View.updateMany(
-    { _id: { $in: ids }, is_deleted: true },
-    { is_deleted: false },
-  );
-
-  const restoredViews = await View.find({ _id: { $in: ids } }).lean();
-  const restoredIds = restoredViews.map((view) => view._id.toString());
-  const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
-
-  return {
-    count: result.modifiedCount,
     not_found_ids: notFoundIds,
   };
 };

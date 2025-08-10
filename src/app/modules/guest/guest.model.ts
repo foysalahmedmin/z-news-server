@@ -12,7 +12,6 @@ const guestSchema = new Schema<TGuestDocument>(
     email: {
       type: String,
       lowercase: true,
-      unique: true,
       trim: true,
     },
     guest_token: { type: String, required: true, unique: true, index: true },
