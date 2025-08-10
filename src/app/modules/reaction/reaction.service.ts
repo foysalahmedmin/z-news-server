@@ -1,8 +1,8 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
-import { TGuest } from '../../types/express-session.type';
 import { TJwtPayload } from '../auth/auth.type';
+import { TGuest } from '../guest/guest.type';
 import { Reaction } from './reaction.model';
 import { TReaction } from './reaction.type';
 
@@ -11,18 +11,39 @@ export const createReaction = async (
   guest: TGuest,
   payload: TReaction,
 ): Promise<TReaction> => {
-  if (!user?._id && !guest?._id) {
+  if (!user?._id && !guest?.guest_token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   const update = {
     ...payload,
     ...(user?._id ? { user: user._id } : {}),
-    ...(guest?._id ? { guest: guest._id } : {}),
+    ...(guest?.guest_token ? { guest: guest.guest_token } : {}),
   };
 
   const result = await Reaction.create(update);
   return result.toObject();
+};
+
+export const getSelfNewsReaction = async (
+  user: TJwtPayload,
+  guest: TGuest,
+  news_id: string,
+): Promise<TReaction> => {
+  if (!user?._id && !guest?.guest_token) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  const result = await Reaction.findOne({
+    news: news_id,
+    ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
+  }).lean();
+
+  if (!result) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
+  }
+
+  return result;
 };
 
 export const getSelfReaction = async (
@@ -30,13 +51,13 @@ export const getSelfReaction = async (
   guest: TGuest,
   id: string,
 ): Promise<TReaction> => {
-  if (!user?._id && !guest?._id) {
+  if (!user?._id && !guest?.guest_token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   const result = await Reaction.findOne({
     _id: id,
-    ...(user?._id ? { user: user._id } : { guest: guest._id }),
+    ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
   }).lean();
 
   if (!result) {
@@ -63,13 +84,13 @@ export const getSelfReactions = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   console.log(user, guest);
-  if (!user?._id && !guest?._id) {
+  if (!user?._id && !guest?.guest_token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   const reactionQuery = new AppQuery<TReaction>(
     Reaction.find({
-      ...(user?._id ? { user: user._id } : { guest: guest._id }),
+      ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
     }),
     query,
   )
@@ -106,13 +127,13 @@ export const updateSelfReaction = async (
   id: string,
   payload: Partial<Pick<TReaction, 'type'>>,
 ): Promise<TReaction> => {
-  if (!user?._id && !guest?._id) {
+  if (!user?._id && !guest?.guest_token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   const data = await Reaction.findOne({
     _id: id,
-    ...(user?._id ? { user: user._id } : { guest: guest._id }),
+    ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
   }).lean();
 
   if (!data) {
@@ -157,13 +178,13 @@ export const updateSelfReactions = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  if (!user?._id && !guest?._id) {
+  if (!user?._id && !guest?.guest_token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   const reactions = await Reaction.find({
     _id: { $in: ids },
-    ...(user?._id ? { user: user._id } : { guest: guest._id }),
+    ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
   }).lean();
   const foundIds = reactions.map((reaction) => reaction._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
@@ -171,7 +192,7 @@ export const updateSelfReactions = async (
   const result = await Reaction.updateMany(
     {
       _id: { $in: foundIds },
-      ...(user?._id ? { user: user._id } : { guest: guest._id }),
+      ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
     },
     { ...payload },
   );
@@ -209,13 +230,13 @@ export const deleteSelfReaction = async (
   guest: TGuest,
   id: string,
 ): Promise<void> => {
-  if (!user?._id && !guest?._id) {
+  if (!user?._id && !guest?.guest_token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   const reaction = await Reaction.findOne({
     _id: id,
-    ...(user?._id ? { user: user._id } : { guest: guest._id }),
+    ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
   });
   if (!reaction) {
     throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
@@ -250,13 +271,13 @@ export const deleteSelfReactions = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  if (!user?._id && !guest?._id) {
+  if (!user?._id && !guest?.guest_token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   const reactions = await Reaction.find({
     _id: { $in: ids },
-    ...(user?._id ? { user: user._id } : { guest: guest._id }),
+    ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
   }).lean();
   const foundIds = reactions.map((reaction) => reaction._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
@@ -264,7 +285,7 @@ export const deleteSelfReactions = async (
   await Reaction.updateMany(
     {
       _id: { $in: foundIds },
-      ...(user?._id ? { user: user._id } : { guest: guest._id }),
+      ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
     },
     { is_deleted: true },
   );
@@ -317,7 +338,7 @@ export const restoreSelfReaction = async (
   guest: TGuest,
   id: string,
 ): Promise<TReaction> => {
-  if (!user?._id && !guest?._id) {
+  if (!user?._id && !guest?.guest_token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
@@ -325,7 +346,7 @@ export const restoreSelfReaction = async (
     {
       _id: id,
       is_deleted: true,
-      ...(user?._id ? { user: user._id } : { guest: guest._id }),
+      ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
     },
     { is_deleted: false },
     { new: true },
@@ -366,7 +387,7 @@ export const restoreSelfReactions = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  if (!user?._id && !guest?._id) {
+  if (!user?._id && !guest?.guest_token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
@@ -374,14 +395,14 @@ export const restoreSelfReactions = async (
     {
       _id: { $in: ids },
       is_deleted: true,
-      ...(user?._id ? { user: user._id } : { guest: guest._id }),
+      ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
     },
     { is_deleted: false },
   );
 
   const restoredReactions = await Reaction.find({
     _id: { $in: ids },
-    ...(user?._id ? { user: user._id } : { guest: guest._id }),
+    ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
   }).lean();
   const restoredIds = restoredReactions.map((reaction) =>
     reaction._id.toString(),

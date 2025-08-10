@@ -57,6 +57,12 @@ export const updateReactionsValidationSchema = z.object({
   }),
 });
 
+export const newsReactionOperationValidationSchema = z.object({
+  params: z.object({
+    news_id: idSchema,
+  }),
+});
+
 export const reactionOperationValidationSchema = z.object({
   params: z.object({
     id: idSchema,

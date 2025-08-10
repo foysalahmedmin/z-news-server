@@ -8,13 +8,13 @@ const router = express.Router();
 
 // GET
 
-router.get('/public', CategoryControllers.getCategoriesPublic);
+router.get('/public', CategoryControllers.getPublicCategories);
 router.get('/', auth('admin'), CategoryControllers.getCategories);
 
-router.get('/tree/public', CategoryControllers.getCategoriesTreePublic);
+router.get('/tree/public', CategoryControllers.getPublicCategoriesTree);
 router.get('/tree', auth('admin'), CategoryControllers.getCategoriesTree);
 
-router.get('/:slug/public', CategoryControllers.getCategoryPublic);
+router.get('/:slug/public', CategoryControllers.getPublicCategory);
 router.get(
   '/:id',
   auth('admin'),

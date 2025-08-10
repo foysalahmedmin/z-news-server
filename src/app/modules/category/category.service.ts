@@ -11,7 +11,7 @@ export const createCategory = async (data: TCategory): Promise<TCategory> => {
   return result.toObject();
 };
 
-export const getCategoryPublic = async (slug: string): Promise<TCategory> => {
+export const getPublicCategory = async (slug: string): Promise<TCategory> => {
   const result = await Category.findOne({
     slug: slug,
     status: 'active',
@@ -30,7 +30,7 @@ export const getCategory = async (id: string): Promise<TCategory> => {
   return result;
 };
 
-export const getCategoriesPublic = async (
+export const getPublicCategories = async (
   query: Record<string, unknown>,
 ): Promise<{
   data: TCategory[];
@@ -94,7 +94,7 @@ export const getCategories = async (
   return result;
 };
 
-export const getCategoriesTreePublic = async (
+export const getPublicCategoriesTree = async (
   category?: string,
   query: { page?: number; limit?: number } = {},
 ): Promise<{

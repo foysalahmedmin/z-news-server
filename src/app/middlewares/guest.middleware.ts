@@ -2,18 +2,19 @@ import crypto from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 import httpStatus from 'http-status';
 import AppError from '../builder/AppError';
-import { TGuest } from '../types/express-session.type';
+import { Guest } from '../modules/guest/guest.model';
+import { TGuest } from '../modules/guest/guest.type';
 import catchAsync from '../utils/catchAsync';
 
-const COOKIE_NAME = 'guest';
-const COOKIE_MAX_AGE = 1000 * 60 * 60 * 24 * 365; // 1 year
+const COOKIE_NAME = 'guest_token';
+const COOKIE_MAX_AGE = 1000 * 60 * 60 * 24 * 365;
 
-async function initialize(req: Request, res: Response): Promise<TGuest> {
-  // Try get guest id from cookie, else generate new
-  let guest_id = req.cookies[COOKIE_NAME];
-  if (!guest_id) {
-    guest_id = crypto.randomBytes(12).toString('hex'); // 24-char ID;
-    res.cookie(COOKIE_NAME, guest_id, {
+const initialize = async (req: Request, res: Response): Promise<TGuest> => {
+  let guestToken = req.cookies?.[COOKIE_NAME];
+
+  if (!guestToken) {
+    guestToken = crypto.randomBytes(12).toString('hex');
+    res.cookie(COOKIE_NAME, guestToken, {
       maxAge: COOKIE_MAX_AGE,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -21,43 +22,31 @@ async function initialize(req: Request, res: Response): Promise<TGuest> {
     });
   }
 
-  // Setup guest session object
-  const now = new Date();
-  const guest: TGuest = {
-    _id: guest_id,
-    fingerprint: await fingerprint(req),
-    session_id: req.sessionID,
-    user_agent: req.get('User-Agent') || '',
-    ip_address:
-      req.get('X-Forwarded-For')?.split(',')[0].trim() ||
-      req.get('X-Real-IP') ||
-      req.get('CF-Connecting-IP') ||
-      req.socket.remoteAddress,
-    preferences: {},
-    created_at: now,
-  };
+  // Try find guest in DB
+  let guest = await Guest.findOne({ guest_token: guestToken });
+
+  if (!guest) {
+    guest = await Guest.create({
+      guest_token: guestToken,
+      session_id: req.sessionID,
+      ip_address: req.ip,
+      user_agent: req.get('User-Agent') || '',
+      fingerprint: req.get('User-Agent')
+        ? crypto.createHash('md5').update(req.get('User-Agent')!).digest('hex')
+        : '',
+      preferences: {},
+    });
+  } else {
+    guest.session_id = req.sessionID;
+    guest.ip_address = req.ip;
+    guest.user_agent = req.get('User-Agent') || guest.user_agent;
+    await guest.save();
+  }
 
   // Attach to session
-  req.session.guest = guest;
+  req.session.guest = guest as unknown as TGuest;
 
-  // Enrich preferences or other data from request
-  await enrichGuestFromRequest(guest, req);
-
-  return guest;
-}
-
-// Generate fingerprint
-export const fingerprint = async (req: Request): Promise<string> => {
-  const userAgent = req.get('User-Agent') || '';
-  const acceptLanguage = req.get('Accept-Language') || '';
-  const acceptEncoding = req.get('Accept-Encoding') || '';
-  const dnt = req.get('DNT') || '';
-
-  return crypto
-    .createHash('md5')
-    .update(`${userAgent}|${acceptLanguage}|${acceptEncoding}|${dnt}`)
-    .digest('hex')
-    .substring(0, 16);
+  return guest as unknown as TGuest;
 };
 
 // Enrich guest with preferences
@@ -89,8 +78,6 @@ const guest = (status: 'mandatory' | 'optional') =>
     // Initialize guest if missing or invalid
     if (!guest || !guest._id) {
       guest = await initialize(req, res);
-    } else {
-      req.session.guest = guest;
     }
 
     // Check mandatory status

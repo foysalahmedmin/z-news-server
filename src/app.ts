@@ -13,13 +13,13 @@ import router from './app/routes';
 dotenv.config();
 const app: Application = express();
 
-app.set('trust proxy', 1);
+app.set('trust proxy', true);
 
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 app.use(
   cors({
-    origin: '*', // or "*" for all origins
+    origin: '*',
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],

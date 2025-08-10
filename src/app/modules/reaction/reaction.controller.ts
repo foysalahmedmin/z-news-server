@@ -17,6 +17,21 @@ export const createReaction = catchAsync(async (req, res) => {
   });
 });
 
+export const getSelfNewsReaction = catchAsync(async (req, res) => {
+  const { news_id } = req.params;
+  const result = await ReactionServices.getSelfNewsReaction(
+    req.user,
+    req.guest,
+    news_id,
+  );
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'Reaction retrieved successfully',
+    data: result,
+  });
+});
+
 export const getSelfReaction = catchAsync(async (req, res) => {
   const { id } = req.params;
   const result = await ReactionServices.getSelfReaction(

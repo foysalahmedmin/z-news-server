@@ -3,11 +3,8 @@ import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
-import { TGuest } from '../../types/express-session.type';
 import { TJwtPayload } from '../auth/auth.type';
 import { Category } from '../category/category.model';
-import { Comment } from '../comment/comment.model';
-import { TComment } from '../comment/comment.type';
 import { NewsBreak } from '../news-break/news-break.model';
 import { TNewsBreak } from '../news-break/news-break.type';
 import { NewsHeadline } from '../news-headline/news-headline.model';
@@ -162,48 +159,12 @@ export const createNews = async (
   }
 };
 
-export const getNewsCommentsPublic = async (
-  id: string,
-  query: {
-    page?: number;
-    limit?: number;
-  },
-  guest: TGuest,
-): Promise<{
-  data: TComment[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-  };
-  guest: TGuest;
-}> => {
-  const page = Number(query.page ?? 1);
-  const limit = Number(query.limit ?? 10);
-  const skip = (page - 1) * limit;
-
-  const [data, total] = await Promise.all([
-    Comment.find({ news: new mongoose.Types.ObjectId(id) })
-      .sort({ created_at: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean(),
-    Comment.countDocuments({ news: new mongoose.Types.ObjectId(id) }),
-  ]);
-
-  return {
-    data,
-    meta: {
-      total,
-      page,
-      limit,
-    },
-    guest,
-  };
-};
-
-export const getNewsPublic = async (slug: string): Promise<TNews> => {
-  const result = await News.findOne({ slug: slug, status: 'published' })
+export const getPublicNews = async (slug: string): Promise<TNews> => {
+  const result = await News.findOneAndUpdate(
+    { slug: slug, status: 'published' },
+    { $inc: { views: 1 } },
+    { new: true },
+  )
     .populate([
       { path: 'like_count' },
       { path: 'dislike_count' },
@@ -212,6 +173,7 @@ export const getNewsPublic = async (slug: string): Promise<TNews> => {
       { path: 'category', select: '_id name slug' },
     ])
     .lean();
+
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'News not found');
   }
@@ -269,7 +231,7 @@ export const getNews = async (id: string): Promise<TNews> => {
   return result;
 };
 
-export const getBulkNewsPublic = async (
+export const getPublicBulkNews = async (
   query: Record<string, unknown>,
 ): Promise<{
   data: TNews[];

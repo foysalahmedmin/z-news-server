@@ -40,7 +40,15 @@ const viewSchema = new Schema<TViewDocument>(
   },
 );
 
-viewSchema.index({ user: 1, news: 1 }, { unique: true });
+viewSchema.index(
+  { user: 1, news: 1 },
+  { unique: true, partialFilterExpression: { user: { $type: 'objectId' } } },
+);
+
+viewSchema.index(
+  { guest: 1, news: 1 },
+  { unique: true, partialFilterExpression: { guest: { $type: 'string' } } },
+);
 
 // toJSON override to remove sensitive fields from output
 viewSchema.methods.toJSON = function () {

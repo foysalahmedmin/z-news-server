@@ -13,9 +13,9 @@ export const createCategory = catchAsync(async (req, res) => {
   });
 });
 
-export const getCategoryPublic = catchAsync(async (req, res) => {
+export const getPublicCategory = catchAsync(async (req, res) => {
   const { slug } = req.params;
-  const result = await CategoryServices.getCategoryPublic(slug);
+  const result = await CategoryServices.getPublicCategory(slug);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -35,8 +35,8 @@ export const getCategory = catchAsync(async (req, res) => {
   });
 });
 
-export const getCategoriesPublic = catchAsync(async (req, res) => {
-  const result = await CategoryServices.getCategoriesPublic(req.query);
+export const getPublicCategories = catchAsync(async (req, res) => {
+  const result = await CategoryServices.getPublicCategories(req.query);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -57,9 +57,9 @@ export const getCategories = catchAsync(async (req, res) => {
   });
 });
 
-export const getCategoriesTreePublic = catchAsync(async (req, res) => {
+export const getPublicCategoriesTree = catchAsync(async (req, res) => {
   const { category, ...query } = req.query;
-  const result = await CategoryServices.getCategoriesTreePublic(
+  const result = await CategoryServices.getPublicCategoriesTree(
     category as string,
     query,
   );

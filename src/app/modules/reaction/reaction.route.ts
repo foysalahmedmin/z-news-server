@@ -25,6 +25,22 @@ router.get(
 router.get('/', auth('admin'), ReactionControllers.getReactions);
 
 router.get(
+  '/news/:news_id/self',
+  guest('optional'),
+  auth(
+    'admin',
+    'editor',
+    'author',
+    'contributor',
+    'subscriber',
+    'user',
+    'guest',
+  ),
+  validation(ReactionValidations.newsReactionOperationValidationSchema),
+  ReactionControllers.getSelfNewsReaction,
+);
+
+router.get(
   '/:id/self',
   guest('optional'),
   auth(

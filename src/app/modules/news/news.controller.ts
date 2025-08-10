@@ -13,24 +13,9 @@ export const createNews = catchAsync(async (req, res) => {
   });
 });
 
-export const getNewsCommentsPublic = catchAsync(async (req, res) => {
+export const getPublicNews = catchAsync(async (req, res) => {
   const { slug } = req.params;
-  const result = await NewsServices.getNewsCommentsPublic(
-    slug,
-    req.query,
-    req.guest,
-  );
-  sendResponse(res, {
-    status: httpStatus.OK,
-    success: true,
-    message: 'News retrieved successfully',
-    data: result,
-  });
-});
-
-export const getNewsPublic = catchAsync(async (req, res) => {
-  const { slug } = req.params;
-  const result = await NewsServices.getNewsPublic(slug);
+  const result = await NewsServices.getPublicNews(slug);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -61,8 +46,8 @@ export const getNews = catchAsync(async (req, res) => {
   });
 });
 
-export const getBulkNewsPublic = catchAsync(async (req, res) => {
-  const result = await NewsServices.getBulkNewsPublic(req.query);
+export const getPublicBulkNews = catchAsync(async (req, res) => {
+  const result = await NewsServices.getPublicBulkNews(req.query);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,

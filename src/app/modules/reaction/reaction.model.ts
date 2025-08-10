@@ -52,7 +52,15 @@ const reactionSchema = new Schema<TReactionDocument>(
   },
 );
 
-reactionSchema.index({ user: 1, news: 1 }, { unique: true });
+reactionSchema.index(
+  { user: 1, news: 1 },
+  { unique: true, partialFilterExpression: { user: { $type: 'objectId' } } },
+);
+
+reactionSchema.index(
+  { guest: 1, news: 1 },
+  { unique: true, partialFilterExpression: { guest: { $type: 'string' } } },
+);
 
 // toJSON override to remove sensitive fields from output
 reactionSchema.methods.toJSON = function () {

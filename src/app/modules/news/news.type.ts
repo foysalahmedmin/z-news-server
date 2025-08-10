@@ -30,6 +30,7 @@ export type TNews = {
   is_edited?: boolean;
   edited_at?: Date;
   layout?: string;
+  views?: number;
   is_deleted: boolean;
   news_headline?: TNewsHeadline;
   news_break?: TNewsBreak;
