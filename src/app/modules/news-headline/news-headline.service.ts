@@ -44,6 +44,37 @@ export const getNewsHeadline = async (id: string): Promise<TNewsHeadline> => {
   return result;
 };
 
+export const getPublicNewsHeadlines = async (
+  query: Record<string, unknown>,
+): Promise<{
+  data: TNewsHeadline[];
+  meta: { total: number; page: number; limit: number };
+}> => {
+  const { date: q_date, ...rest } = query || {};
+
+  const date = q_date ? new Date(q_date as string) : new Date();
+  date.setHours(0, 0, 0, 0);
+
+  const filter = {
+    published_at: { $lte: date },
+    expired_at: { $gte: date },
+  };
+
+  const NewsQuery = new AppQuery<TNewsHeadline>(
+    NewsHeadline.find({ status: 'published', ...filter }),
+    rest,
+  )
+    .search(['title', 'description'])
+    .filter()
+    .sort()
+    .paginate()
+    .fields()
+    .tap((q) => q.lean());
+
+  const result = await NewsQuery.execute();
+  return result;
+};
+
 export const getSelfNewsHeadlines = async (
   user: TJwtPayload,
   query: Record<string, unknown>,
@@ -55,7 +86,7 @@ export const getSelfNewsHeadlines = async (
     NewsHeadline.find({ author: user._id }),
     query,
   )
-    .search(['title', 'description', 'content'])
+    .search(['title', 'description'])
     .filter()
     .sort()
     .paginate()
@@ -73,7 +104,7 @@ export const getNewsHeadlines = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const NewsQuery = new AppQuery<TNewsHeadline>(NewsHeadline.find(), query)
-    .search(['title', 'description', 'content'])
+    .search(['title', 'description'])
     .filter()
     .sort()
     .paginate()

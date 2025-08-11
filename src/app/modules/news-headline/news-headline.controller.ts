@@ -38,6 +38,17 @@ export const getNewsHeadline = catchAsync(async (req, res) => {
   });
 });
 
+export const getPublicNewsHeadlines = catchAsync(async (req, res) => {
+  const result = await NewsHeadlineServices.getPublicNewsHeadlines(req.query);
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'All news-headlines are retrieved successfully',
+    meta: result.meta,
+    data: result.data,
+  });
+});
+
 export const getSelfNewsHeadlines = catchAsync(async (req, res) => {
   const result = await NewsHeadlineServices.getSelfNewsHeadlines(
     req.user,

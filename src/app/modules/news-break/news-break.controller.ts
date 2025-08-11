@@ -35,6 +35,17 @@ export const getNewsBreak = catchAsync(async (req, res) => {
   });
 });
 
+export const getPublicNewsBreaks = catchAsync(async (req, res) => {
+  const result = await NewsBreakServices.getPublicNewsBreaks(req.query);
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'All news-breaks are retrieved successfully',
+    meta: result.meta,
+    data: result.data,
+  });
+});
+
 export const getSelfNewsBreaks = catchAsync(async (req, res) => {
   const result = await NewsBreakServices.getSelfNewsBreaks(req.user, req.query);
   sendResponse(res, {

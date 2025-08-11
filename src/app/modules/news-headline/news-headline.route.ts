@@ -7,6 +7,7 @@ import * as NewsValidations from './news-headline.validation';
 const router = express.Router();
 
 // GET
+router.get('/public', NewsControllers.getPublicNewsHeadlines);
 router.get('/self', auth('admin'), NewsControllers.getSelfNewsHeadlines);
 router.get('/', auth('admin'), NewsControllers.getNewsHeadlines);
 

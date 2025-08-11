@@ -7,6 +7,7 @@ import * as NewsBreakValidations from './news-break.validation';
 const router = express.Router();
 
 // GET
+router.get('/public', NewsBreakControllers.getPublicNewsBreaks);
 router.get('/self', auth('admin'), NewsBreakControllers.getSelfNewsBreaks);
 router.get('/', auth('admin'), NewsBreakControllers.getNewsBreaks);
 

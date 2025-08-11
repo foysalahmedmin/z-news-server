@@ -44,6 +44,37 @@ export const getNewsBreak = async (id: string): Promise<TNewsBreak> => {
   return result;
 };
 
+export const getPublicNewsBreaks = async (
+  query: Record<string, unknown>,
+): Promise<{
+  data: TNewsBreak[];
+  meta: { total: number; page: number; limit: number };
+}> => {
+  const { date: q_date, ...rest } = query || {};
+
+  const date = q_date ? new Date(q_date as string) : new Date();
+  date.setHours(0, 0, 0, 0);
+
+  const filter = {
+    published_at: { $lte: date },
+    expired_at: { $gte: date },
+  };
+
+  const NewsQuery = new AppQuery<TNewsBreak>(
+    NewsBreak.find({ status: 'published', ...filter }),
+    rest,
+  )
+    .search(['title', 'description'])
+    .filter()
+    .sort()
+    .paginate()
+    .fields()
+    .tap((q) => q.lean());
+
+  const result = await NewsQuery.execute();
+  return result;
+};
+
 export const getSelfNewsBreaks = async (
   user: TJwtPayload,
   query: Record<string, unknown>,
@@ -55,7 +86,7 @@ export const getSelfNewsBreaks = async (
     NewsBreak.find({ author: user._id }),
     query,
   )
-    .search(['title', 'description', 'content'])
+    .search(['title', 'description'])
     .filter()
     .sort()
     .paginate()
@@ -73,7 +104,7 @@ export const getNewsBreaks = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const NewsQuery = new AppQuery<TNewsBreak>(NewsBreak.find(), query)
-    .search(['title', 'description', 'content'])
+    .search(['title', 'description'])
     .filter()
     .sort()
     .paginate()
