@@ -11,14 +11,14 @@ export const createView = async (
   guest: TGuest,
   payload: TView,
 ): Promise<TView> => {
-  if (!user?._id && !guest?.guest_token) {
+  if (!user?._id && !guest?.token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   const update = {
     ...payload,
     ...(user?._id ? { user: user._id } : {}),
-    ...(guest?.guest_token ? { guest: guest.guest_token } : {}),
+    ...(guest?.token ? { guest: guest.token } : {}),
   };
 
   const result = await View.create(update);
@@ -30,13 +30,13 @@ export const getSelfView = async (
   guest: TGuest,
   id: string,
 ): Promise<TView> => {
-  if (!user?._id && !guest?.guest_token) {
+  if (!user?._id && !guest?.token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   const result = await View.findOne({
     _id: id,
-    ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
+    ...(user?._id ? { user: user._id } : { guest: guest.token }),
   }).lean();
 
   if (!result) {
@@ -62,13 +62,13 @@ export const getSelfViews = async (
   data: TView[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  if (!user?._id && !guest?.guest_token) {
+  if (!user?._id && !guest?.token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   const viewQuery = new AppQuery<TView>(
     View.find({
-      ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
+      ...(user?._id ? { user: user._id } : { guest: guest.token }),
     }),
     query,
   )
@@ -104,13 +104,13 @@ export const deleteSelfView = async (
   guest: TGuest,
   id: string,
 ): Promise<void> => {
-  if (!user?._id && !guest?.guest_token) {
+  if (!user?._id && !guest?.token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   await View.findOneAndDelete({
     _id: id,
-    ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
+    ...(user?._id ? { user: user._id } : { guest: guest.token }),
   });
 };
 
@@ -131,13 +131,13 @@ export const deleteSelfViews = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  if (!user?._id && !guest?.guest_token) {
+  if (!user?._id && !guest?.token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   const views = await View.find({
     _id: { $in: ids },
-    ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
+    ...(user?._id ? { user: user._id } : { guest: guest.token }),
   }).lean();
   const foundIds = views.map((view) => view._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
@@ -145,7 +145,7 @@ export const deleteSelfViews = async (
   await View.deleteMany(
     {
       _id: { $in: foundIds },
-      ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
+      ...(user?._id ? { user: user._id } : { guest: guest.token }),
     },
     { is_deleted: true },
   );

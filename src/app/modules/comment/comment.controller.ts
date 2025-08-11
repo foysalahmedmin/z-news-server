@@ -39,6 +39,17 @@ export const getComment = catchAsync(async (req, res) => {
   });
 });
 
+export const getPublicComments = catchAsync(async (req, res) => {
+  const result = await CommentServices.getPublicComments(req.query);
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'Comments retrieved successfully',
+    meta: result.meta,
+    data: result.data,
+  });
+});
+
 export const getSelfComments = catchAsync(async (req, res) => {
   const result = await CommentServices.getSelfComments(
     req.user,

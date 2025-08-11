@@ -10,11 +10,11 @@ const COOKIE_NAME = 'guest_token';
 const COOKIE_MAX_AGE = 1000 * 60 * 60 * 24 * 365;
 
 const initialize = async (req: Request, res: Response): Promise<TGuest> => {
-  let guestToken = req.cookies?.[COOKIE_NAME];
+  let token = req.cookies?.[COOKIE_NAME];
 
-  if (!guestToken) {
-    guestToken = crypto.randomBytes(12).toString('hex');
-    res.cookie(COOKIE_NAME, guestToken, {
+  if (!token) {
+    token = crypto.randomBytes(12).toString('hex');
+    res.cookie(COOKIE_NAME, token, {
       maxAge: COOKIE_MAX_AGE,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -23,11 +23,11 @@ const initialize = async (req: Request, res: Response): Promise<TGuest> => {
   }
 
   // Try find guest in DB
-  let guest = await Guest.findOne({ guest_token: guestToken });
+  let guest = await Guest.findOne({ token: token });
 
   if (!guest) {
     guest = await Guest.create({
-      guest_token: guestToken,
+      token: token,
       session_id: req.sessionID,
       ip_address: req.ip,
       user_agent: req.get('User-Agent') || '',

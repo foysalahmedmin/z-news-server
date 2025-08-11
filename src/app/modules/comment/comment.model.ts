@@ -57,7 +57,7 @@ const commentSchema = new Schema<TCommentDocument>(
     status: {
       type: String,
       enum: ['pending', 'approved', 'rejected'],
-      default: 'pending',
+      default: 'approved',
     },
 
     is_edited: {

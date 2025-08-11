@@ -8,6 +8,7 @@ import * as CommentValidations from './comment.validation';
 const router = express.Router();
 
 // GET
+router.get('/public', CommentControllers.getPublicComments);
 router.get(
   '/self',
   guest('optional'),

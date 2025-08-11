@@ -14,7 +14,7 @@ const guestSchema = new Schema<TGuestDocument>(
       lowercase: true,
       trim: true,
     },
-    guest_token: { type: String, required: true, unique: true, index: true },
+    token: { type: String, required: true, unique: true, index: true },
     session_id: { type: String, required: true },
     ip_address: String,
     user_agent: String,
@@ -52,7 +52,9 @@ guestSchema.index(
 
 guestSchema.index(
   { updated_at: 1 },
-  { expireAfterSeconds: 60 * 60 * 24 * 30 * 6 },
+  {
+    expireAfterSeconds: 60 * 60 * 24 * 30 * 3,
+  },
 );
 
 // toJSON override to remove sensitive fields from output

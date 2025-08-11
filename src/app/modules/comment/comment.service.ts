@@ -11,14 +11,14 @@ export const createComment = async (
   guest: TGuest,
   payload: TComment,
 ): Promise<TComment> => {
-  if (!user?._id && !guest?.guest_token) {
+  if (!user?._id && !guest?.token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   const update = {
     ...payload,
     ...(user?._id ? { user: user._id } : {}),
-    ...(guest?.guest_token ? { guest: guest.guest_token } : {}),
+    ...(guest?.token ? { guest: guest.token } : {}),
   };
 
   const result = await Comment.create(update);
@@ -30,13 +30,13 @@ export const getSelfComment = async (
   guest: TGuest,
   id: string,
 ): Promise<TComment> => {
-  if (!user?._id && !guest?.guest_token) {
+  if (!user?._id && !guest?.token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   const result = await Comment.findOne({
     _id: id,
-    ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
+    ...(user?._id ? { user: user._id } : { guest: guest.token }),
   }).lean();
 
   if (!result) {
@@ -60,7 +60,10 @@ export const getPublicComments = async (
   data: TComment[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const commentQuery = new AppQuery<TComment>(Comment.find(), query)
+  const commentQuery = new AppQuery<TComment>(
+    Comment.find({ status: 'approved' }),
+    query,
+  )
     .search(['name', 'email', 'content'])
     .filter()
     .sort()
@@ -80,13 +83,13 @@ export const getSelfComments = async (
   data: TComment[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  if (!user?._id && !guest?.guest_token) {
+  if (!user?._id && !guest?.token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   const commentQuery = new AppQuery<TComment>(
     Comment.find({
-      ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
+      ...(user?._id ? { user: user._id } : { guest: guest.token }),
     }),
     query,
   )
@@ -125,13 +128,13 @@ export const updateSelfComment = async (
   id: string,
   payload: Partial<Pick<TComment, 'content' | 'name' | 'email'>>,
 ): Promise<TComment> => {
-  if (!user?._id && !guest?.guest_token) {
+  if (!user?._id && !guest?.token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   const data = await Comment.findOne({
     _id: id,
-    ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
+    ...(user?._id ? { user: user._id } : { guest: guest.token }),
   }).lean();
 
   if (!data) {
@@ -186,13 +189,13 @@ export const updateSelfComments = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  if (!user?._id && !guest?.guest_token) {
+  if (!user?._id && !guest?.token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   const comments = await Comment.find({
     _id: { $in: ids },
-    ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
+    ...(user?._id ? { user: user._id } : { guest: guest.token }),
   }).lean();
   const foundIds = comments.map((comment) => comment._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
@@ -200,7 +203,7 @@ export const updateSelfComments = async (
   const result = await Comment.updateMany(
     {
       _id: { $in: foundIds },
-      ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
+      ...(user?._id ? { user: user._id } : { guest: guest.token }),
     },
     { ...payload },
   );
@@ -238,13 +241,13 @@ export const deleteSelfComment = async (
   guest: TGuest,
   id: string,
 ): Promise<void> => {
-  if (!user?._id && !guest?.guest_token) {
+  if (!user?._id && !guest?.token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   const comment = await Comment.findOne({
     _id: id,
-    ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
+    ...(user?._id ? { user: user._id } : { guest: guest.token }),
   });
   if (!comment) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
@@ -279,13 +282,13 @@ export const deleteSelfComments = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  if (!user?._id && !guest?.guest_token) {
+  if (!user?._id && !guest?.token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   const comments = await Comment.find({
     _id: { $in: ids },
-    ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
+    ...(user?._id ? { user: user._id } : { guest: guest.token }),
   }).lean();
   const foundIds = comments.map((comment) => comment._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
@@ -293,7 +296,7 @@ export const deleteSelfComments = async (
   await Comment.updateMany(
     {
       _id: { $in: foundIds },
-      ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
+      ...(user?._id ? { user: user._id } : { guest: guest.token }),
     },
     { is_deleted: true },
   );
@@ -346,7 +349,7 @@ export const restoreSelfComment = async (
   guest: TGuest,
   id: string,
 ): Promise<TComment> => {
-  if (!user?._id && !guest?.guest_token) {
+  if (!user?._id && !guest?.token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
@@ -354,7 +357,7 @@ export const restoreSelfComment = async (
     {
       _id: id,
       is_deleted: true,
-      ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
+      ...(user?._id ? { user: user._id } : { guest: guest.token }),
     },
     { is_deleted: false },
     { new: true },
@@ -395,7 +398,7 @@ export const restoreSelfComments = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  if (!user?._id && !guest?.guest_token) {
+  if (!user?._id && !guest?.token) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
@@ -403,14 +406,14 @@ export const restoreSelfComments = async (
     {
       _id: { $in: ids },
       is_deleted: true,
-      ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
+      ...(user?._id ? { user: user._id } : { guest: guest.token }),
     },
     { is_deleted: false },
   );
 
   const restoredComments = await Comment.find({
     _id: { $in: ids },
-    ...(user?._id ? { user: user._id } : { guest: guest.guest_token }),
+    ...(user?._id ? { user: user._id } : { guest: guest.token }),
   }).lean();
   const restoredIds = restoredComments.map((comment) => comment._id.toString());
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
