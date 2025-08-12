@@ -1,7 +1,7 @@
 // src/middlewares/auth.ts
 import { NextFunction, Request, Response } from 'express';
 import httpStatus from 'http-status';
-import jwt, { JwtPayload } from 'jsonwebtoken';
+import jwt, { JwtPayload, TokenExpiredError } from 'jsonwebtoken';
 import AppError from '../builder/AppError';
 import config from '../config';
 import { TJwtPayload } from '../modules/auth/auth.type';
@@ -47,10 +47,18 @@ const auth = (...roles: (TRole | 'guest')[]) => {
         throw new AppError(httpStatus.UNAUTHORIZED, 'No token provided.');
       }
 
-      const decoded = jwt.verify(
-        token,
-        config.jwt_access_secret as string,
-      ) as JwtPayload;
+      let decoded: JwtPayload;
+      try {
+        decoded = jwt.verify(
+          token,
+          config.jwt_access_secret as string,
+        ) as JwtPayload;
+      } catch (err) {
+        if (err instanceof TokenExpiredError) {
+          throw new AppError(httpStatus.UNAUTHORIZED, 'Token expired');
+        }
+        throw new AppError(httpStatus.UNAUTHORIZED, 'Invalid token');
+      }
 
       const { _id, role, iat } = decoded;
 
@@ -69,14 +77,11 @@ const auth = (...roles: (TRole | 'guest')[]) => {
       }
 
       if (user?.password_changed_at && user?.isPasswordChanged(iat)) {
-        throw new AppError(
-          httpStatus.UNAUTHORIZED,
-          'Password recently changed',
-        );
+        throw new AppError(httpStatus.FORBIDDEN, 'Password recently changed');
       }
 
       if (!roles.includes(role) || !roles.includes(user?.role)) {
-        throw new AppError(httpStatus.UNAUTHORIZED, 'Access denied');
+        throw new AppError(httpStatus.FORBIDDEN, 'Access denied');
       }
 
       req.user = decoded as JwtPayload & TJwtPayload;
