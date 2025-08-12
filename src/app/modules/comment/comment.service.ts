@@ -37,7 +37,9 @@ export const getSelfComment = async (
   const result = await Comment.findOne({
     _id: id,
     ...(user?._id ? { user: user._id } : { guest: guest.token }),
-  }).lean();
+  })
+    .populate([{ path: 'user', select: '_id name email image' }])
+    .lean();
 
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
@@ -47,7 +49,9 @@ export const getSelfComment = async (
 };
 
 export const getComment = async (id: string): Promise<TComment> => {
-  const result = await Comment.findById(id).lean();
+  const result = await Comment.findById(id)
+    .populate([{ path: 'user', select: '_id name email image' }])
+    .lean();
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
   }
@@ -61,7 +65,9 @@ export const getPublicComments = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const commentQuery = new AppQuery<TComment>(
-    Comment.find({ status: 'approved' }),
+    Comment.find({ status: 'approved' }).populate([
+      { path: 'user', select: '_id name email image' },
+    ]),
     query,
   )
     .search(['name', 'email', 'content'])
@@ -90,7 +96,7 @@ export const getSelfComments = async (
   const commentQuery = new AppQuery<TComment>(
     Comment.find({
       ...(user?._id ? { user: user._id } : { guest: guest.token }),
-    }),
+    }).populate([{ path: 'user', select: '_id name email image' }]),
     query,
   )
     .search(['name', 'email', 'content'])
@@ -110,7 +116,10 @@ export const getComments = async (
   data: TComment[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const commentQuery = new AppQuery<TComment>(Comment.find(), query)
+  const commentQuery = new AppQuery<TComment>(
+    Comment.find().populate([{ path: 'user', select: '_id name email image' }]),
+    query,
+  )
     .search(['name', 'email', 'content'])
     .filter()
     .sort()

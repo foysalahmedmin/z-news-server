@@ -166,10 +166,10 @@ export const getPublicNews = async (slug: string): Promise<TNews> => {
     { new: true },
   )
     .populate([
-      { path: 'like_count' },
-      { path: 'dislike_count' },
-      { path: 'comment_count' },
-      { path: 'author', select: '_id name email' },
+      // { path: 'like_count' },
+      // { path: 'dislike_count' },
+      // { path: 'comment_count' },
+      { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
     ])
     .lean();
@@ -189,7 +189,7 @@ export const getSelfNews = async (
       { path: 'like_count' },
       { path: 'dislike_count' },
       { path: 'comment_count' },
-      { path: 'author', select: '_id name email' },
+      { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
       {
         path: 'news_headline',
@@ -213,7 +213,7 @@ export const getNews = async (id: string): Promise<TNews> => {
       { path: 'like_count' },
       { path: 'dislike_count' },
       { path: 'comment_count' },
-      { path: 'author', select: '_id name email' },
+      { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
       {
         path: 'news_headline',
@@ -293,7 +293,7 @@ export const getPublicBulkNews = async (
 
   const NewsQuery = new AppQuery<TNews>(
     News.find({ status: 'published' }).populate([
-      { path: 'author', select: '_id name email' },
+      { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
     ]),
     rest,
@@ -334,7 +334,7 @@ export const getSelfBulkNews = async (
       { path: 'like_count' },
       { path: 'dislike_count' },
       { path: 'comment_count' },
-      { path: 'author', select: '_id name email' },
+      { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
       {
         path: 'news_headline',
@@ -369,7 +369,7 @@ export const getBulkNews = async (
       { path: 'like_count' },
       { path: 'dislike_count' },
       { path: 'comment_count' },
-      { path: 'author', select: '_id name email' },
+      { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
       {
         path: 'news_headline',

@@ -72,7 +72,7 @@ export const getNotificationRecipients = async (
 }> => {
   const notificationQuery = new AppQuery<TNotificationRecipient>(
     NotificationRecipient.find().populate([
-      { path: 'recipient', select: '_id name email' },
+      { path: 'recipient', select: '_id name email image' },
     ]),
     query,
   )

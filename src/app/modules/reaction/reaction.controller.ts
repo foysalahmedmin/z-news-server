@@ -19,7 +19,7 @@ export const createReaction = catchAsync(async (req, res) => {
 
 export const getSelfNewsReaction = catchAsync(async (req, res) => {
   const { news_id } = req.params;
-  const result = await ReactionServices.getSelfNewsReaction(
+  const { data, meta } = await ReactionServices.getSelfNewsReaction(
     req.user,
     req.guest,
     news_id,
@@ -28,7 +28,8 @@ export const getSelfNewsReaction = catchAsync(async (req, res) => {
     status: httpStatus.OK,
     success: true,
     message: 'Reaction retrieved successfully',
-    data: result,
+    data: data,
+    meta: meta,
   });
 });
 
