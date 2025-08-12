@@ -150,7 +150,7 @@ export const refreshToken = async (token: string) => {
 
   return {
     access_token: accessToken,
-    jwt_payload: jwtPayload,
+    info: jwtPayload,
   };
 };
 

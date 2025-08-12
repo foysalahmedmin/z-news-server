@@ -1,17 +1,21 @@
 import httpStatus from 'http-status';
-import config from '../../config';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
 import * as AuthServices from './auth.service';
+
+const COOKIE_NAME = 'refresh_token';
+const COOKIE_MAX_AGE = 1000 * 60 * 60 * 24 * 365;
 
 export const signin = catchAsync(async (req, res) => {
   const { refresh_token, access_token, info } = await AuthServices.signin(
     req.body,
   );
 
-  res.cookie('refresh_token', refresh_token, {
-    secure: config.node_dev === 'production',
+  res.cookie(COOKIE_NAME, refresh_token, {
+    maxAge: COOKIE_MAX_AGE,
     httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
   });
 
   sendResponse(res, {
@@ -36,9 +40,11 @@ export const signup = catchAsync(async (req, res) => {
   const { refresh_token, access_token, info } =
     await AuthServices.signup(payload);
 
-  res.cookie('refresh_token', refresh_token, {
-    secure: config.node_dev === 'production',
+  res.cookie(COOKIE_NAME, refresh_token, {
+    maxAge: COOKIE_MAX_AGE,
     httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
   });
 
   sendResponse(res, {
@@ -54,13 +60,16 @@ export const signup = catchAsync(async (req, res) => {
 
 export const refreshToken = catchAsync(async (req, res) => {
   const { refresh_token } = req.cookies;
-  const result = await AuthServices.refreshToken(refresh_token);
+  const { access_token, info } = await AuthServices.refreshToken(refresh_token);
 
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
     message: 'Access token is retrieved successfully!',
-    data: result,
+    data: {
+      token: access_token,
+      info: info,
+    },
   });
 });
 
