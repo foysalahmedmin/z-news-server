@@ -329,28 +329,84 @@ export const getSelfBulkNews = async (
   data: TNews[];
   meta: { total: number; page: number; limit: number };
 }> => {
+  const {
+    category: q_category,
+    category_slug: q_category_slug,
+    published_at: q_published_at,
+    published_at_gte: q_published_at_gte,
+    published_at_lte: q_published_at_lte,
+    date: q_date,
+    ...rest
+  } = query;
+
+  const category = q_category as string;
+  const category_slug = q_category_slug as string;
+
+  const categories_ids = await getCategoryIds({ category, category_slug });
+
+  if (categories_ids.length > 0) {
+    rest.category = { $in: categories_ids };
+  }
+
+  if (q_published_at) {
+    const start = new Date(q_published_at as string);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(q_published_at as string);
+    end.setHours(23, 59, 59, 999);
+
+    rest.published_at = { $gte: start, $lte: end };
+  } else if (q_published_at_gte || q_published_at_lte) {
+    const filter: Record<string, Date> = {};
+
+    if (q_published_at_gte) {
+      const start = new Date(q_published_at_gte as string);
+      start.setHours(0, 0, 0, 0);
+      filter.$gte = start;
+    }
+
+    if (q_published_at_lte) {
+      const end = new Date(q_published_at_lte as string);
+      end.setHours(23, 59, 59, 999);
+      filter.$lte = end;
+    }
+
+    rest.published_at = filter;
+  } else if (q_date) {
+    const end = new Date(q_date as string);
+    end.setHours(23, 59, 59, 999);
+
+    rest.published_at = { $lte: end };
+  } else {
+    const end = new Date();
+
+    rest.published_at = { $lte: end };
+  }
+
   const NewsQuery = new AppQuery<TNews>(
     News.find({ author: user._id }).populate([
-      { path: 'like_count' },
-      { path: 'dislike_count' },
-      { path: 'comment_count' },
       { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
-      {
-        path: 'news_headline',
-        select: '_id title published_at expired_at status',
-      },
-      {
-        path: 'news_break',
-        select: '_id title published_at expired_at status',
-      },
     ]),
-    query,
+    rest,
   )
-    .search(['title', 'description', 'content'])
+    .search(['title', 'description'])
     .filter()
     .sort()
     .paginate()
+    .fields([
+      'title',
+      'slug',
+      'description',
+      'content',
+      'thumbnail',
+      'author',
+      'category',
+      'tags',
+      'sequence',
+      'status',
+      'published_at',
+    ])
     .fields()
     .tap((q) => q.lean());
 
@@ -364,28 +420,84 @@ export const getBulkNews = async (
   data: TNews[];
   meta: { total: number; page: number; limit: number };
 }> => {
+  const {
+    category: q_category,
+    category_slug: q_category_slug,
+    published_at: q_published_at,
+    published_at_gte: q_published_at_gte,
+    published_at_lte: q_published_at_lte,
+    date: q_date,
+    ...rest
+  } = query;
+
+  const category = q_category as string;
+  const category_slug = q_category_slug as string;
+
+  const categories_ids = await getCategoryIds({ category, category_slug });
+
+  if (categories_ids.length > 0) {
+    rest.category = { $in: categories_ids };
+  }
+
+  if (q_published_at) {
+    const start = new Date(q_published_at as string);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(q_published_at as string);
+    end.setHours(23, 59, 59, 999);
+
+    rest.published_at = { $gte: start, $lte: end };
+  } else if (q_published_at_gte || q_published_at_lte) {
+    const filter: Record<string, Date> = {};
+
+    if (q_published_at_gte) {
+      const start = new Date(q_published_at_gte as string);
+      start.setHours(0, 0, 0, 0);
+      filter.$gte = start;
+    }
+
+    if (q_published_at_lte) {
+      const end = new Date(q_published_at_lte as string);
+      end.setHours(23, 59, 59, 999);
+      filter.$lte = end;
+    }
+
+    rest.published_at = filter;
+  } else if (q_date) {
+    const end = new Date(q_date as string);
+    end.setHours(23, 59, 59, 999);
+
+    rest.published_at = { $lte: end };
+  } else {
+    const end = new Date();
+
+    rest.published_at = { $lte: end };
+  }
+
   const NewsQuery = new AppQuery<TNews>(
     News.find().populate([
-      { path: 'like_count' },
-      { path: 'dislike_count' },
-      { path: 'comment_count' },
       { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
-      {
-        path: 'news_headline',
-        select: '_id title published_at expired_at status',
-      },
-      {
-        path: 'news_break',
-        select: '_id title published_at expired_at status',
-      },
     ]),
-    query,
+    rest,
   )
-    .search(['title', 'description', 'content'])
+    .search(['title', 'description'])
     .filter()
     .sort()
     .paginate()
+    .fields([
+      'title',
+      'slug',
+      'description',
+      'content',
+      'thumbnail',
+      'author',
+      'category',
+      'tags',
+      'sequence',
+      'status',
+      'published_at',
+    ])
     .fields()
     .tap((q) => q.lean());
 
