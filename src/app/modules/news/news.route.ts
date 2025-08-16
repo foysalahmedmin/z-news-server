@@ -53,7 +53,7 @@ router.patch(
       allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
     },
     {
-      name: 'seo.image',
+      name: 'seo[image]',
       folder: '/news/seo/images',
       size: 5_000_000,
       maxCount: 5,
@@ -90,7 +90,7 @@ router.patch(
       allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
     },
     {
-      name: 'seo.image',
+      name: 'seo[image]',
       folder: '/news/seo/images',
       size: 5_000_000,
       maxCount: 5,
@@ -165,7 +165,7 @@ router.post(
       allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
     },
     {
-      name: 'seo.image',
+      name: 'seo[image]',
       folder: '/news/seo/images',
       size: 5_000_000,
       maxCount: 5,
