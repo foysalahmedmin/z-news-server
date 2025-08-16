@@ -42,15 +42,6 @@ const guestSchema = new Schema<TGuestDocument>(
 );
 
 guestSchema.index(
-  { email: 1 },
-  {
-    unique: true,
-    partialFilterExpression: { is_deleted: false },
-    name: 'unique_email_not_deleted',
-  },
-);
-
-guestSchema.index(
   { updated_at: 1 },
   {
     expireAfterSeconds: 60 * 60 * 24 * 30 * 3,

@@ -51,11 +51,6 @@ const categorySchema = new Schema<TCategoryDocument>(
       type: String,
       default: 'default',
     },
-    seo: {
-      title: String,
-      description: String,
-      keywords: [String],
-    },
     is_featured: { type: Boolean, default: false },
     is_deleted: { type: Boolean, default: false, select: false },
   },

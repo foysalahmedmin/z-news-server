@@ -46,8 +46,8 @@ export const getSelfNewsReaction = async (
 
   const [data, likes, dislikes] = await Promise.all([
     query ? Reaction.findOne(query).lean() : Promise.resolve(null),
-    Reaction.countDocuments({ news: news_id, status: 'like' }),
-    Reaction.countDocuments({ news: news_id, status: 'dislike' }),
+    Reaction.countDocuments({ news: news_id, type: 'like' }),
+    Reaction.countDocuments({ news: news_id, type: 'dislike' }),
   ]);
 
   return { data, meta: { likes, dislikes }, guest };

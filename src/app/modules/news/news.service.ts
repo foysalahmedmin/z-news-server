@@ -3,6 +3,7 @@ import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
+import { deleteFiles } from '../../utils/deleteFiles';
 import { TJwtPayload } from '../auth/auth.type';
 import { Category } from '../category/category.model';
 import { NewsBreak } from '../news-break/news-break.model';
@@ -508,7 +509,12 @@ export const getBulkNews = async (
 export const updateSelfNews = async (
   user: TJwtPayload,
   id: string,
-  payload: Partial<Pick<TNews, 'title' | 'description' | 'content'>>,
+  payload: Partial<
+    Pick<
+      TNews,
+      'title' | 'thumbnail' | 'images' | 'description' | 'content' | 'seo'
+    >
+  >,
 ): Promise<TNews> => {
   const data = await News.findOne({ _id: id, author: user._id }).lean();
   if (!data) {
@@ -526,6 +532,19 @@ export const updateSelfNews = async (
     update.edited_at = new Date();
   }
 
+  // === File cleanup using utility ===
+  if (payload?.thumbnail && data.thumbnail) {
+    deleteFiles(data.thumbnail, 'news/thumbnail');
+  }
+
+  if (payload.images?.length && data.images?.length) {
+    deleteFiles(data.images, 'news/images');
+  }
+
+  if (payload.seo?.image && data.seo?.image) {
+    deleteFiles(data.seo.image, 'news/seo/images');
+  }
+
   const flatten = Flattener.flatten(update);
 
   const result = await News.findByIdAndUpdate(id, flatten, {
@@ -538,7 +557,12 @@ export const updateSelfNews = async (
 
 export const updateNews = async (
   id: string,
-  payload: Partial<Pick<TNews, 'title' | 'description' | 'content'>>,
+  payload: Partial<
+    Pick<
+      TNews,
+      'title' | 'thumbnail' | 'images' | 'description' | 'content' | 'seo'
+    >
+  >,
 ): Promise<TNews> => {
   const data = await News.findById(id).lean();
   if (!data) {
@@ -554,6 +578,19 @@ export const updateNews = async (
   ) {
     update.is_edited = true;
     update.edited_at = new Date();
+  }
+
+  // === File cleanup using utility ===
+  if (payload?.thumbnail && data.thumbnail) {
+    deleteFiles(data.thumbnail, 'news/thumbnail');
+  }
+
+  if (payload.images?.length && data.images?.length) {
+    deleteFiles(data.images, 'news/images');
+  }
+
+  if (payload.seo?.image && data.seo?.image) {
+    deleteFiles(data.seo.image, 'news/seo/images');
   }
 
   const flatten = Flattener.flatten(update);
@@ -640,6 +677,11 @@ export const deleteNewsPermanent = async (id: string): Promise<void> => {
   if (!news) {
     throw new AppError(httpStatus.NOT_FOUND, 'News not found');
   }
+
+  // === File cleanup using utility ===
+  deleteFiles(news?.thumbnail, 'news/thumbnail');
+  deleteFiles(news?.images, 'news/images');
+  deleteFiles(news?.seo?.image, 'news/seo/images');
 
   await News.findByIdAndDelete(id);
 };

@@ -21,6 +21,7 @@ export type TNews = {
   is_top_featured?: boolean;
   is_premium: boolean;
   seo?: {
+    image?: string;
     title?: string;
     description?: string;
     keywords?: string[];

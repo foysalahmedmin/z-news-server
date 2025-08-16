@@ -52,6 +52,13 @@ router.patch(
       maxCount: 5,
       allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
     },
+    {
+      name: 'seo.image',
+      folder: '/news/seo/images',
+      size: 5_000_000,
+      maxCount: 5,
+      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+    },
   ),
   validation(NewsValidations.updateSelfNewsValidationSchema),
   NewsControllers.updateSelfNews,
@@ -78,6 +85,13 @@ router.patch(
     {
       name: 'images',
       folder: '/news/images',
+      size: 5_000_000,
+      maxCount: 5,
+      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+    },
+    {
+      name: 'seo.image',
+      folder: '/news/seo/images',
       size: 5_000_000,
       maxCount: 5,
       allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
@@ -146,6 +160,13 @@ router.post(
     {
       name: 'images',
       folder: '/news/images',
+      size: 5_000_000,
+      maxCount: 5,
+      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+    },
+    {
+      name: 'seo.image',
+      folder: '/news/seo/images',
       size: 5_000_000,
       maxCount: 5,
       allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],

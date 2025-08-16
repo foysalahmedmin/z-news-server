@@ -4,7 +4,34 @@ import sendResponse from '../../utils/sendResponse';
 import * as NewsServices from './news.service';
 
 export const createNews = catchAsync(async (req, res) => {
-  const result = await NewsServices.createNews(req.user, req.body);
+  // Multer files type casting
+  const files = req.files as Record<string, Express.Multer.File[]>;
+
+  // Thumbnail filename
+  const thumbnailFile = files['thumbnail']?.[0] || '';
+  const thumbnailPath = thumbnailFile ? thumbnailFile.filename : '';
+
+  // Multiple images filenames
+  const imagesFiles = files['images'] || [];
+  const imagesPaths = imagesFiles.map((f) => f.filename);
+
+  // SEO image(s)
+  const seoFile = files['seo.image']?.[0] || '';
+  const seoImagePath = seoFile ? seoFile.filename : '';
+
+  const { seo = {}, ...rest } = req.body || {};
+
+  const payload = {
+    ...rest,
+    thumbnail: thumbnailPath,
+    ...(imagesPaths?.length > 0 && { images: imagesPaths }),
+    seo: {
+      ...seo,
+      ...(seoImagePath && { image: seoImagePath }),
+    },
+  };
+
+  const result = await NewsServices.createNews(req.user, payload);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -80,8 +107,35 @@ export const getBulkNews = catchAsync(async (req, res) => {
 });
 
 export const updateSelfNews = catchAsync(async (req, res) => {
+  // Multer files type casting
+  const files = req.files as Record<string, Express.Multer.File[]>;
+
+  // Thumbnail filename
+  const thumbnailFile = files['thumbnail']?.[0] || '';
+  const thumbnailPath = thumbnailFile ? thumbnailFile.filename : '';
+
+  // Multiple images filenames
+  const imagesFiles = files['images'] || [];
+  const imagesPaths = imagesFiles.map((f) => f.filename);
+
+  // SEO image(s)
+  const seoFile = files['seo.image']?.[0] || '';
+  const seoImagePath = seoFile ? seoFile.filename : '';
+
+  const { seo = {}, ...rest } = req.body || {};
+
+  const payload = {
+    ...rest,
+    ...(thumbnailFile && { thumbnail: thumbnailPath }),
+    ...(imagesPaths?.length > 0 && { images: imagesPaths }),
+    seo: {
+      ...seo,
+      ...(seoImagePath && { image: seoImagePath }),
+    },
+  };
+
   const { id } = req.params;
-  const result = await NewsServices.updateSelfNews(req.user, id, req.body);
+  const result = await NewsServices.updateSelfNews(req.user, id, payload);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -91,8 +145,35 @@ export const updateSelfNews = catchAsync(async (req, res) => {
 });
 
 export const updateNews = catchAsync(async (req, res) => {
+  // Multer files type casting
+  const files = req.files as Record<string, Express.Multer.File[]>;
+
+  // Thumbnail filename
+  const thumbnailFile = files['thumbnail']?.[0] || '';
+  const thumbnailPath = thumbnailFile ? thumbnailFile.filename : '';
+
+  // Multiple images filenames
+  const imagesFiles = files['images'] || [];
+  const imagesPaths = imagesFiles.map((f) => f.filename);
+
+  // SEO image(s)
+  const seoFile = files['seo.image']?.[0] || '';
+  const seoImagePath = seoFile ? seoFile.filename : '';
+
+  const { seo = {}, ...rest } = req.body || {};
+
+  const payload = {
+    ...rest,
+    ...(thumbnailFile && { thumbnail: thumbnailPath }),
+    ...(imagesPaths?.length > 0 && { images: imagesPaths }),
+    seo: {
+      ...seo,
+      ...(seoImagePath && { image: seoImagePath }),
+    },
+  };
+
   const { id } = req.params;
-  const result = await NewsServices.updateNews(id, req.body);
+  const result = await NewsServices.updateNews(id, payload);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,

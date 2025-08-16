@@ -4,7 +4,6 @@ export type TStatus = 'active' | 'inactive';
 
 export type TCategory = {
   icon?: string;
-  thumbnail?: string;
   name: string;
   slug: string;
   description?: string;
@@ -13,11 +12,6 @@ export type TCategory = {
   tags: string[];
   category?: mongoose.Types.ObjectId | null;
   layout?: string;
-  seo?: {
-    title?: string;
-    description?: string;
-    keywords?: string[];
-  };
   is_featured: boolean;
   is_deleted?: boolean;
 };
