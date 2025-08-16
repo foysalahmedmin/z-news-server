@@ -534,7 +534,7 @@ export const updateSelfNews = async (
 
   // === File cleanup using utility ===
   if (payload?.thumbnail && data.thumbnail) {
-    deleteFiles(data.thumbnail, 'news/thumbnail');
+    deleteFiles(data.thumbnail, 'news/thumbnails');
   }
 
   if (payload.images?.length && data.images?.length) {
@@ -582,7 +582,7 @@ export const updateNews = async (
 
   // === File cleanup using utility ===
   if (payload?.thumbnail && data.thumbnail) {
-    deleteFiles(data.thumbnail, 'news/thumbnail');
+    deleteFiles(data.thumbnail, 'news/thumbnails');
   }
 
   if (payload.images?.length && data.images?.length) {
@@ -679,7 +679,7 @@ export const deleteNewsPermanent = async (id: string): Promise<void> => {
   }
 
   // === File cleanup using utility ===
-  deleteFiles(news?.thumbnail, 'news/thumbnail');
+  deleteFiles(news?.thumbnail, 'news/thumbnails');
   deleteFiles(news?.images, 'news/images');
   deleteFiles(news?.seo?.image, 'news/seo/images');
 

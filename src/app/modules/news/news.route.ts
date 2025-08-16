@@ -40,7 +40,7 @@ router.patch(
   file(
     {
       name: 'thumbnail',
-      folder: '/news/thumbnails',
+      folder: '/news/thumbnailss',
       size: 5_000_000,
       maxCount: 1,
       allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
@@ -77,7 +77,7 @@ router.patch(
   file(
     {
       name: 'thumbnail',
-      folder: '/news/thumbnail',
+      folder: '/news/thumbnails',
       size: 5_000_000,
       maxCount: 1,
       allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
@@ -151,7 +151,7 @@ router.post(
   file(
     {
       name: 'thumbnail',
-      folder: '/news/thumbnail',
+      folder: '/news/thumbnails',
       size: 5_000_000,
       minCount: 1,
       maxCount: 1,

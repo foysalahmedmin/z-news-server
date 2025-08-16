@@ -16,12 +16,12 @@ const seoSchema = z
 
 export const createNewsValidationSchema = z.object({
   body: z.object({
-    sequence: z
+    sequence: z.coerce
       .number({ invalid_type_error: 'Sequence must be a number' })
       .int('Sequence must be an integer')
       .nonnegative('Sequence must be 0 or greater')
       .optional(),
-    title: z.string().trim().min(1),
+    title: z.string().trim().min(1, 'Title is required'),
     slug: z
       .string()
       .trim()
@@ -30,17 +30,18 @@ export const createNewsValidationSchema = z.object({
         message: 'Slug must be lowercase and kebab-case',
       }),
     description: z.string().max(300).optional(),
-    content: z.string().min(1),
+    content: z.string().min(1, 'Content is required'),
     tags: z.array(z.string().min(1)).optional(),
     category: idSchema.optional(),
+    author: idSchema.optional(),
     status: statusEnum.optional(),
-    is_featured: z.boolean().optional(),
-    is_to_featured: z.boolean().optional(),
-    is_premium: z.boolean().optional(),
-    seo: seoSchema,
+    layout: z.string().optional(),
+    is_featured: z.coerce.boolean().optional(),
+    is_to_featured: z.coerce.boolean().optional(),
+    is_premium: z.coerce.boolean().optional(),
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
-    layout: z.string().optional(),
+    seo: seoSchema,
     news_headline: z
       .object({
         title: z.string().trim().min(1),
@@ -71,7 +72,7 @@ export const updateSelfNewsValidationSchema = z.object({
     id: idSchema,
   }),
   body: z.object({
-    sequence: z
+    sequence: z.coerce
       .number({ invalid_type_error: 'Sequence must be a number' })
       .int('Sequence must be an integer')
       .nonnegative('Sequence must be 0 or greater')
@@ -90,25 +91,13 @@ export const updateSelfNewsValidationSchema = z.object({
     tags: z.array(z.string().min(1)).optional(),
     category: idSchema.optional(),
     status: statusEnum.optional(),
-    is_featured: z.boolean().optional(),
-    is_to_featured: z.boolean().optional(),
-    is_premium: z.boolean().optional(),
-    seo: seoSchema,
+    layout: z.string().optional(),
+    is_featured: z.coerce.boolean().optional(),
+    is_to_featured: z.coerce.boolean().optional(),
+    is_premium: z.coerce.boolean().optional(),
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
-    layout: z.string().optional(),
-  }),
-});
-
-export const updateSelfBulkNewsValidationSchema = z.object({
-  body: z.object({
-    ids: z
-      .array(idSchema, {
-        required_error: 'At least one news ID is required',
-        invalid_type_error: 'News IDs must be valid Mongo IDs',
-      })
-      .nonempty('At least one news ID is required'),
-    status: statusEnum.optional(),
+    seo: seoSchema,
   }),
 });
 
@@ -117,7 +106,7 @@ export const updateNewsValidationSchema = z.object({
     id: idSchema,
   }),
   body: z.object({
-    sequence: z
+    sequence: z.coerce
       .number({ invalid_type_error: 'Sequence must be a number' })
       .int('Sequence must be an integer')
       .nonnegative('Sequence must be 0 or greater')
@@ -137,23 +126,26 @@ export const updateNewsValidationSchema = z.object({
     category: idSchema.optional(),
     author: idSchema.optional(),
     status: statusEnum.optional(),
-    is_featured: z.boolean().optional(),
-    is_to_featured: z.boolean().optional(),
-    is_premium: z.boolean().optional(),
-    seo: seoSchema,
+    layout: z.string().optional(),
+    is_featured: z.coerce.boolean().optional(),
+    is_to_featured: z.coerce.boolean().optional(),
+    is_premium: z.coerce.boolean().optional(),
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
+    seo: seoSchema,
+  }),
+});
+
+export const updateSelfBulkNewsValidationSchema = z.object({
+  body: z.object({
+    ids: z.array(idSchema).nonempty('At least one news ID is required'),
+    status: statusEnum.optional(),
   }),
 });
 
 export const updateBulkNewsValidationSchema = z.object({
   body: z.object({
-    ids: z
-      .array(idSchema, {
-        required_error: 'At least one news ID is required',
-        invalid_type_error: 'News IDs must be valid Mongo IDs',
-      })
-      .nonempty('At least one news ID is required'),
+    ids: z.array(idSchema).nonempty('At least one news ID is required'),
     status: statusEnum.optional(),
   }),
 });
