@@ -106,7 +106,7 @@ router.patch(
 
 // DELETE
 router.delete(
-  '/upload/:url',
+  '/file/:path',
   auth('admin', 'author'),
   NewsControllers.deleteNewsFile,
 );
@@ -155,7 +155,7 @@ router.delete(
 
 // POST
 router.post(
-  '/upload/:type',
+  '/file/:type',
   auth('admin', 'author'),
   (req, res, next) => {
     const { type } = req.params;

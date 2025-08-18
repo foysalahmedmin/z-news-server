@@ -15,9 +15,8 @@ export const uploadNewsFile = catchAsync(async (req, res) => {
     throw new AppError(httpStatus.BAD_REQUEST, `No ${type} file uploaded`);
   }
 
-  const filePath = uploadedFile.filename;
   const result = await NewsServices.uploadNewsFile(
-    filePath,
+    uploadedFile,
     type as 'image' | 'video' | 'audio' | 'file',
   );
 
@@ -30,12 +29,12 @@ export const uploadNewsFile = catchAsync(async (req, res) => {
 });
 
 export const deleteNewsFile = catchAsync(async (req, res) => {
-  const { url } = req.params;
-  const result = await NewsServices.deleteNewsFile(url);
+  const { path } = req.params;
+  const result = await NewsServices.deleteNewsFile(path);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'File deleted successfully',
+    message: `"${path}" file deleted successfully`,
     data: result,
   });
 });

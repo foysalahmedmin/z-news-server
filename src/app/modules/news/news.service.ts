@@ -67,33 +67,39 @@ const getCategoryIds = async ({
 };
 
 export const uploadNewsFile = async (
-  path: string,
+  file: Express.Multer.File,
   type: 'image' | 'video' | 'audio' | 'file',
 ) => {
-  if (!path || !type) return null;
+  if (!file || !type) return null;
 
-  if (type === 'image') {
-    return config.url + '/uploads/news/images/' + path;
-  } else if (type === 'video') {
-    return config.url + '/uploads/news/videos/' + path;
-  } else if (type === 'audio') {
-    return config.url + '/uploads/news/audios/' + path;
-  } else if (type === 'file') {
-    return config.url + '/uploads/news/files/' + path;
-  } else {
-    return config.url + '/uploads/news/files/' + path;
-  }
+  const folderMap: Record<typeof type, string> = {
+    image: 'images',
+    video: 'videos',
+    audio: 'audios',
+    file: 'files',
+  };
+
+  const folder = folderMap[type] || 'files';
+
+  return {
+    type: type,
+    filename: file.filename,
+    path: `/uploads/news/${folder}/${file.filename}`,
+    url: `${config.url}/uploads/news/${folder}/${file.filename}`,
+  };
 };
 
-export const deleteNewsFile = async (url: string) => {
-  if (!url) return;
-  fs.unlink(url, (err) => {
+export const deleteNewsFile = async (path: string) => {
+  if (!path) return;
+  fs.unlink(path, (err) => {
     if (err && err.code !== 'ENOENT') {
-      console.warn(`❌ Failed to delete file: ${url}`, err.message);
+      console.warn(`❌ Failed to delete file: ${path}`, err.message);
     } else {
-      console.log(`🗑️ Deleted file: ${url}`);
+      console.log(`🗑️ Deleted file: ${path}`);
     }
   });
+
+  return path;
 };
 
 export const createNews = async (
