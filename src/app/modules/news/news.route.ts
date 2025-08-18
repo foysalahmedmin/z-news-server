@@ -1,8 +1,11 @@
 import express from 'express';
+import httpStatus from 'http-status';
+import AppError from '../../builder/AppError';
 import auth from '../../middlewares/auth.middleware';
 import file from '../../middlewares/file.middleware';
 import validation from '../../middlewares/validation.middleware';
 import * as NewsControllers from './news.controller';
+import { getFileConfigByType } from './news.utils';
 import * as NewsValidations from './news.validation';
 
 const router = express.Router();
@@ -103,6 +106,12 @@ router.patch(
 
 // DELETE
 router.delete(
+  '/upload/:url',
+  auth('admin', 'author'),
+  NewsControllers.deleteNewsFile,
+);
+
+router.delete(
   '/bulk/self',
   auth('admin', 'author'),
   validation(NewsValidations.bulkNewsOperationValidationSchema),
@@ -145,6 +154,27 @@ router.delete(
 );
 
 // POST
+router.post(
+  '/upload/:type',
+  auth('admin', 'author'),
+  (req, res, next) => {
+    const { type } = req.params;
+
+    // Validate type parameter
+    const validTypes = ['image', 'video', 'audio', 'file'];
+    if (!validTypes.includes(type)) {
+      return next(new AppError(httpStatus.BAD_REQUEST, 'Invalid upload type'));
+    }
+
+    // Configure file upload based on type
+    const fileConfig = getFileConfigByType(type);
+    const fileMiddleware = file(fileConfig);
+
+    fileMiddleware(req, res, next);
+  },
+  NewsControllers.uploadNewsFile,
+);
+
 router.post(
   '/',
   auth('admin', 'author'),

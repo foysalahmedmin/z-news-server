@@ -21,6 +21,12 @@ const newsSchema = new Schema<TNewsDocument>(
       lowercase: true,
     },
 
+    caption: {
+      type: String,
+      trim: true,
+      maxlength: 300,
+    },
+
     description: {
       type: String,
       trim: true,
@@ -70,11 +76,6 @@ const newsSchema = new Schema<TNewsDocument>(
     },
 
     is_featured: {
-      type: Boolean,
-      default: false,
-    },
-
-    is_top_featured: {
       type: Boolean,
       default: false,
     },

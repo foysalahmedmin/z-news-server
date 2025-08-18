@@ -1,7 +1,44 @@
 import httpStatus from 'http-status';
+import AppError from '../../builder/AppError';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
 import * as NewsServices from './news.service';
+
+export const uploadNewsFile = catchAsync(async (req, res) => {
+  const { type } = req.params;
+  const files = req.files as Record<string, Express.Multer.File[]>;
+
+  // Get the uploaded file based on type
+  const uploadedFile = files[type]?.[0];
+
+  if (!uploadedFile) {
+    throw new AppError(httpStatus.BAD_REQUEST, `No ${type} file uploaded`);
+  }
+
+  const filePath = uploadedFile.filename;
+  const result = await NewsServices.uploadNewsFile(
+    filePath,
+    type as 'image' | 'video' | 'audio' | 'file',
+  );
+
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: `${type.charAt(0).toUpperCase() + type.slice(1)} uploaded successfully`,
+    data: result,
+  });
+});
+
+export const deleteNewsFile = catchAsync(async (req, res) => {
+  const { url } = req.params;
+  const result = await NewsServices.deleteNewsFile(url);
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'File deleted successfully',
+    data: result,
+  });
+});
 
 export const createNews = catchAsync(async (req, res) => {
   // Multer files type casting

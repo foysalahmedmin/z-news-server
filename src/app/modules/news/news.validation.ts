@@ -29,6 +29,7 @@ export const createNewsValidationSchema = z.object({
       .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
         message: 'Slug must be lowercase and kebab-case',
       }),
+    caption: z.string().max(300).optional(),
     description: z.string().max(300).optional(),
     content: z.string().min(1, 'Content is required'),
     tags: z.array(z.string().min(1)).optional(),
@@ -37,7 +38,6 @@ export const createNewsValidationSchema = z.object({
     status: statusEnum.optional(),
     layout: z.string().optional(),
     is_featured: z.coerce.boolean().optional(),
-    is_to_featured: z.coerce.boolean().optional(),
     is_premium: z.coerce.boolean().optional(),
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
@@ -86,6 +86,7 @@ export const updateSelfNewsValidationSchema = z.object({
         message: 'Slug must be lowercase and kebab-case',
       })
       .optional(),
+    caption: z.string().max(300).optional(),
     description: z.string().max(300).optional(),
     content: z.string().min(1).optional(),
     tags: z.array(z.string().min(1)).optional(),
@@ -93,7 +94,6 @@ export const updateSelfNewsValidationSchema = z.object({
     status: statusEnum.optional(),
     layout: z.string().optional(),
     is_featured: z.coerce.boolean().optional(),
-    is_to_featured: z.coerce.boolean().optional(),
     is_premium: z.coerce.boolean().optional(),
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
@@ -120,6 +120,7 @@ export const updateNewsValidationSchema = z.object({
         message: 'Slug must be lowercase and kebab-case',
       })
       .optional(),
+    caption: z.string().max(300).optional(),
     description: z.string().max(300).optional(),
     content: z.string().min(1).optional(),
     tags: z.array(z.string().min(1)).optional(),
@@ -128,7 +129,6 @@ export const updateNewsValidationSchema = z.object({
     status: statusEnum.optional(),
     layout: z.string().optional(),
     is_featured: z.coerce.boolean().optional(),
-    is_to_featured: z.coerce.boolean().optional(),
     is_premium: z.coerce.boolean().optional(),
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),

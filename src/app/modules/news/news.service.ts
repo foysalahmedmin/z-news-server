@@ -1,8 +1,10 @@
 import { Flattener } from 'flattener-kit';
+import fs from 'fs';
 import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
+import config from '../../config';
 import { deleteFiles } from '../../utils/deleteFiles';
 import { TJwtPayload } from '../auth/auth.type';
 import { Category } from '../category/category.model';
@@ -62,6 +64,36 @@ const getCategoryIds = async ({
   }
 
   return [];
+};
+
+export const uploadNewsFile = async (
+  path: string,
+  type: 'image' | 'video' | 'audio' | 'file',
+) => {
+  if (!path || !type) return null;
+
+  if (type === 'image') {
+    return config.url + '/uploads/news/images/' + path;
+  } else if (type === 'video') {
+    return config.url + '/uploads/news/videos/' + path;
+  } else if (type === 'audio') {
+    return config.url + '/uploads/news/audios/' + path;
+  } else if (type === 'file') {
+    return config.url + '/uploads/news/files/' + path;
+  } else {
+    return config.url + '/uploads/news/files/' + path;
+  }
+};
+
+export const deleteNewsFile = async (url: string) => {
+  if (!url) return;
+  fs.unlink(url, (err) => {
+    if (err && err.code !== 'ENOENT') {
+      console.warn(`❌ Failed to delete file: ${url}`, err.message);
+    } else {
+      console.log(`🗑️ Deleted file: ${url}`);
+    }
+  });
 };
 
 export const createNews = async (

@@ -5,9 +5,10 @@ import { TNewsHeadline } from '../news-headline/news-headline.type';
 export type TStatus = 'draft' | 'pending' | 'published' | 'archived';
 
 export type TNews = {
-  sequence: number;
+  sequence?: number;
   title: string;
   slug: string;
+  caption?: string;
   description?: string;
   content: string;
   thumbnail?: string;
@@ -18,7 +19,6 @@ export type TNews = {
   collaborators?: Types.ObjectId[];
   status: TStatus;
   is_featured?: boolean;
-  is_top_featured?: boolean;
   is_premium: boolean;
   seo?: {
     image?: string;
