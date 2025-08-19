@@ -9,7 +9,6 @@ const newsHeadlineSchema = new Schema<TNewsHeadlineDocument>(
   {
     sequence: {
       type: Number,
-      required: true,
     },
 
     title: {
@@ -73,13 +72,13 @@ const newsHeadlineSchema = new Schema<TNewsHeadlineDocument>(
 
     expired_at: {
       type: Date,
-      default: function (this: TNewsHeadlineDocument) {
-        if (this.status === 'published') {
-          const publishedAt = this.published_at || new Date();
-          return new Date(publishedAt.getTime() + 1 * 24 * 60 * 60 * 1000);
-        }
-        return undefined;
-      },
+      // default: function (this: TNewsHeadlineDocument) {
+      //   if (this.status === 'published') {
+      //     const publishedAt = this.published_at || new Date();
+      //     return new Date(publishedAt.getTime() + 1 * 24 * 60 * 60 * 1000);
+      //   }
+      //   return undefined;
+      // },
       validate: {
         validator: function (value: Date) {
           if (this.published_at && value) {

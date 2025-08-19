@@ -42,28 +42,8 @@ export const createNewsValidationSchema = z.object({
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
     seo: seoSchema,
-    news_headline: z
-      .object({
-        title: z.string().trim().min(1),
-        description: z.string().max(300).optional(),
-        tags: z.array(z.string().min(1)).optional(),
-        category: idSchema.optional(),
-        status: statusEnum.optional(),
-        published_at: z.coerce.date().optional(),
-        expired_at: z.coerce.date().optional(),
-      })
-      .optional(),
-    news_break: z
-      .object({
-        title: z.string().trim().min(1),
-        description: z.string().max(300).optional(),
-        tags: z.array(z.string().min(1)).optional(),
-        category: idSchema.optional(),
-        status: statusEnum.optional(),
-        published_at: z.coerce.date().optional(),
-        expired_at: z.coerce.date().optional(),
-      })
-      .optional(),
+    is_news_headline: z.coerce.boolean().optional(),
+    is_news_break: z.coerce.boolean().optional(),
   }),
 });
 
@@ -98,6 +78,8 @@ export const updateSelfNewsValidationSchema = z.object({
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
     seo: seoSchema,
+    is_news_headline: z.coerce.boolean().optional(),
+    is_news_break: z.coerce.boolean().optional(),
   }),
 });
 
@@ -133,6 +115,8 @@ export const updateNewsValidationSchema = z.object({
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
     seo: seoSchema,
+    is_news_headline: z.coerce.boolean().optional(),
+    is_news_break: z.coerce.boolean().optional(),
   }),
 });
 

@@ -16,6 +16,7 @@ export type TNews = {
   tags?: string[];
   category: Types.ObjectId;
   author: Types.ObjectId;
+  writer?: string;
   collaborators?: Types.ObjectId[];
   status: TStatus;
   is_featured?: boolean;

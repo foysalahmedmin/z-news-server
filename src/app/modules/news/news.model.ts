@@ -5,7 +5,6 @@ const newsSchema = new Schema<TNewsDocument>(
   {
     sequence: {
       type: Number,
-      required: true,
     },
 
     title: {
@@ -61,6 +60,10 @@ const newsSchema = new Schema<TNewsDocument>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+    },
+
+    writer: {
+      type: String,
     },
 
     collaborators: {
@@ -176,6 +179,14 @@ newsSchema.virtual('news_break', {
   localField: '_id',
   foreignField: 'news',
   justOne: true,
+});
+
+newsSchema.virtual('is_news_headline').get(function () {
+  return !!this.news_headline;
+});
+
+newsSchema.virtual('is_news_break').get(function () {
+  return !!this.news_break;
 });
 
 newsSchema.virtual('like_count', {
