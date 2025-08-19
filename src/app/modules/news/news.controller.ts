@@ -9,7 +9,7 @@ export const uploadNewsFile = catchAsync(async (req, res) => {
   const files = req.files as Record<string, Express.Multer.File[]>;
 
   // Get the uploaded file based on type
-  const uploadedFile = files[type]?.[0];
+  const uploadedFile = files['file']?.[0];
 
   if (!uploadedFile) {
     throw new AppError(httpStatus.BAD_REQUEST, `No ${type} file uploaded`);
@@ -72,6 +72,16 @@ export const createNews = catchAsync(async (req, res) => {
     status: httpStatus.OK,
     success: true,
     message: 'News created successfully',
+    data: result,
+  });
+});
+
+export const getFeaturedPublicNews = catchAsync(async (req, res) => {
+  const result = await NewsServices.getFeaturedPublicNews(req.query);
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'All News are retrieved successfully',
     data: result,
   });
 });

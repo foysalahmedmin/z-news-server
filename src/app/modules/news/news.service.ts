@@ -13,7 +13,7 @@ import { TNewsBreak } from '../news-break/news-break.type';
 import { NewsHeadline } from '../news-headline/news-headline.model';
 import { TNewsHeadline } from '../news-headline/news-headline.type';
 import { News } from './news.model';
-import { TNews } from './news.type';
+import { TNews, TNewsDocument } from './news.type';
 
 const getCategoryIds = async ({
   category,
@@ -196,6 +196,97 @@ export const createNews = async (
     session.endSession();
     throw error;
   }
+};
+
+export const getFeaturedPublicNews = async (
+  query: Record<string, unknown>,
+): Promise<(TNewsDocument | null)[]> => {
+  const { date: q_date } = query;
+
+  const baseQuery: Record<string, unknown> = {
+    status: 'published',
+    is_featured: true,
+    is_deleted: false,
+  };
+
+  if (q_date) {
+    const end = new Date(q_date as string);
+    end.setHours(23, 59, 59, 999);
+
+    baseQuery.published_at = { $lte: end };
+  } else {
+    const end = new Date();
+
+    baseQuery.published_at = { $lte: end };
+  }
+
+  const results = await News.aggregate<{
+    seq1: TNewsDocument[];
+    seq2: TNewsDocument[];
+    seq3: TNewsDocument[];
+    seq4: TNewsDocument[];
+    seq5: TNewsDocument[];
+    seq6: TNewsDocument[];
+    seq7: TNewsDocument[];
+  }>([
+    {
+      $match: {
+        ...baseQuery,
+      },
+    },
+    {
+      $facet: {
+        seq1: [
+          { $match: { sequence: 1 } },
+          { $sort: { published_at: -1 } },
+          { $limit: 1 },
+        ],
+        seq2: [
+          { $match: { sequence: 2 } },
+          { $sort: { published_at: -1 } },
+          { $limit: 1 },
+        ],
+        seq3: [
+          { $match: { sequence: 3 } },
+          { $sort: { published_at: -1 } },
+          { $limit: 1 },
+        ],
+        seq4: [
+          { $match: { sequence: 4 } },
+          { $sort: { published_at: -1 } },
+          { $limit: 1 },
+        ],
+        seq5: [
+          { $match: { sequence: 5 } },
+          { $sort: { published_at: -1 } },
+          { $limit: 1 },
+        ],
+        seq6: [
+          { $match: { sequence: 6 } },
+          { $sort: { published_at: -1 } },
+          { $limit: 1 },
+        ],
+        seq7: [
+          { $match: { sequence: 7 } },
+          { $sort: { published_at: -1 } },
+          { $limit: 1 },
+        ],
+      },
+    },
+  ]);
+
+  // facet result সর্বদা array দেয় → [ { seq1: [...], seq2: [...], ... } ]
+  const data = results[0];
+
+  return [
+    data.seq1[0] || null,
+    data.seq2[0] || null,
+    data.seq3[0] || null,
+    data.seq4[0] || null,
+    data.seq5[0] || null,
+    data.seq6[0] || null,
+    data.seq7[0] || null,
+  ];
 };
 
 export const getPublicNews = async (slug: string): Promise<TNews> => {

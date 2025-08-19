@@ -11,6 +11,7 @@ import * as NewsValidations from './news.validation';
 const router = express.Router();
 
 // GET
+router.get('/public/featured', NewsControllers.getFeaturedPublicNews);
 router.get('/public', NewsControllers.getPublicBulkNews);
 router.get('/self', auth('admin'), NewsControllers.getSelfBulkNews);
 router.get('/', auth('admin'), NewsControllers.getBulkNews);

@@ -9,7 +9,7 @@ export const getFileConfigByType = (type: string) => {
     case 'image':
       return {
         ...baseConfig,
-        name: 'image',
+        name: 'file',
         folder: 'news/images',
         allowedTypes: [
           'image/jpeg',
@@ -23,7 +23,7 @@ export const getFileConfigByType = (type: string) => {
     case 'video':
       return {
         ...baseConfig,
-        name: 'video',
+        name: 'file',
         folder: 'news/videos',
         allowedTypes: ['video/mp4', 'video/avi', 'video/mov', 'video/wmv'],
         size: 50_000_000, // 50MB for videos
@@ -31,7 +31,7 @@ export const getFileConfigByType = (type: string) => {
     case 'audio':
       return {
         ...baseConfig,
-        name: 'audio',
+        name: 'file',
         folder: 'news/audios',
         allowedTypes: ['audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a'],
         size: 20_000_000, // 20MB for audio
