@@ -57,7 +57,9 @@ export const getPublicNewsHeadlines = async (
 
   const filter = {
     published_at: { $lte: date },
-    expired_at: { $gte: date },
+    expired_at: {
+      $or: [{ expired_at: { $exists: false } }, { expired_at: { $gte: date } }],
+    },
   };
 
   const NewsQuery = new AppQuery<TNewsHeadline>(

@@ -55,6 +55,7 @@ class AppQuery<T = any> {
     ];
     excludedFields.forEach((field) => delete queryObj[field]);
 
+    // Normal filter
     if (applicableFields?.length) {
       Object.keys(queryObj).forEach((key) => {
         if (!applicableFields.includes(key as keyof T)) {
@@ -63,9 +64,35 @@ class AppQuery<T = any> {
       });
     }
 
-    const filterQuery = queryObj as FilterQuery<DocumentType<T>>;
-    this.queryFilter = { ...this.queryFilter, ...filterQuery };
-    this.query = this.query.find(filterQuery);
+    const mongoFilter: Record<string, any> = {};
+
+    // Handle OR
+    if (queryObj.or) {
+      try {
+        mongoFilter.$or = Object.values(queryObj.or).map((cond: any) => cond);
+      } catch (e) {
+        console.error('Invalid OR format:', e);
+      }
+      delete queryObj.or;
+    }
+
+    // Handle AND
+    if (queryObj.and) {
+      try {
+        mongoFilter.$and = Object.values(queryObj.and).map((cond: any) => cond);
+      } catch (e) {
+        console.error('Invalid AND format:', e);
+      }
+      delete queryObj.and;
+    }
+
+    // Merge remaining normal filters
+    Object.assign(mongoFilter, queryObj);
+
+    // Apply to query
+    this.queryFilter = { ...this.queryFilter, ...mongoFilter };
+    this.query = this.query.find(mongoFilter);
+
     return this;
   }
 
