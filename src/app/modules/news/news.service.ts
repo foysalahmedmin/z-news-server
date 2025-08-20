@@ -621,7 +621,24 @@ export const updateSelfNews = async (
   payload: Partial<
     Pick<
       TNews,
-      'title' | 'thumbnail' | 'images' | 'description' | 'content' | 'seo'
+      | 'writer'
+      | 'title'
+      | 'description'
+      | 'content'
+      | 'caption'
+      | 'thumbnail'
+      | 'images'
+      | 'youtube'
+      | 'caption'
+      | 'seo'
+      | 'tags'
+      | 'category'
+      | 'author'
+      | 'status'
+      | 'is_featured'
+      | 'is_premium'
+      | 'published_at'
+      | 'expired_at'
     >
   >,
 ): Promise<TNews> => {
@@ -671,13 +688,22 @@ export const updateNews = async (
       TNews,
       | 'writer'
       | 'title'
-      | 'thumbnail'
-      | 'images'
       | 'description'
       | 'content'
+      | 'caption'
+      | 'thumbnail'
+      | 'images'
+      | 'youtube'
+      | 'caption'
       | 'seo'
       | 'tags'
       | 'category'
+      | 'author'
+      | 'status'
+      | 'is_featured'
+      | 'is_premium'
+      | 'published_at'
+      | 'expired_at'
     > & {
       is_news_headline?: boolean;
       is_news_break?: boolean;

@@ -13,6 +13,8 @@ export type TNews = {
   content: string;
   thumbnail?: string;
   images?: string[];
+  video?: string;
+  youtube?: string;
   tags?: string[];
   category: Types.ObjectId;
   author: Types.ObjectId;

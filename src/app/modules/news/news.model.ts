@@ -46,6 +46,14 @@ const newsSchema = new Schema<TNewsDocument>(
       default: [],
     },
 
+    video: {
+      type: String,
+    },
+
+    youtube: {
+      type: String,
+    },
+
     tags: {
       type: [String],
       default: [],
