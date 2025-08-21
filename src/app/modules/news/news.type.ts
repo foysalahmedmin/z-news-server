@@ -1,6 +1,4 @@
 import { Document, Model, Types } from 'mongoose';
-import { TNewsBreak } from '../news-break/news-break.type';
-import { TNewsHeadline } from '../news-headline/news-headline.type';
 
 export type TStatus = 'draft' | 'pending' | 'published' | 'archived';
 
@@ -36,8 +34,10 @@ export type TNews = {
   layout?: string;
   views?: number;
   is_deleted: boolean;
-  news_headline?: TNewsHeadline;
-  news_break?: TNewsBreak;
+  is_news_headline?: boolean;
+  is_news_break?: boolean;
+  // news_headline?: TNewsHeadline;
+  // news_break?: TNewsBreak;
 };
 
 export interface TNewsDocument extends TNews, Document {

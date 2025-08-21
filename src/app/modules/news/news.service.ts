@@ -8,8 +8,6 @@ import config from '../../config';
 import { deleteFiles } from '../../utils/deleteFiles';
 import { TJwtPayload } from '../auth/auth.type';
 import { Category } from '../category/category.model';
-import { NewsBreak } from '../news-break/news-break.model';
-import { NewsHeadline } from '../news-headline/news-headline.model';
 import { News } from './news.model';
 import { TNews, TNewsDocument } from './news.type';
 
@@ -100,6 +98,86 @@ export const deleteNewsFile = async (path: string) => {
   return path;
 };
 
+// export const createNews = async (
+//   user: TJwtPayload,
+//   payload: TNews & {
+//     is_news_headline?: boolean;
+//     is_news_break?: boolean;
+//   },
+// ): Promise<TNews> => {
+//   if (!user?._id) {
+//     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+//   }
+
+//   const session = await mongoose.startSession();
+
+//   try {
+//     session.startTransaction();
+
+//     const {
+//       is_news_headline,
+//       is_news_break,
+//       news_headline,
+//       news_break,
+//       ...rest
+//     } = payload;
+
+//     const newsData = {
+//       ...rest,
+//       author: user._id,
+//     };
+
+//     const [created_news] = await News.create([newsData], { session });
+
+//     // Create NewsHeadline
+//     if (is_news_headline) {
+//       await NewsHeadline.create(
+//         [
+//           {
+//             author: user._id,
+//             news: created_news._id,
+//             title: created_news.title,
+//             description: created_news.description || '',
+//             tags: created_news.tags || [],
+//             category: created_news.category || null,
+//             published_at: created_news.published_at || null,
+//             expired_at: created_news.expired_at || null,
+//           },
+//         ],
+//         { session },
+//       );
+//     }
+
+//     // Create NewsBreak
+//     if (is_news_break) {
+//       await NewsBreak.create(
+//         [
+//           {
+//             author: user._id,
+//             news: created_news._id,
+//             title: created_news.title,
+//             description: created_news.description || '',
+//             tags: created_news.tags || [],
+//             category: created_news.category || null,
+//             published_at: created_news.published_at || null,
+//             expired_at: created_news.expired_at || null,
+//           },
+//         ],
+//         { session },
+//       );
+//     }
+
+//     await session.commitTransaction();
+//     session.endSession();
+
+//     return created_news.toObject();
+//   } catch (error) {
+//     await session.abortTransaction();
+//     session.endSession();
+//     throw error;
+//   }
+// };
+
 export const createNews = async (
   user: TJwtPayload,
   payload: TNews & {
@@ -111,73 +189,9 @@ export const createNews = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const session = await mongoose.startSession();
+  const created_news = await News.create(payload);
 
-  try {
-    session.startTransaction();
-
-    const {
-      is_news_headline,
-      is_news_break,
-      news_headline,
-      news_break,
-      ...rest
-    } = payload;
-
-    const newsData = {
-      ...rest,
-      author: user._id,
-    };
-
-    const [created_news] = await News.create([newsData], { session });
-
-    // Create NewsHeadline
-    if (is_news_headline) {
-      await NewsHeadline.create(
-        [
-          {
-            author: user._id,
-            news: created_news._id,
-            title: created_news.title,
-            description: created_news.description || '',
-            tags: created_news.tags || [],
-            category: created_news.category || null,
-            published_at: created_news.published_at || null,
-            expired_at: created_news.expired_at || null,
-          },
-        ],
-        { session },
-      );
-    }
-
-    // Create NewsBreak
-    if (is_news_break) {
-      await NewsBreak.create(
-        [
-          {
-            author: user._id,
-            news: created_news._id,
-            title: created_news.title,
-            description: created_news.description || '',
-            tags: created_news.tags || [],
-            category: created_news.category || null,
-            published_at: created_news.published_at || null,
-            expired_at: created_news.expired_at || null,
-          },
-        ],
-        { session },
-      );
-    }
-
-    await session.commitTransaction();
-    session.endSession();
-
-    return created_news.toObject();
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    throw error;
-  }
+  return created_news.toObject();
 };
 
 export const getFeaturedPublicNews = async (
@@ -423,8 +437,10 @@ export const getPublicBulkNews = async (
       'sequence',
       'status',
       'published_at',
+      'is_featured',
+      'is_news_headline',
+      'is_news_break',
     ])
-    .fields()
     .tap((q) => q.lean());
 
   const result = await NewsQuery.execute();
@@ -732,135 +748,46 @@ export const updateNews = async (
       | 'is_premium'
       | 'published_at'
       | 'expired_at'
-    > & {
-      is_news_headline?: boolean;
-      is_news_break?: boolean;
-    }
+    >
   >,
 ): Promise<TNews> => {
-  const data = await News.findById(id)
-    .populate(['news_headline', 'news_break'])
-    .lean();
-
+  const data = await News.findOne({ _id: id }).lean();
   if (!data) {
     throw new AppError(httpStatus.NOT_FOUND, 'News not found');
   }
 
-  const session = await mongoose.startSession();
+  const update: Partial<TNews> = { ...payload };
 
-  try {
-    session.startTransaction();
-
-    const { is_news_headline, is_news_break, ...newsUpdateData } = payload;
-
-    const update: Partial<TNews> = { ...newsUpdateData };
-
-    // Mark as edited if important fields are changed
-    if (
-      Object.keys(payload).includes('title') ||
-      Object.keys(payload).includes('content') ||
-      Object.keys(payload).includes('description')
-    ) {
-      update.is_edited = true;
-      update.edited_at = new Date();
-    }
-
-    // === File cleanup using utility ===
-    if (payload?.thumbnail && data.thumbnail) {
-      deleteFiles(data.thumbnail, 'news/thumbnails');
-    }
-
-    if (payload.images?.length && data.images?.length) {
-      deleteFiles(data.images, 'news/images');
-    }
-
-    if (payload.seo?.image && data.seo?.image) {
-      deleteFiles(data.seo.image, 'news/seo/images');
-    }
-
-    const flatten = Flattener.flatten(update);
-
-    // Update the main news document
-    const updatedNews = await News.findByIdAndUpdate(id, flatten, {
-      new: true,
-      runValidators: true,
-      session,
-    });
-
-    if (!updatedNews) {
-      throw new AppError(httpStatus.NOT_FOUND, 'Failed to update news');
-    }
-
-    // Handle NewsHeadline
-    if (is_news_headline === true && !data.news_headline) {
-      // Create headline
-      await NewsHeadline.create(
-        [
-          {
-            author: updatedNews.author,
-            news: updatedNews._id,
-            title: updatedNews.title,
-            category: updatedNews.category,
-            description: updatedNews.description || '',
-          },
-        ],
-        { session },
-      );
-    }
-
-    if (is_news_headline === false && data.news_headline) {
-      // Delete headline
-      await NewsHeadline.findByIdAndDelete((data.news_headline as any)._id, {
-        session,
-      });
-    }
-
-    // Handle NewsBreak
-    if (is_news_break === true && !data.news_break) {
-      // Create breaking news
-      await NewsBreak.create(
-        [
-          {
-            author: updatedNews.author,
-            news: updatedNews._id,
-            title: updatedNews.title,
-            category: updatedNews.category,
-            description: updatedNews.description || '',
-          },
-        ],
-        { session },
-      );
-    }
-
-    if (is_news_break === false && data.news_break) {
-      // Delete breaking news
-      await NewsBreak.findByIdAndDelete((data.news_break as any)._id, {
-        session,
-      });
-    }
-
-    await session.commitTransaction();
-    session.endSession();
-
-    // Return updated news with populated fields
-    const result = await News.findById(id)
-      .populate([
-        { path: 'like_count' },
-        { path: 'dislike_count' },
-        { path: 'comment_count' },
-        { path: 'author', select: '_id name email image' },
-        { path: 'category', select: '_id name slug' },
-        { path: 'news_headline', select: '_id title description status' },
-        { path: 'news_break', select: '_id title description status' },
-      ])
-      .lean();
-
-    return result!;
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    throw error;
+  if (
+    Object.keys(payload).includes('slug') ||
+    Object.keys(payload).includes('title') ||
+    Object.keys(payload).includes('content')
+  ) {
+    update.is_edited = true;
+    update.edited_at = new Date();
   }
+
+  // === File cleanup using utility ===
+  if (payload?.thumbnail && data.thumbnail) {
+    deleteFiles(data.thumbnail, 'news/thumbnails');
+  }
+
+  if (payload.images?.length && data.images?.length) {
+    deleteFiles(data.images, 'news/images');
+  }
+
+  if (payload.seo?.image && data.seo?.image) {
+    deleteFiles(data.seo.image, 'news/seo/images');
+  }
+
+  const flatten = Flattener.flatten(update);
+
+  const result = await News.findByIdAndUpdate(id, flatten, {
+    new: true,
+    runValidators: true,
+  }).lean();
+
+  return result!;
 };
 
 export const updateSelfBulkNews = async (
