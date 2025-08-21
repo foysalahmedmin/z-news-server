@@ -26,8 +26,8 @@ export const createNewsValidationSchema = z.object({
       .string()
       .trim()
       .min(1)
-      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
-        message: 'Slug must be lowercase and kebab-case',
+      .regex(/^[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*$/u, {
+        message: 'Slug must be kebab-case and support Bangla/Unicode letters',
       }),
     caption: z.string().max(300).optional(),
     description: z.string().max(300).optional(),
@@ -63,8 +63,8 @@ export const updateSelfNewsValidationSchema = z.object({
       .string()
       .trim()
       .min(1)
-      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
-        message: 'Slug must be lowercase and kebab-case',
+      .regex(/^[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*$/u, {
+        message: 'Slug must be kebab-case and support Bangla/Unicode letters',
       })
       .optional(),
     caption: z.string().max(300).optional(),
@@ -100,8 +100,8 @@ export const updateNewsValidationSchema = z.object({
       .string()
       .trim()
       .min(1)
-      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
-        message: 'Slug must be lowercase and kebab-case',
+      .regex(/^[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*$/u, {
+        message: 'Slug must be kebab-case and support Bangla/Unicode letters',
       })
       .optional(),
     caption: z.string().max(300).optional(),

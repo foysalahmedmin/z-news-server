@@ -19,7 +19,10 @@ export const createCategoryValidationSchema = z.object({
     slug: z
       .string()
       .min(1, 'Slug is required')
-      .max(50, 'Slug cannot exceed 50 characters'),
+      .max(50, 'Slug cannot exceed 50 characters')
+      .regex(/^[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*$/u, {
+        message: 'Slug must be kebab-case and support Bangla/Unicode letters',
+      }),
     description: z
       .string()
       .trim()
