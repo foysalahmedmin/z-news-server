@@ -22,13 +22,7 @@ export const createNewsValidationSchema = z.object({
       .nonnegative('Sequence must be 0 or greater')
       .optional(),
     title: z.string().trim().min(1, 'Title is required'),
-    slug: z
-      .string()
-      .trim()
-      .min(1)
-      .regex(/^[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*$/u, {
-        message: 'Slug must be kebab-case and support Bangla/Unicode letters',
-      }),
+    slug: z.string().trim().min(1),
     caption: z.string().max(300).optional(),
     description: z.string().max(300).optional(),
     content: z.string().min(1, 'Content is required'),
@@ -59,14 +53,7 @@ export const updateSelfNewsValidationSchema = z.object({
       .nonnegative('Sequence must be 0 or greater')
       .optional(),
     title: z.string().trim().min(1).optional(),
-    slug: z
-      .string()
-      .trim()
-      .min(1)
-      .regex(/^[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*$/u, {
-        message: 'Slug must be kebab-case and support Bangla/Unicode letters',
-      })
-      .optional(),
+    slug: z.string().trim().min(1).optional(),
     caption: z.string().max(300).optional(),
     description: z.string().max(300).optional(),
     content: z.string().min(1).optional(),
@@ -96,14 +83,7 @@ export const updateNewsValidationSchema = z.object({
       .nonnegative('Sequence must be 0 or greater')
       .optional(),
     title: z.string().trim().min(1).optional(),
-    slug: z
-      .string()
-      .trim()
-      .min(1)
-      .regex(/^[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*$/u, {
-        message: 'Slug must be kebab-case and support Bangla/Unicode letters',
-      })
-      .optional(),
+    slug: z.string().trim().min(1).optional(),
     caption: z.string().max(300).optional(),
     description: z.string().max(300).optional(),
     content: z.string().min(1).optional(),
