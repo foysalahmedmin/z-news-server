@@ -486,11 +486,12 @@ export const getSelfBulkNews = async (
     end.setHours(23, 59, 59, 999);
 
     rest.published_at = { $lte: end };
-  } else {
-    const end = new Date();
-
-    rest.published_at = { $lte: end };
   }
+  // else {
+  //   const end = new Date();
+
+  //   rest.published_at = { $lte: end };
+  // }
 
   const NewsQuery = new AppQuery<TNews>(
     News.find({ author: user._id }).populate([
@@ -515,11 +516,24 @@ export const getSelfBulkNews = async (
       'sequence',
       'status',
       'published_at',
+      'is_featured',
     ])
-    .fields()
     .tap((q) => q.lean());
 
-  const result = await NewsQuery.execute();
+  const result = await NewsQuery.execute([
+    {
+      key: 'published',
+      filter: { status: 'published' },
+    },
+    {
+      key: 'draft',
+      filter: { status: 'draft' },
+    },
+    {
+      key: 'pending',
+      filter: { status: 'pending' },
+    },
+  ]);
   return result;
 };
 
@@ -577,11 +591,12 @@ export const getBulkNews = async (
     end.setHours(23, 59, 59, 999);
 
     rest.published_at = { $lte: end };
-  } else {
-    const end = new Date();
-
-    rest.published_at = { $lte: end };
   }
+  // else {
+  //   const end = new Date();
+
+  //   rest.published_at = { $lte: end };
+  // }
 
   const NewsQuery = new AppQuery<TNews>(
     News.find().populate([
@@ -607,11 +622,24 @@ export const getBulkNews = async (
       'sequence',
       'status',
       'published_at',
+      'is_featured',
     ])
-    .fields()
     .tap((q) => q.lean());
 
-  const result = await NewsQuery.execute();
+  const result = await NewsQuery.execute([
+    {
+      key: 'published',
+      filter: { status: 'published' },
+    },
+    {
+      key: 'draft',
+      filter: { status: 'draft' },
+    },
+    {
+      key: 'pending',
+      filter: { status: 'pending' },
+    },
+  ]);
   return result;
 };
 

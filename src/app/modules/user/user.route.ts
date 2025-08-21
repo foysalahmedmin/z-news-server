@@ -13,6 +13,8 @@ router.get(
   UserControllers.getSelf,
 );
 
+router.get('/writers', UserControllers.getWritersUsers);
+
 router.get('/', auth('admin'), UserControllers.getUsers);
 
 router.get(

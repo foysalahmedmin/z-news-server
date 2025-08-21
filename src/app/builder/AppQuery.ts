@@ -157,30 +157,60 @@ class AppQuery<T = any> {
     return this;
   }
 
-  async execute(): Promise<{
+  async execute(
+    statisticsQueries?: { key: string; filter: Record<string, any> }[],
+  ): Promise<{
     data: T[];
-    meta: { total: number; page: number; limit: number };
+    meta: {
+      total: number;
+      page: number;
+      limit: number;
+      statistics?: Record<string, number>;
+    };
   }> {
     if (Boolean(this.queryParams.is_count_only)) {
       const total = await (
         this.query.model as Model<DocumentType<T>>
       ).countDocuments(this.queryFilter);
+
       return {
         data: [],
         meta: { total, page: this.pageNumber, limit: this.pageLimit },
       };
     }
 
-    const [data, total] = await Promise.all([
+    const [data, total, stats] = await Promise.all([
       this.query,
       (this.query.model as Model<DocumentType<T>>).countDocuments(
         this.queryFilter,
       ),
+      statisticsQueries
+        ? Promise.all(
+            statisticsQueries.map(async (stat) => {
+              const count = await (
+                this.query.model as Model<DocumentType<T>>
+              ).countDocuments({
+                ...this.queryFilter,
+                ...stat.filter,
+              });
+              return { key: stat.key, count };
+            }),
+          )
+        : Promise.resolve([]),
     ]);
+
+    const statistics =
+      stats?.reduce(
+        (acc, curr) => {
+          acc[curr.key] = curr.count;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ) || undefined;
 
     return {
       data: data as unknown as T[],
-      meta: { total, page: this.pageNumber, limit: this.pageLimit },
+      meta: { total, page: this.pageNumber, limit: this.pageLimit, statistics },
     };
   }
 }

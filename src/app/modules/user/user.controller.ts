@@ -24,6 +24,17 @@ export const getUser = catchAsync(async (req, res) => {
   });
 });
 
+export const getWritersUsers = catchAsync(async (req, res) => {
+  const result = await UserServices.getWritersUsers(req.query);
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'Users retrieved successfully',
+    meta: result.meta,
+    data: result.data,
+  });
+});
+
 export const getUsers = catchAsync(async (req, res) => {
   const result = await UserServices.getUsers(req.query);
   sendResponse(res, {

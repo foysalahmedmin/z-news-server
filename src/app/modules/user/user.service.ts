@@ -21,13 +21,35 @@ export const getUser = async (id: string): Promise<TUser> => {
   return result;
 };
 
+export const getWritersUsers = async (
+  query: Record<string, unknown>,
+): Promise<{
+  data: TUser[];
+  meta: { total: number; page: number; limit: number };
+}> => {
+  const userQuery = new AppQuery<TUser>(
+    User.find({ role: { $in: ['admin', 'author'] } }),
+    query,
+  )
+    .search(['name', 'email'])
+    .filter()
+    .sort()
+    .paginate()
+    .fields()
+    .tap((q) => q.lean());
+
+  const result = await userQuery.execute();
+
+  return result;
+};
+
 export const getUsers = async (
   query: Record<string, unknown>,
 ): Promise<{
   data: TUser[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const userQuery = new AppQuery<TUser>(User.find().lean(), query)
+  const userQuery = new AppQuery<TUser>(User.find(), query)
     .search(['name', 'email'])
     .filter()
     .sort()
