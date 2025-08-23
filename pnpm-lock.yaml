@@ -78,6 +78,9 @@ importers:
       '@types/express-session':
         specifier: ^1.18.2
         version: 1.18.2
+      '@types/http-status':
+        specifier: ^1.1.2
+        version: 1.1.2
       '@types/jsonwebtoken':
         specifier: ^9.0.10
         version: 9.0.10
@@ -292,6 +295,10 @@ packages:
 
   '@types/http-errors@2.0.5':
     resolution: {integrity: sha512-r8Tayk8HJnX0FztbZN7oVqGccWgw98T/0neJphO91KkmOzug1KkofZURD4UaD5uH8AqcFLfdPErnBod0u71/qg==}
+
+  '@types/http-status@1.1.2':
+    resolution: {integrity: sha512-GodZPvF3xPVglUx4q7s0plKu1cdW0mMLADpWi5PMMx3n/2xGB6GoKqQxQxp6A5xuARtZpQ9/6p3WDFwCpPaN8A==}
+    deprecated: This is a stub types definition. http-status provides its own type definitions, so you do not need this installed.
 
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
@@ -1693,6 +1700,10 @@ snapshots:
       '@types/serve-static': 1.15.8
 
   '@types/http-errors@2.0.5': {}
+
+  '@types/http-status@1.1.2':
+    dependencies:
+      http-status: 2.1.0
 
   '@types/json-schema@7.0.15': {}
 

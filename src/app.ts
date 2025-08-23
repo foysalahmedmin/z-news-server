@@ -27,6 +27,7 @@ app.use(
       'http://localhost:3001',
       'https://z-news.vercel.app',
       'https://z-news-server.vercel.app',
+      'https://z-news-adminpanel.netlify.app',
     ],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -51,22 +52,46 @@ app.use(
   }),
 );
 
-// ✅ static serve first
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Static file serving with proper headers for Vercel
+app.use(
+  '/uploads',
+  express.static(path.join(__dirname, '../uploads'), {
+    setHeaders: (res, path) => {
+      if (path.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+      }
+    },
+  }),
+);
 
+// API routes
 app.use('/api', router);
 
-app.use(express.static(path.join(__dirname, '../public/dist')));
+// Serve static frontend files with proper MIME types
+app.use(
+  express.static(path.join(__dirname, '../public/dist'), {
+    setHeaders: (res, path) => {
+      if (path.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+      } else if (path.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css');
+      }
+    },
+  }),
+);
+
+// Health check endpoint for Vercel
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 // Fallback for SPA routing - serves index.html for all unmatched routes
 app.use((_req, res) => {
   res.sendFile(path.join(__dirname, '../public/dist', 'index.html'));
 });
 
-// Error handle;
+// Error handling middleware
 app.use(error);
-
-// Not found handle;
 app.use(notfound);
 
 export default app;

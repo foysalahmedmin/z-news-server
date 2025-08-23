@@ -17,7 +17,7 @@ const getUser = async (_id: string) => {
 
   try {
     const cachedUser = await cacheClient.get(redisKey);
-    if (cachedUser) return JSON.parse(cachedUser);
+    if (cachedUser) return JSON.parse(cachedUser.toString());
 
     const user = await User.isUserExist(_id);
     if (user) {
