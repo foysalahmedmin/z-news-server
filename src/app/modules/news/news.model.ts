@@ -189,14 +189,6 @@ newsSchema.virtual('news_break', {
   justOne: true,
 });
 
-newsSchema.virtual('is_news_headline').get(function () {
-  return !!this.news_headline;
-});
-
-newsSchema.virtual('is_news_break').get(function () {
-  return !!this.news_break;
-});
-
 newsSchema.virtual('like_count', {
   ref: 'Reaction',
   localField: '_id',

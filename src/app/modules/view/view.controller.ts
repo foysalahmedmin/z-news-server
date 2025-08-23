@@ -83,17 +83,6 @@ export const deleteView = catchAsync(async (req, res) => {
   });
 });
 
-export const deleteViewPermanent = catchAsync(async (req, res) => {
-  const { id } = req.params;
-  await ViewServices.deleteViewPermanent(id);
-  sendResponse(res, {
-    status: httpStatus.OK,
-    success: true,
-    message: 'View permanently deleted successfully',
-    data: null,
-  });
-});
-
 export const deleteSelfViews = catchAsync(async (req, res) => {
   const { ids } = req.body;
   const result = await ViewServices.deleteSelfViews(req.user, req.guest, ids);
@@ -114,67 +103,6 @@ export const deleteViews = catchAsync(async (req, res) => {
     status: httpStatus.OK,
     success: true,
     message: `${result.count} Views soft deleted successfully`,
-    data: {
-      not_found_ids: result.not_found_ids,
-    },
-  });
-});
-
-export const deleteViewsPermanent = catchAsync(async (req, res) => {
-  const { ids } = req.body;
-  const result = await ViewServices.deleteViewsPermanent(ids);
-  sendResponse(res, {
-    status: httpStatus.OK,
-    success: true,
-    message: `${result.count} Views permanently deleted successfully`,
-    data: {
-      not_found_ids: result.not_found_ids,
-    },
-  });
-});
-
-export const restoreSelfView = catchAsync(async (req, res) => {
-  const { id } = req.params;
-  const result = await ViewServices.restoreSelfView(req.user, req.guest, id);
-  sendResponse(res, {
-    status: httpStatus.OK,
-    success: true,
-    message: 'View restored successfully',
-    data: result,
-  });
-});
-
-export const restoreView = catchAsync(async (req, res) => {
-  const { id } = req.params;
-  const result = await ViewServices.restoreView(id);
-  sendResponse(res, {
-    status: httpStatus.OK,
-    success: true,
-    message: 'View restored successfully',
-    data: result,
-  });
-});
-
-export const restoreSelfViews = catchAsync(async (req, res) => {
-  const { ids } = req.body;
-  const result = await ViewServices.restoreSelfViews(req.user, req.guest, ids);
-  sendResponse(res, {
-    status: httpStatus.OK,
-    success: true,
-    message: `${result.count} Views restored successfully`,
-    data: {
-      not_found_ids: result.not_found_ids,
-    },
-  });
-});
-
-export const restoreViews = catchAsync(async (req, res) => {
-  const { ids } = req.body;
-  const result = await ViewServices.restoreViews(ids);
-  sendResponse(res, {
-    status: httpStatus.OK,
-    success: true,
-    message: `${result.count} Views restored successfully`,
     data: {
       not_found_ids: result.not_found_ids,
     },

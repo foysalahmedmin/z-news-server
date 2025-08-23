@@ -57,13 +57,6 @@ router.delete(
 );
 
 router.delete(
-  '/bulk/permanent',
-  auth('admin'),
-  validation(ViewValidations.viewOperationValidationSchema),
-  ViewControllers.deleteViewsPermanent,
-);
-
-router.delete(
   '/bulk',
   auth('admin'),
   validation(ViewValidations.viewOperationValidationSchema),
@@ -84,13 +77,6 @@ router.delete(
   ),
   validation(ViewValidations.viewOperationValidationSchema),
   ViewControllers.deleteSelfView,
-);
-
-router.delete(
-  '/:id/permanent',
-  auth('admin'),
-  validation(ViewValidations.viewOperationValidationSchema),
-  ViewControllers.deleteViewPermanent,
 );
 
 router.delete(
@@ -115,52 +101,6 @@ router.post(
   ),
   validation(ViewValidations.createViewValidationSchema),
   ViewControllers.createView,
-);
-
-router.post(
-  '/bulk/restore/self',
-  guest('optional'),
-  auth(
-    'admin',
-    'editor',
-    'author',
-    'contributor',
-    'subscriber',
-    'user',
-    'guest',
-  ),
-  validation(ViewValidations.viewOperationValidationSchema),
-  ViewControllers.restoreSelfViews,
-);
-
-router.post(
-  '/bulk/restore',
-  auth('admin'),
-  validation(ViewValidations.viewOperationValidationSchema),
-  ViewControllers.restoreViews,
-);
-
-router.post(
-  '/:id/restore/self',
-  guest('optional'),
-  auth(
-    'admin',
-    'editor',
-    'author',
-    'contributor',
-    'subscriber',
-    'user',
-    'guest',
-  ),
-  validation(ViewValidations.viewOperationValidationSchema),
-  ViewControllers.restoreSelfView,
-);
-
-router.post(
-  '/:id/restore',
-  auth('admin'),
-  validation(ViewValidations.viewOperationValidationSchema),
-  ViewControllers.restoreView,
 );
 
 const ViewRoutes = router;

@@ -25,6 +25,8 @@ app.use(
       'http://localhost:8080',
       'http://localhost:3000',
       'http://localhost:3001',
+      'https://z-news.vercel.app',
+      'https://z-news-server.vercel.app',
     ],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
