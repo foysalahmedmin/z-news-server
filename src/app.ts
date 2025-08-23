@@ -2,7 +2,7 @@ import MongoStore from 'connect-mongo';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import express, { Application, Request, Response } from 'express';
+import express, { Application } from 'express';
 import session from 'express-session';
 import path from 'path';
 import config from './app/config';
@@ -21,7 +21,11 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: ['http://localhost:8080', 'http://localhost:3001'],
+    origin: [
+      'http://localhost:8080',
+      'http://localhost:3000',
+      'http://localhost:3001',
+    ],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
@@ -50,8 +54,11 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.use('/api', router);
 
-app.get('/', (_req: Request, res: Response) => {
-  res.send('Welcome to z-news server!');
+app.use(express.static(path.join(__dirname, '../public/dist')));
+
+// Fallback for SPA routing - serves index.html for all unmatched routes
+app.use((_req, res) => {
+  res.sendFile(path.join(__dirname, '../public/dist', 'index.html'));
 });
 
 // Error handle;

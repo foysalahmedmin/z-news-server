@@ -11,7 +11,12 @@ export default {
   url:
     (process.env.URL as string) ||
     `http://localhost:${process.env.PORT || 3000}`,
-  redis_enabled: process.env.REDIS_ENABLED === 'false' ? false : true,
+  cluster_enabled: process.env.CLUSTER_ENABLED === 'true' ? true : false,
+  redis_enabled: !!(
+    process.env.REDIS_ENABLED === 'true' && !!process.env.REDIS_URL
+  )
+    ? true
+    : false,
   redis_url: process.env.REDIS_URL as string,
   redis_password: process.env.REDIS_PASSWORD as string,
   database_url: process.env.DATABASE_URL as string,
