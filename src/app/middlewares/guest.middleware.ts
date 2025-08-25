@@ -29,7 +29,7 @@ const initialize = async (req: Request, res: Response): Promise<TGuest> => {
     guest = await Guest.create({
       token: token,
       session_id: req.sessionID,
-      ip_address: req.ip,
+      ip_address: req.ip === '::1' ? '127.0.0.1' : req.ip,
       user_agent: req.get('User-Agent') || '',
       fingerprint: req.get('User-Agent')
         ? crypto.createHash('md5').update(req.get('User-Agent')!).digest('hex')
@@ -38,7 +38,7 @@ const initialize = async (req: Request, res: Response): Promise<TGuest> => {
     });
   } else {
     guest.session_id = req.sessionID;
-    guest.ip_address = req.ip;
+    guest.ip_address = req.ip === '::1' ? '127.0.0.1' : req.ip;
     guest.user_agent = req.get('User-Agent') || guest.user_agent;
     await guest.save();
   }
