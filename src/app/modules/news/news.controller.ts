@@ -219,7 +219,7 @@ export const updateNews = catchAsync(async (req, res) => {
   };
 
   const { id } = req.params;
-  const result = await NewsServices.updateNews(id, payload);
+  const result = await NewsServices.updateNews(req.user, id, payload);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,

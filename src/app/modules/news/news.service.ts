@@ -1,7 +1,7 @@
 import { Flattener } from 'flattener-kit';
 import fs from 'fs';
 import httpStatus from 'http-status';
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
 import config from '../../config';
@@ -700,6 +700,7 @@ export const updateSelfNews = async (
   ) {
     update.is_edited = true;
     update.edited_at = new Date();
+    update.editor = new Types.ObjectId(user._id);
   }
 
   // === File cleanup using utility ===
@@ -715,7 +716,7 @@ export const updateSelfNews = async (
     deleteFiles(data.seo.image, 'news/seo/images');
   }
 
-  const flatten = Flattener.flatten(update);
+  const flatten = Flattener.flatten(update, { safe: true });
 
   const result = await News.findByIdAndUpdate(id, flatten, {
     new: true,
@@ -726,6 +727,7 @@ export const updateSelfNews = async (
 };
 
 export const updateNews = async (
+  user: TJwtPayload,
   id: string,
   payload: Partial<
     Pick<
@@ -765,6 +767,7 @@ export const updateNews = async (
   ) {
     update.is_edited = true;
     update.edited_at = new Date();
+    update.editor = new Types.ObjectId(user._id);
   }
 
   // === File cleanup using utility ===

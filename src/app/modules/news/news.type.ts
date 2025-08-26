@@ -31,6 +31,7 @@ export type TNews = {
   expired_at?: Date;
   is_edited?: boolean;
   edited_at?: Date;
+  editor?: Types.ObjectId;
   layout?: string;
   views?: number;
   is_deleted: boolean;

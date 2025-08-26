@@ -150,6 +150,11 @@ const newsSchema = new Schema<TNewsDocument>(
       type: Date,
     },
 
+    editor: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+
     layout: {
       type: String,
       default: 'default',

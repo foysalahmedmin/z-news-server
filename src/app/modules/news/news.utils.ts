@@ -1,3 +1,17 @@
+export const getYearMonthPath = (): {
+  year: string;
+  month: string;
+  suffix: string;
+} => {
+  const now = new Date();
+  const year = now.getFullYear().toString();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+
+  const suffix = `${year}/${month}`; // Example: "2025/08"
+
+  return { year, month, suffix };
+};
+
 export const getFileConfigByType = (type: string) => {
   const baseConfig = {
     size: 10_000_000, // 10MB default
@@ -10,7 +24,7 @@ export const getFileConfigByType = (type: string) => {
       return {
         ...baseConfig,
         name: 'file',
-        folder: 'news/images',
+        folder: 'news/images' + '/' + getYearMonthPath().suffix,
         allowedTypes: [
           'image/jpeg',
           'image/png',
@@ -24,7 +38,7 @@ export const getFileConfigByType = (type: string) => {
       return {
         ...baseConfig,
         name: 'file',
-        folder: 'news/videos',
+        folder: 'news/videos' + '/' + getYearMonthPath().suffix,
         allowedTypes: ['video/mp4', 'video/avi', 'video/mov', 'video/wmv'],
         size: 50_000_000, // 50MB for videos
       };
@@ -32,7 +46,7 @@ export const getFileConfigByType = (type: string) => {
       return {
         ...baseConfig,
         name: 'file',
-        folder: 'news/audios',
+        folder: 'news/audios' + '/' + getYearMonthPath().suffix,
         allowedTypes: ['audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a'],
         size: 20_000_000, // 20MB for audio
       };
@@ -40,7 +54,7 @@ export const getFileConfigByType = (type: string) => {
       return {
         ...baseConfig,
         name: 'file',
-        folder: 'news/files',
+        folder: 'news/files' + '/' + getYearMonthPath().suffix,
         allowedTypes: [
           'application/pdf',
           'application/msword',
