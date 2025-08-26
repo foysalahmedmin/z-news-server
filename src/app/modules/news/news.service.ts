@@ -4,7 +4,6 @@ import httpStatus from 'http-status';
 import mongoose, { Types } from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
-import config from '../../config';
 import { deleteFiles } from '../../utils/deleteFiles';
 import { TJwtPayload } from '../auth/auth.type';
 import { Category } from '../category/category.model';
@@ -65,23 +64,17 @@ const getCategoryIds = async ({
 export const uploadNewsFile = async (
   file: Express.Multer.File,
   type: 'image' | 'video' | 'audio' | 'file',
+  base: string = '',
 ) => {
   if (!file || !type) return null;
-
-  const folderMap: Record<typeof type, string> = {
-    image: 'images',
-    video: 'videos',
-    audio: 'audios',
-    file: 'files',
-  };
-
-  const folder = folderMap[type] || 'files';
 
   return {
     type: type,
     filename: file.filename,
-    path: `/uploads/news/${folder}/${file.filename}`,
-    url: `${config.url}/uploads/news/${folder}/${file.filename}`,
+    path: file.path,
+    url: `${base}/${file.path.replace(/\\/g, '/')}`,
+    size: file.size,
+    mimetype: file.mimetype,
   };
 };
 

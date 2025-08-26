@@ -9,15 +9,18 @@ export const uploadNewsFile = catchAsync(async (req, res) => {
   const files = req.files as Record<string, Express.Multer.File[]>;
 
   // Get the uploaded file based on type
-  const uploadedFile = files['file']?.[0];
+  const file = files['file']?.[0];
 
-  if (!uploadedFile) {
+  if (!file) {
     throw new AppError(httpStatus.BAD_REQUEST, `No ${type} file uploaded`);
   }
 
+  const base = req.protocol + '://' + req.get('host');
+
   const result = await NewsServices.uploadNewsFile(
-    uploadedFile,
+    file as Express.Multer.File,
     type as 'image' | 'video' | 'audio' | 'file',
+    base as string,
   );
 
   sendResponse(res, {

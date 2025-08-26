@@ -3,6 +3,7 @@ import authRoutes from '../modules/auth/auth.route';
 import categoryRoutes from '../modules/category/category.route';
 import CommentRoutes from '../modules/comment/comment.route';
 import guestRoutes from '../modules/guest/guest.route';
+import mediaRoutes from '../modules/media/media.route';
 import NewsBreakRoutes from '../modules/news-break/news-break.route';
 import NewsHeadlineRoutes from '../modules/news-headline/news-headline.route';
 import NewsRoutes from '../modules/news/news.route';
@@ -62,6 +63,10 @@ const moduleRoutes = [
   {
     path: '/view',
     route: ViewRoutes,
+  },
+  {
+    path: '/media',
+    route: mediaRoutes,
   },
 ];
 
