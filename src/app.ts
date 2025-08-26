@@ -7,6 +7,7 @@ import session from 'express-session';
 import path from 'path';
 import config from './app/config';
 import error from './app/middlewares/error.middleware';
+import log from './app/middlewares/log.middleware';
 import notfound from './app/middlewares/not-found.middleware';
 import router from './app/routes';
 
@@ -51,6 +52,9 @@ app.use(
     },
   }),
 );
+
+// Log request middleware
+app.use(log);
 
 // Static file serving with proper headers for Vercel
 app.use(
