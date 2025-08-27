@@ -1,13 +1,12 @@
 import express from 'express';
-import auth from '../../middlewares/auth.middleware';
 import * as MediaControllers from './media.controller';
 
 const router = express.Router();
 
-// GET
+// GET - Fixed syntax for path-to-regexp v8
 router.get(
-  '/:folder(*)',
-  auth('super-admin', 'admin', 'editor', 'author'),
+  '/',
+  // auth('super-admin', 'admin', 'editor', 'author'),
   MediaControllers.getMedias,
 );
 

@@ -68,11 +68,15 @@ export const uploadNewsFile = async (
 ) => {
   if (!file || !type) return null;
 
+  const path = file.path.replace(/\\/g, '/');
+  const short_path = path.split('/').slice(-3).join('/');
+
   return {
     type: type,
     filename: file.filename,
-    path: file.path,
-    url: `${base}/${file.path.replace(/\\/g, '/')}`,
+    short_path: short_path,
+    path: path,
+    url: `${base}/${path}`,
     size: file.size,
     mimetype: file.mimetype,
   };
@@ -698,7 +702,7 @@ export const updateSelfNews = async (
 
   // === File cleanup using utility ===
   if (payload?.thumbnail && data.thumbnail) {
-    deleteFiles(data.thumbnail, 'news/thumbnails');
+    deleteFiles(data.thumbnail, 'news/images');
   }
 
   if (payload.images?.length && data.images?.length) {
@@ -751,6 +755,8 @@ export const updateNews = async (
     throw new AppError(httpStatus.NOT_FOUND, 'News not found');
   }
 
+  console.log(payload);
+
   const update: Partial<TNews> = { ...payload };
 
   if (
@@ -765,7 +771,7 @@ export const updateNews = async (
 
   // === File cleanup using utility ===
   if (payload?.thumbnail && data.thumbnail) {
-    deleteFiles(data.thumbnail, 'news/thumbnails');
+    deleteFiles(data.thumbnail, 'news/images');
   }
 
   if (payload.images?.length && data.images?.length) {
@@ -776,7 +782,7 @@ export const updateNews = async (
     deleteFiles(data.seo.image, 'news/seo/images');
   }
 
-  const flatten = Flattener.flatten(update);
+  const flatten = Flattener.flatten(update, { safe: true });
 
   const result = await News.findByIdAndUpdate(id, flatten, {
     new: true,
@@ -862,7 +868,7 @@ export const deleteNewsPermanent = async (id: string): Promise<void> => {
   }
 
   // === File cleanup using utility ===
-  deleteFiles(news?.thumbnail, 'news/thumbnails');
+  deleteFiles(news?.thumbnail, 'news/images');
   deleteFiles(news?.images, 'news/images');
   deleteFiles(news?.seo?.image, 'news/seo/images');
 

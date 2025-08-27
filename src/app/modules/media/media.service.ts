@@ -5,10 +5,17 @@ import path from 'path';
 import { TMedia } from './media.type';
 
 export const getMedias = async (
-  folder: string,
-  base: string,
+  folder: string = '',
+  base: string = '',
 ): Promise<TMedia[]> => {
-  const uploadPath = path.join(__dirname, '../uploads', folder);
+  console.log(folder);
+  const uploadPath = path.join(
+    __dirname,
+    '../../../../uploads',
+    (folder || '').trim(),
+  );
+
+  console.log(uploadPath);
 
   if (!fs.existsSync(uploadPath)) {
     throw new Error('Folder not found');
@@ -31,7 +38,7 @@ export const getMedias = async (
     return {
       type,
       filename: file,
-      path: filePath,
+      path: `/uploads/${folder}/${file}`,
       url: `${base}/uploads/${folder}/${file}`,
       size: stats.size,
       mimetype,

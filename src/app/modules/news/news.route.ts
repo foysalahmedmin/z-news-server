@@ -5,7 +5,7 @@ import auth from '../../middlewares/auth.middleware';
 import file from '../../middlewares/file.middleware';
 import validation from '../../middlewares/validation.middleware';
 import * as NewsControllers from './news.controller';
-import { getFileConfigByType } from './news.utils';
+import { folderMapWithYearMonth, getFileConfigByType } from './news.utils';
 import * as NewsValidations from './news.validation';
 
 const router = express.Router();
@@ -33,7 +33,7 @@ router.get(
 // PATCH
 router.patch(
   '/bulk/self',
-  auth('admin', 'author'),
+  // auth('admin', 'author'),
   validation(NewsValidations.updateSelfBulkNewsValidationSchema),
   NewsControllers.updateBulkNews,
 );
@@ -44,21 +44,21 @@ router.patch(
   file(
     {
       name: 'thumbnail',
-      folder: '/news/thumbnailss',
+      folder: folderMapWithYearMonth.thumbnail,
       size: 5_000_000,
       maxCount: 1,
       allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
     },
     {
       name: 'images',
-      folder: '/news/images',
+      folder: folderMapWithYearMonth.image,
       size: 5_000_000,
       maxCount: 4,
       allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
     },
     {
       name: 'seo[image]',
-      folder: '/news/seo/images',
+      folder: folderMapWithYearMonth.seo,
       size: 5_000_000,
       maxCount: 1,
       allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
@@ -81,21 +81,21 @@ router.patch(
   file(
     {
       name: 'thumbnail',
-      folder: '/news/thumbnails',
+      folder: folderMapWithYearMonth.thumbnail,
       size: 5_000_000,
       maxCount: 1,
       allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
     },
     {
       name: 'images',
-      folder: '/news/images',
+      folder: folderMapWithYearMonth.image,
       size: 5_000_000,
       maxCount: 4,
       allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
     },
     {
       name: 'seo[image]',
-      folder: '/news/seo/images',
+      folder: folderMapWithYearMonth.seo,
       size: 5_000_000,
       maxCount: 1,
       allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
@@ -157,7 +157,7 @@ router.delete(
 // POST
 router.post(
   '/file/:type',
-  auth('admin', 'author'),
+  // auth('admin', 'author'),
   (req, res, next) => {
     const { type } = req.params;
 
@@ -182,22 +182,21 @@ router.post(
   file(
     {
       name: 'thumbnail',
-      folder: '/news/thumbnails',
+      folder: folderMapWithYearMonth.thumbnail,
       size: 5_000_000,
-      minCount: 1,
       maxCount: 1,
       allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
     },
     {
       name: 'images',
-      folder: '/news/images',
+      folder: folderMapWithYearMonth.image,
       size: 5_000_000,
       maxCount: 4,
       allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
     },
     {
       name: 'seo[image]',
-      folder: '/news/seo/images',
+      folder: folderMapWithYearMonth.seo,
       size: 5_000_000,
       maxCount: 1,
       allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],

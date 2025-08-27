@@ -48,15 +48,26 @@ export const createNews = catchAsync(async (req, res) => {
 
   // Thumbnail filename
   const thumbnailFile = files['thumbnail']?.[0] || '';
-  const thumbnailPath = thumbnailFile ? thumbnailFile.filename : '';
+  const thumbnailFilePath = thumbnailFile
+    ? thumbnailFile.path.replace(/\\/g, '/')
+    : '';
+  const thumbnailPath = thumbnailFilePath
+    ? thumbnailFilePath.split('/').slice(-3).join('/')
+    : '';
 
   // Multiple images filenames
   const imagesFiles = files['images'] || [];
-  const imagesPaths = imagesFiles.map((f) => f.filename);
+  const imagesPaths = imagesFiles?.map((f) => {
+    const filePath = f?.path?.replace(/\\/g, '/');
+    return filePath.split('/').slice(-3).join('/');
+  });
 
   // SEO image(s)
   const seoFile = files['seo.image']?.[0] || '';
-  const seoImagePath = seoFile ? seoFile.filename : '';
+  const seoFilePath = seoFile ? seoFile.path.replace(/\\/g, '/') : '';
+  const seoImagePath = seoFilePath
+    ? seoFilePath.split('/').slice(-3).join('/')
+    : '';
 
   const { seo = {}, ...rest } = req.body || {};
 
@@ -161,15 +172,26 @@ export const updateSelfNews = catchAsync(async (req, res) => {
 
   // Thumbnail filename
   const thumbnailFile = files['thumbnail']?.[0] || '';
-  const thumbnailPath = thumbnailFile ? thumbnailFile.filename : '';
+  const thumbnailFilePath = thumbnailFile
+    ? thumbnailFile.path.replace(/\\/g, '/')
+    : '';
+  const thumbnailPath = thumbnailFilePath
+    ? thumbnailFilePath.split('/').slice(-3).join('/')
+    : '';
 
   // Multiple images filenames
   const imagesFiles = files['images'] || [];
-  const imagesPaths = imagesFiles.map((f) => f.filename);
+  const imagesPaths = imagesFiles?.map((f) => {
+    const filePath = f?.path?.replace(/\\/g, '/');
+    return filePath.split('/').slice(-3).join('/');
+  });
 
   // SEO image(s)
   const seoFile = files['seo.image']?.[0] || '';
-  const seoImagePath = seoFile ? seoFile.filename : '';
+  const seoFilePath = seoFile ? seoFile.path.replace(/\\/g, '/') : '';
+  const seoImagePath = seoFilePath
+    ? seoFilePath.split('/').slice(-3).join('/')
+    : '';
 
   const { seo = {}, ...rest } = req.body || {};
 
@@ -199,15 +221,26 @@ export const updateNews = catchAsync(async (req, res) => {
 
   // Thumbnail filename
   const thumbnailFile = files['thumbnail']?.[0] || '';
-  const thumbnailPath = thumbnailFile ? thumbnailFile.filename : '';
+  const thumbnailFilePath = thumbnailFile
+    ? thumbnailFile.path.replace(/\\/g, '/')
+    : '';
+  const thumbnailPath = thumbnailFilePath
+    ? thumbnailFilePath.split('/').slice(-3).join('/')
+    : '';
 
   // Multiple images filenames
   const imagesFiles = files['images'] || [];
-  const imagesPaths = imagesFiles.map((f) => f.filename);
+  const imagesPaths = imagesFiles?.map((f) => {
+    const filePath = f?.path?.replace(/\\/g, '/');
+    return filePath.split('/').slice(-3).join('/');
+  });
 
   // SEO image(s)
   const seoFile = files['seo.image']?.[0] || '';
-  const seoImagePath = seoFile ? seoFile.filename : '';
+  const seoFilePath = seoFile ? seoFile.path.replace(/\\/g, '/') : '';
+  const seoImagePath = seoFilePath
+    ? seoFilePath.split('/').slice(-3).join('/')
+    : '';
 
   const { seo = {}, ...rest } = req.body || {};
 
