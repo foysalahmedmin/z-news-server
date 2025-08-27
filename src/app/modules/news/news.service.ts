@@ -1,7 +1,7 @@
 import { Flattener } from 'flattener-kit';
 import fs from 'fs';
 import httpStatus from 'http-status';
-import mongoose, { Types } from 'mongoose';
+import mongoose from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
 import { deleteFiles } from '../../utils/deleteFiles';
@@ -176,16 +176,11 @@ export const deleteNewsFile = async (path: string) => {
 // };
 
 export const createNews = async (
-  user: TJwtPayload,
   payload: TNews & {
     is_news_headline?: boolean;
     is_news_break?: boolean;
   },
 ): Promise<TNews> => {
-  if (!user?._id) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
-  }
-
   const created_news = await News.create(payload);
 
   return created_news.toObject();
@@ -221,6 +216,7 @@ export const getFeaturedPublicNews = async (
     seq5: TNewsDocument[];
     seq6: TNewsDocument[];
     seq7: TNewsDocument[];
+    seq8: TNewsDocument[];
   }>([
     {
       $match: {
@@ -261,6 +257,11 @@ export const getFeaturedPublicNews = async (
         ],
         seq7: [
           { $match: { sequence: 7 } },
+          { $sort: { published_at: -1 } },
+          { $limit: 1 },
+        ],
+        seq8: [
+          { $match: { sequence: 8 } },
           { $sort: { published_at: -1 } },
           { $limit: 1 },
         ],
@@ -530,6 +531,8 @@ export const getSelfBulkNews = async (
       'status',
       'published_at',
       'is_featured',
+      'is_news_headline',
+      'is_news_break',
     ])
     .tap((q) => q.lean());
 
@@ -636,6 +639,8 @@ export const getBulkNews = async (
       'status',
       'published_at',
       'is_featured',
+      'is_news_headline',
+      'is_news_break',
     ])
     .tap((q) => q.lean());
 
@@ -697,20 +702,33 @@ export const updateSelfNews = async (
   ) {
     update.is_edited = true;
     update.edited_at = new Date();
-    update.editor = new Types.ObjectId(user._id);
+    update.editor = user._id as any;
   }
 
   // === File cleanup using utility ===
-  if (payload?.thumbnail && data.thumbnail) {
+  if (payload?.thumbnail !== data.thumbnail && data.thumbnail) {
     deleteFiles(data.thumbnail, 'news/images');
+    update.thumbnail = payload.thumbnail || '';
   }
 
-  if (payload.images?.length && data.images?.length) {
-    deleteFiles(data.images, 'news/images');
-  }
-
-  if (payload.seo?.image && data.seo?.image) {
+  if (payload.seo?.image !== data.seo?.image && data.seo?.image) {
     deleteFiles(data.seo.image, 'news/seo/images');
+
+    const seo = update.seo ?? (update.seo = {});
+    seo.image = payload.seo?.image || '';
+  }
+
+  if (data.images?.length) {
+    const oldImages = data.images || [];
+    const newImages = payload.images || [];
+
+    const imagesToDelete = oldImages.filter(
+      (oldImage) => !newImages.includes(oldImage),
+    );
+
+    if (imagesToDelete.length > 0) {
+      deleteFiles(imagesToDelete, 'news/images');
+    }
   }
 
   const flatten = Flattener.flatten(update, { safe: true });
@@ -755,8 +773,6 @@ export const updateNews = async (
     throw new AppError(httpStatus.NOT_FOUND, 'News not found');
   }
 
-  console.log(payload);
-
   const update: Partial<TNews> = { ...payload };
 
   if (
@@ -766,20 +782,33 @@ export const updateNews = async (
   ) {
     update.is_edited = true;
     update.edited_at = new Date();
-    update.editor = new Types.ObjectId(user._id);
+    update.editor = user._id as any;
   }
 
   // === File cleanup using utility ===
-  if (payload?.thumbnail && data.thumbnail) {
+  if (payload?.thumbnail !== data.thumbnail && data.thumbnail) {
     deleteFiles(data.thumbnail, 'news/images');
+    update.thumbnail = payload.thumbnail || '';
   }
 
-  if (payload.images?.length && data.images?.length) {
-    deleteFiles(data.images, 'news/images');
-  }
-
-  if (payload.seo?.image && data.seo?.image) {
+  if (payload.seo?.image !== data.seo?.image && data.seo?.image) {
     deleteFiles(data.seo.image, 'news/seo/images');
+
+    const seo = update.seo ?? (update.seo = {});
+    seo.image = payload.seo?.image || '';
+  }
+
+  if (data.images?.length) {
+    const oldImages = data.images || [];
+    const newImages = payload.images || [];
+
+    const imagesToDelete = oldImages.filter(
+      (oldImage) => !newImages.includes(oldImage),
+    );
+
+    if (imagesToDelete.length > 0) {
+      deleteFiles(imagesToDelete, 'news/images');
+    }
   }
 
   const flatten = Flattener.flatten(update, { safe: true });

@@ -73,7 +73,8 @@ export const createNews = catchAsync(async (req, res) => {
 
   const payload = {
     ...rest,
-    thumbnail: thumbnailPath,
+    author: req.user._id,
+    ...(thumbnailPath && { thumbnail: thumbnailPath }),
     ...(imagesPaths?.length > 0 && { images: imagesPaths }),
     seo: {
       ...seo,
@@ -81,7 +82,7 @@ export const createNews = catchAsync(async (req, res) => {
     },
   };
 
-  const result = await NewsServices.createNews(req.user, payload);
+  const result = await NewsServices.createNews(payload);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,

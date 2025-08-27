@@ -8,6 +8,7 @@ const statusEnum = z.enum(['draft', 'pending', 'published', 'archived']);
 
 const seoSchema = z
   .object({
+    image: z.string().optional(),
     title: z.string().optional(),
     description: z.string().optional(),
     keywords: z.array(z.string()).optional(),
@@ -29,7 +30,6 @@ export const createNewsValidationSchema = z.object({
     youtube: z.string().optional(),
     tags: z.array(z.string().min(1)).optional(),
     category: idSchema.optional(),
-    author: idSchema.optional(),
     status: statusEnum.optional(),
     layout: z.string().optional(),
     is_featured: z.coerce.boolean().optional(),
@@ -69,6 +69,7 @@ export const updateSelfNewsValidationSchema = z.object({
     seo: seoSchema,
     is_news_headline: z.coerce.boolean().optional(),
     is_news_break: z.coerce.boolean().optional(),
+    thumbnail: z.string().nullable().optional(),
   }),
 });
 
@@ -89,7 +90,6 @@ export const updateNewsValidationSchema = z.object({
     content: z.string().min(1).optional(),
     tags: z.array(z.string().min(1)).optional(),
     category: idSchema.optional(),
-    author: idSchema.optional(),
     status: statusEnum.optional(),
     layout: z.string().optional(),
     is_featured: z.coerce.boolean().optional(),
@@ -99,6 +99,7 @@ export const updateNewsValidationSchema = z.object({
     seo: seoSchema,
     is_news_headline: z.coerce.boolean().optional(),
     is_news_break: z.coerce.boolean().optional(),
+    thumbnail: z.string().nullable().optional(),
   }),
 });
 

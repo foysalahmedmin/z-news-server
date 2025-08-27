@@ -1,25 +1,30 @@
-import fs from 'fs';
+import { promises as fs } from 'fs';
 import path from 'path';
 
-export const deleteFiles = (filePaths?: string | string[], folder?: string) => {
-  if (!filePaths || (Array.isArray(filePaths) && filePaths?.length === 0))
+export const deleteFiles = async (
+  filePaths?: string | string[],
+  folder?: string,
+) => {
+  if (!filePaths || (Array.isArray(filePaths) && filePaths.length === 0))
     return;
   const paths = Array.isArray(filePaths) ? filePaths : [filePaths];
 
-  paths.forEach((filePath) => {
-    if (!filePath) return;
+  for (const filePath of paths) {
+    if (!filePath) continue;
 
-    // Resolve path inside uploads + optional folder
     const fullPath = folder
       ? path.resolve('uploads', folder, filePath)
       : path.resolve('uploads', filePath);
 
-    fs.unlink(fullPath, (err) => {
-      if (err && err.code !== 'ENOENT') {
-        console.warn(`❌ Failed to delete file: ${fullPath}`, err.message);
+    try {
+      await fs.unlink(fullPath);
+      console.log(`🗑️ Deleted file: ${fullPath}`);
+    } catch (err: any) {
+      if (err.code === 'ENOENT') {
+        console.warn(`⚠️ File not found: ${fullPath}`);
       } else {
-        console.log(`🗑️ Deleted file: ${fullPath}`);
+        console.error(`❌ Failed to delete file: ${fullPath}`, err.message);
       }
-    });
-  });
+    }
+  }
 };
