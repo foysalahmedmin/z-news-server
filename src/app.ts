@@ -56,33 +56,18 @@ app.use(
 // Log request middleware
 app.use(log);
 
-// Static file serving with proper headers for Vercel
-app.use(
-  '/uploads',
-  express.static(path.join(__dirname, '../uploads'), {
-    setHeaders: (res, path) => {
-      if (path.endsWith('.js')) {
-        res.setHeader('Content-Type', 'application/javascript');
-      }
-    },
-  }),
-);
+// Static file serving for uploads
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // API routes
 app.use('/api', router);
 
-// Serve static frontend files with proper MIME types
-app.use(
-  express.static(path.join(__dirname, '../public/dist'), {
-    setHeaders: (res, path) => {
-      if (path.endsWith('.js')) {
-        res.setHeader('Content-Type', 'application/javascript');
-      } else if (path.endsWith('.css')) {
-        res.setHeader('Content-Type', 'text/css');
-      }
-    },
-  }),
-);
+// Static file serving for frontend (SPA)
+app.use(express.static(path.join(__dirname, '../public/dist')));
+
+app.get(/.*/, (_req, res) => {
+  res.sendFile(path.join(__dirname, '../public/dist/index.html'));
+});
 
 // Health check endpoint for Vercel
 app.get('/health', (_req, res) => {

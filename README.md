@@ -16,6 +16,39 @@
     "docker:compose:logs": "docker-compose -f docker-compose.yml logs -f"
   }
 }
+
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "dist/index.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "dist/index.js"
+    },
+    {
+      "src": "/uploads/(.*)",
+      "dest": "dist/index.js"
+    },
+    {
+      "src": "/health",
+      "dest": "dist/index.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "dist/index.js"
+    }
+  ],
+  "functions": {
+    "dist/index.js": {
+      "includeFiles": "public/dist/**"
+    }
+  }
+}
 -->
 
 # Z NEWS
