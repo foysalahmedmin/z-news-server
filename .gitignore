@@ -1,5 +1,7 @@
-node_modules/
-dist/
-uploads/
+/node_modules
+/dist
+/public
+/uploads
+
 .env
 .vercel
