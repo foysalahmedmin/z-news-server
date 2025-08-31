@@ -1,6 +1,10 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
+import { emitToRole } from '../../socket';
+import { NotificationRecipient } from '../notification-recipient/notification-recipient.model';
+import { TNotificationMetadata } from '../notification-recipient/notification-recipient.type';
+import { User } from '../user/user.model';
 import { Notification } from './notification.model';
 import { TNotification } from './notification.type';
 
@@ -9,6 +13,57 @@ export const createNotification = async (
 ): Promise<TNotification> => {
   const result = await Notification.create(data);
   return result.toObject();
+};
+
+export const sendNewsRequestNotification = async (
+  payload: TNotification,
+  metadata?: TNotificationMetadata,
+) => {
+  try {
+    if (payload.type === 'news-request') {
+      const notification = await Notification.create(payload);
+
+      const admins = await User.find({
+        role: 'admin',
+        is_deleted: { $ne: true },
+      });
+
+      // Create notification recipients for all admins
+      const recipients = admins.map((admin) => ({
+        notification: notification._id,
+        recipient: admin._id,
+        metadata: metadata,
+      }));
+
+      await NotificationRecipient.insertMany(recipients);
+
+      // Emit real-time notifications to all admins
+      const notificationWithDetails = await NotificationRecipient.findOne({
+        notification: notification._id,
+      })
+        .populate('notification')
+        .populate('recipient', 'name email role');
+
+      // Send to admin role room
+      emitToRole(
+        'admin',
+        'notification-recipient-created',
+        notificationWithDetails,
+      );
+
+      console.log(
+        `📢 News request notification sent to ${admins.length} admins`,
+      );
+      return notification;
+    }
+
+    // Create notification
+
+    // Find all admin users
+  } catch (error) {
+    console.error('❌ Failed to send news request notification:', error);
+    throw error;
+  }
 };
 
 export const getNotification = async (id: string): Promise<TNotification> => {

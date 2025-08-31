@@ -7,6 +7,7 @@ import AppQuery from '../../builder/AppQuery';
 import { deleteFiles } from '../../utils/deleteFiles';
 import { TJwtPayload } from '../auth/auth.type';
 import { Category } from '../category/category.model';
+import { sendNewsRequestNotification } from '../notification/notification.service';
 import { News } from './news.model';
 import { TNews, TNewsDocument } from './news.type';
 
@@ -176,12 +177,41 @@ export const deleteNewsFile = async (path: string) => {
 // };
 
 export const createNews = async (
+  user: TJwtPayload,
   payload: TNews & {
     is_news_headline?: boolean;
     is_news_break?: boolean;
   },
 ): Promise<TNews> => {
-  const created_news = await News.create(payload);
+  const created_news = await News.create({ ...payload, author: user._id });
+
+  const notificationPayload = {
+    title: 'New News Request',
+    message: `${user?.name || 'Author'} has submitted a news request: "${payload.title}"`,
+    type: 'news-request',
+    priority: 'medium',
+    channels: ['web', 'push'],
+    sender: user._id.toString(),
+  };
+
+  const metadata = {
+    url: `/admin/news-requests/${created_news._id.toString()}`,
+    source: 'news-management',
+    reference: created_news._id.toString(),
+    actions: [
+      {
+        title: 'Review',
+        type: 'news-view',
+        url: `/news-articles/${created_news._id.toString()}`,
+      },
+      {
+        title: 'Published',
+        type: 'news-published',
+      },
+    ],
+  };
+
+  await sendNewsRequestNotification(notificationPayload, metadata);
 
   return created_news.toObject();
 };
