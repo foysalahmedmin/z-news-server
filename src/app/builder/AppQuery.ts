@@ -15,36 +15,36 @@ type DocumentType<T> = T & Document;
 
 class AppQuery<T = any> {
   public query: Query<DocumentType<T>[], DocumentType<T>>;
-  public queryParams: QueryParams;
-  public queryFilter: FilterQuery<DocumentType<T>>;
-  private pageNumber = 1;
-  private pageLimit = 0;
+  public query_params: QueryParams;
+  public query_filter: FilterQuery<DocumentType<T>>;
+  private page = 1;
+  private limit = 0;
 
   constructor(
     query: Query<DocumentType<T>[], DocumentType<T>>,
-    queryParams: Record<string, unknown>,
+    query_params: Record<string, unknown>,
   ) {
     this.query = query;
-    this.queryParams = queryParams;
-    this.queryFilter = {};
+    this.query_params = query_params;
+    this.query_filter = {};
   }
 
   search(applicableFields: (keyof T)[]): this {
-    const searchValue = this.queryParams.search;
+    const searchValue = this.query_params.search;
     if (searchValue) {
       const searchConditions: FilterQuery<DocumentType<T>> = {
         $or: applicableFields.map((field) => ({
           [field]: { $regex: searchValue, $options: 'i' },
         })) as FilterQuery<DocumentType<T>>[],
       };
-      this.queryFilter = { ...this.queryFilter, ...searchConditions };
+      this.query_filter = { ...this.query_filter, ...searchConditions };
       this.query = this.query.find(searchConditions);
     }
     return this;
   }
 
   filter(applicableFields?: (keyof T)[]): this {
-    const queryObj = { ...this.queryParams };
+    const queryObj = { ...this.query_params };
     const excludedFields = [
       'search',
       'sort',
@@ -90,14 +90,14 @@ class AppQuery<T = any> {
     Object.assign(mongoFilter, queryObj);
 
     // Apply to query
-    this.queryFilter = { ...this.queryFilter, ...mongoFilter };
+    this.query_filter = { ...this.query_filter, ...mongoFilter };
     this.query = this.query.find(mongoFilter);
 
     return this;
   }
 
   sort(applicableFields?: (keyof T)[]): this {
-    const rawSort = this.queryParams.sort ?? '';
+    const rawSort = this.query_params.sort ?? '';
     let fields = rawSort.split(',').filter(Boolean);
 
     if (applicableFields?.length) {
@@ -113,20 +113,20 @@ class AppQuery<T = any> {
   }
 
   paginate(): this {
-    const { page, limit } = this.queryParams;
+    const { page, limit } = this.query_params;
 
     if (limit && page) {
-      this.pageNumber = Number(page) || 1;
-      this.pageLimit = Number(limit) || 10;
-      const skip = (this.pageNumber - 1) * this.pageLimit;
-      this.query = this.query.skip(skip).limit(this.pageLimit);
+      this.page = Number(page) || 1;
+      this.limit = Number(limit) || 10;
+      const skip = (this.page - 1) * this.limit;
+      this.query = this.query.skip(skip).limit(this.limit);
     }
 
     return this;
   }
 
   fields(applicableFields?: (keyof T)[]): this {
-    const rawFields = this.queryParams.fields ?? '';
+    const rawFields = this.query_params.fields ?? '';
     let selectedFields = rawFields.split(',').filter(Boolean);
 
     if (applicableFields?.length) {
@@ -168,21 +168,9 @@ class AppQuery<T = any> {
       statistics?: Record<string, number>;
     };
   }> {
-    if (Boolean(this.queryParams.is_count_only)) {
-      const total = await (
-        this.query.model as Model<DocumentType<T>>
-      ).countDocuments(this.queryFilter);
-
-      return {
-        data: [],
-        meta: { total, page: this.pageNumber, limit: this.pageLimit },
-      };
-    }
-
-    const [data, total, stats] = await Promise.all([
-      this.query,
+    const [total, stats] = await Promise.all([
       (this.query.model as Model<DocumentType<T>>).countDocuments(
-        this.queryFilter,
+        this.query_filter,
       ),
       statisticsQueries
         ? Promise.all(
@@ -190,7 +178,7 @@ class AppQuery<T = any> {
               const count = await (
                 this.query.model as Model<DocumentType<T>>
               ).countDocuments({
-                ...this.queryFilter,
+                ...this.query_filter,
                 ...stat.filter,
               });
               return { key: stat.key, count };
@@ -208,9 +196,23 @@ class AppQuery<T = any> {
         {} as Record<string, number>,
       ) || undefined;
 
+    if (Boolean(this.query_params.is_count_only)) {
+      return {
+        data: [],
+        meta: {
+          total,
+          page: this.page,
+          limit: this.limit,
+          statistics,
+        },
+      };
+    }
+
+    const data = (await this.query) as unknown as T[];
+
     return {
-      data: data as unknown as T[],
-      meta: { total, page: this.pageNumber, limit: this.pageLimit, statistics },
+      data,
+      meta: { total, page: this.page, limit: this.limit, statistics },
     };
   }
 }

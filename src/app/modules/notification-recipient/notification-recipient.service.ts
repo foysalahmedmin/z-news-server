@@ -52,7 +52,10 @@ export const getSelfNotificationRecipients = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const notificationQuery = new AppQuery<TNotificationRecipient>(
-    NotificationRecipient.find({ author: user._id }),
+    NotificationRecipient.find({ author: user._id }).populate([
+      { path: 'recipient', select: '_id name email image' },
+      { path: 'notification', select: '_id title type sender' },
+    ]),
     query,
   )
     .filter()
@@ -61,7 +64,12 @@ export const getSelfNotificationRecipients = async (
     .fields()
     .tap((q) => q.lean());
 
-  return await notificationQuery.execute();
+  return await notificationQuery.execute([
+    {
+      key: 'unread',
+      filter: { is_read: false },
+    },
+  ]);
 };
 
 export const getNotificationRecipients = async (
@@ -73,6 +81,7 @@ export const getNotificationRecipients = async (
   const notificationQuery = new AppQuery<TNotificationRecipient>(
     NotificationRecipient.find().populate([
       { path: 'recipient', select: '_id name email image' },
+      { path: 'notification', select: '_id title type sender' },
     ]),
     query,
   )
@@ -82,7 +91,12 @@ export const getNotificationRecipients = async (
     .fields()
     .tap((q) => q.lean());
 
-  return await notificationQuery.execute();
+  return await notificationQuery.execute([
+    {
+      key: 'unread',
+      filter: { is_read: false },
+    },
+  ]);
 };
 
 export const updateSelfNotificationRecipient = async (
