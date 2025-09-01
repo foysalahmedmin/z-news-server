@@ -1,12 +1,12 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
-import { emitToRole } from '../../socket';
+import { emitToRole, emitToUser } from '../../socket';
+import { News } from '../news/news.model';
 import { NotificationRecipient } from '../notification-recipient/notification-recipient.model';
-import { TNotificationMetadata } from '../notification-recipient/notification-recipient.type';
 import { User } from '../user/user.model';
 import { Notification } from './notification.model';
-import { TNotification } from './notification.type';
+import { TNotification, TType } from './notification.type';
 
 export const createNotification = async (
   data: TNotification,
@@ -15,54 +15,110 @@ export const createNotification = async (
   return result.toObject();
 };
 
-export const sendNewsRequestNotification = async (
-  payload: TNotification,
-  metadata?: TNotificationMetadata,
-) => {
+export const sendNewsNotification = async (payload: {
+  news: string;
+  sender: string;
+  type: TType;
+}) => {
   try {
-    if (payload.type === 'news-request') {
-      const notification = await Notification.create(payload);
+    const news = await News.findById(payload.news).populate('author').lean();
+    const sender = await User.findById(payload.sender).lean();
+    const type = payload.type;
+
+    if (type === 'news-request' && news && sender) {
+      const notificationPayload: TNotification = {
+        title: 'New News Request',
+        message: `${sender?.name || 'Author'} has submitted a news request: "${news.title}"`,
+        type: 'news-request',
+        priority: 'medium',
+        channels: ['web', 'push'],
+        sender: sender?._id.toString(),
+      };
+
+      const notification = await Notification.create(notificationPayload);
 
       const admins = await User.find({
         role: 'admin',
-        is_deleted: { $ne: true },
       });
 
-      // Create notification recipients for all admins
       const recipients = admins.map((admin) => ({
         notification: notification._id,
         recipient: admin._id,
-        metadata: metadata,
+        metadata: {
+          url: `/admin/news-requests/${news?._id.toString()}`,
+          source: 'news-management',
+          reference: news._id.toString(),
+          actions: [
+            {
+              title: 'Review',
+              type: 'news-view',
+              url: `/news-articles/${news._id.toString()}`,
+            },
+            {
+              title: 'Published',
+              type: 'news-published',
+            },
+          ],
+        },
       }));
 
       await NotificationRecipient.insertMany(recipients);
 
-      // Emit real-time notifications to all admins
-      const notificationWithDetails = await NotificationRecipient.findOne({
+      const result = await NotificationRecipient.findOne({
         notification: notification._id,
       })
         .populate('notification')
         .populate('recipient', 'name email role');
 
       // Send to admin role room
-      emitToRole(
-        'admin',
-        'notification-recipient-created',
-        notificationWithDetails,
-      );
-
-      console.log(
-        `📢 News request notification sent to ${admins.length} admins`,
-      );
-      return notification;
+      emitToRole('admin', 'notification-recipient-created', result);
     }
+    if (type === 'news-request-response' && news && sender) {
+      const notificationPayload: TNotification = {
+        title: 'New News Request Response',
+        message: `${sender?.name || 'Admin'} has ${news.status} your news request: "${news.title}"`,
+        type: 'news-request-response',
+        priority: 'medium',
+        channels: ['web', 'push'],
+        sender: sender?._id.toString(),
+      };
 
-    // Create notification
+      const notification = await Notification.create(notificationPayload);
 
-    // Find all admin users
+      const recipient = {
+        notification: notification._id,
+        recipient: news.author.toString(),
+        metadata: {
+          url: `/admin/news-requests/${news?._id.toString()}`,
+          source: 'news-management',
+          reference: news._id.toString(),
+          actions: [
+            {
+              title: 'Review',
+              type: 'news-view',
+              url: `/news-articles/${news._id.toString()}`,
+            },
+          ],
+        },
+      };
+
+      await NotificationRecipient.create(recipient);
+
+      const result = await NotificationRecipient.findOne({
+        notification: notification._id,
+      })
+        .populate('notification')
+        .populate('recipient', 'name email role');
+
+      // Send to admin role room
+      emitToUser(
+        news.author.toString(),
+        'notification-recipient-created',
+        result,
+      );
+    }
   } catch (error) {
     console.error('❌ Failed to send news request notification:', error);
-    throw error;
   }
 };
 

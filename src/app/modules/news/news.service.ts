@@ -7,7 +7,7 @@ import AppQuery from '../../builder/AppQuery';
 import { deleteFiles } from '../../utils/deleteFiles';
 import { TJwtPayload } from '../auth/auth.type';
 import { Category } from '../category/category.model';
-import { sendNewsRequestNotification } from '../notification/notification.service';
+import { sendNewsNotification } from '../notification/notification.service';
 import { News } from './news.model';
 import { TNews, TNewsDocument } from './news.type';
 
@@ -185,33 +185,13 @@ export const createNews = async (
 ): Promise<TNews> => {
   const created_news = await News.create({ ...payload, author: user._id });
 
-  const notificationPayload = {
-    title: 'New News Request',
-    message: `${user?.name || 'Author'} has submitted a news request: "${payload.title}"`,
-    type: 'news-request',
-    priority: 'medium',
-    channels: ['web', 'push'],
-    sender: user._id.toString(),
-  };
-
-  const metadata = {
-    url: `/admin/news-requests/${created_news._id.toString()}`,
-    source: 'news-management',
-    reference: created_news._id.toString(),
-    actions: [
-      {
-        title: 'Review',
-        type: 'news-view',
-        url: `/news-articles/${created_news._id.toString()}`,
-      },
-      {
-        title: 'Published',
-        type: 'news-published',
-      },
-    ],
-  };
-
-  await sendNewsRequestNotification(notificationPayload, metadata);
+  if (created_news && user.role !== 'admin' && user.role !== 'super-admin') {
+    await sendNewsNotification({
+      news: created_news._id.toString(),
+      sender: user?._id.toString(),
+      type: 'news-request',
+    });
+  }
 
   return created_news.toObject();
 };
@@ -847,6 +827,20 @@ export const updateNews = async (
     new: true,
     runValidators: true,
   }).lean();
+
+  if (
+    result &&
+    user._id !== result.author.toString() &&
+    data.status !== result.status &&
+    result.status !== 'pending' &&
+    result.status !== 'draft'
+  ) {
+    await sendNewsNotification({
+      news: result._id.toString(),
+      sender: user._id.toString(),
+      type: 'news-request-response',
+    });
+  }
 
   return result!;
 };

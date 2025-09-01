@@ -5,11 +5,11 @@ export type TPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type TChannel = 'web' | 'push' | 'email';
 export type TType =
   | 'news-request'
-  | 'news-request-approval'
+  | 'news-request-response'
   | 'news-headline-request'
-  | 'news-headline-request-approval'
+  | 'news-headline-request-response'
   | 'news-break-request'
-  | 'news-break-request-approval'
+  | 'news-break-request-response'
   | 'reaction'
   | 'comment'
   | 'reply';
@@ -20,7 +20,7 @@ export type TNotification = {
   type: TType;
   priority?: TPriority;
   channels: TChannel[];
-  sender: Types.ObjectId;
+  sender: Types.ObjectId | string;
   expires_at?: Date;
   status?: TStatus;
   is_deleted?: boolean;
