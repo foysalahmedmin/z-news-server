@@ -21,6 +21,12 @@ export type TCategoryTree = TCategory & {
   children?: TCategoryTree[];
 };
 
+export type TCategoryInput = {
+  category_id: string;
+  category_name: string;
+  parent_id?: string;
+};
+
 export interface TCategoryDocument extends TCategory, Document {
   _id: Types.ObjectId;
   softDelete(): Promise<TCategoryDocument | null>;

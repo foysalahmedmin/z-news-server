@@ -15,6 +15,7 @@ export type TNews = {
   youtube?: string;
   tags?: string[];
   category: Types.ObjectId;
+  categories: Types.ObjectId[];
   author: Types.ObjectId;
   writer?: string;
   collaborators?: Types.ObjectId[];
@@ -37,8 +38,20 @@ export type TNews = {
   is_deleted: boolean;
   is_news_headline?: boolean;
   is_news_break?: boolean;
-  // news_headline?: TNewsHeadline;
-  // news_break?: TNewsBreak;
+};
+
+export type TNewsInput = {
+  post_id: string;
+  post_date: string;
+  post_content: string;
+  post_title: string;
+  post_status: 'publish' | string;
+  post_modified_gmt: string;
+  post_author: string;
+  post_slug_bn: string;
+  category_ids: string;
+  image_url: string;
+  image_caption: string;
 };
 
 export interface TNewsDocument extends TNews, Document {

@@ -1,10 +1,57 @@
+import fs from 'fs';
 import httpStatus from 'http-status';
+import { ObjectId } from 'mongodb';
 import { Types } from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
+import { slugify } from '../../utils/slugify';
 import { Category } from './category.model';
-import { TCategory, TCategoryTree } from './category.type';
+import { TCategory, TCategoryInput, TCategoryTree } from './category.type';
 import { buildTree } from './category.utils';
+
+export const insertCategoriesFromFile = async (
+  file?: Express.Multer.File,
+): Promise<{
+  count: number;
+}> => {
+  if (!file) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'No file uploaded');
+  }
+
+  const rawData = fs.readFileSync(file.path, 'utf-8');
+  const categories: TCategoryInput[] = JSON.parse(rawData);
+
+  let sequenceCounter = 1;
+
+  const formatted: TCategory[] = categories.map((cat) => ({
+    _id: new ObjectId(Number(cat.category_id).toString(16).padStart(24, '0')),
+    name: cat.category_name,
+    slug: slugify(cat.category_name),
+    sequence: sequenceCounter++,
+    status: 'active',
+    is_featured: false,
+    is_deleted: false,
+    icon: 'blocks',
+    layout: 'default',
+    tags: [],
+    description: '',
+    ...(cat?.parent_id
+      ? {
+          category: new ObjectId(
+            Number(cat.parent_id).toString(16).padStart(24, '0'),
+          ),
+        }
+      : {}),
+  }));
+
+  await Category.insertMany(formatted, { ordered: false });
+
+  fs.unlinkSync(file.path);
+
+  return {
+    count: formatted.length,
+  };
+};
 
 export const createCategory = async (data: TCategory): Promise<TCategory> => {
   const result = await Category.create(data);

@@ -3,6 +3,17 @@ import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
 import * as CategoryServices from './category.service';
 
+export const insertCategoriesFromFile = catchAsync(async (req, res) => {
+  const result = await CategoryServices.insertCategoriesFromFile(req.file);
+
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: `${result.count} categories uploaded successfully`,
+    data: result,
+  });
+});
+
 export const createCategory = catchAsync(async (req, res) => {
   const result = await CategoryServices.createCategory(req.body);
   sendResponse(res, {

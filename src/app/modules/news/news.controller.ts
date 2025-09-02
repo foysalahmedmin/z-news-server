@@ -2,7 +2,19 @@ import httpStatus from 'http-status';
 import AppError from '../../builder/AppError';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
+import * as NewsFileServices from './news.file.service';
 import * as NewsServices from './news.service';
+
+export const insertBulkNewsFromFile = catchAsync(async (req, res) => {
+  const result = await NewsFileServices.insertBulkNewsFromFile(req.file);
+
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: `${result.count} news uploaded successfully`,
+    data: result,
+  });
+});
 
 export const uploadNewsFile = catchAsync(async (req, res) => {
   const { type } = req.params;

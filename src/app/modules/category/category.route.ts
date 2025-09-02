@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 import auth from '../../middlewares/auth.middleware';
 import validation from '../../middlewares/validation.middleware';
 import * as CategoryControllers from './category.controller';
@@ -7,6 +8,14 @@ import * as CategoryValidations from './category.validation';
 const router = express.Router();
 
 // GET
+
+const upload = multer({ dest: 'uploads/' });
+
+router.post(
+  '/upload-json',
+  upload.single('file'),
+  CategoryControllers.insertCategoriesFromFile,
+);
 
 router.get('/public', CategoryControllers.getPublicCategories);
 router.get('/', auth('admin'), CategoryControllers.getCategories);

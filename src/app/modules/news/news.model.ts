@@ -64,6 +64,12 @@ const newsSchema = new Schema<TNewsDocument>(
       ref: 'Category',
     },
 
+    categories: {
+      type: [Schema.Types.ObjectId],
+      ref: 'Category',
+      default: [],
+    },
+
     author: {
       type: Schema.Types.ObjectId,
       ref: 'User',
