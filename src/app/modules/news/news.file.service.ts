@@ -165,7 +165,7 @@ const forceGC = (): void => {
   }
 };
 
-// Main optimized function
+// Main optimized function with per-batch transaction
 export const insertBulkNewsFromFile = async (
   file?: Express.Multer.File,
 ): Promise<{
@@ -180,7 +180,6 @@ export const insertBulkNewsFromFile = async (
   }
 
   const startTime = Date.now();
-  let session: ClientSession | null = null;
   let successful = 0;
   let failed = 0;
   const errors: string[] = [];
@@ -199,28 +198,21 @@ export const insertBulkNewsFromFile = async (
       );
     }
 
-    // Memory-efficient file reading for large files
+    // Memory-efficient file reading
     let allNews: TNewsInput[];
-
     if (fileSizeMB > 50) {
-      // For large files, read in streaming mode
       console.log('🌊 Using streaming mode for large file...');
       const chunks: Buffer[] = [];
       const readStream = fs.createReadStream(file.path, {
         highWaterMark: 1024 * 1024,
-      }); // 1MB chunks
-
+      });
       for await (const chunk of readStream) {
         chunks.push(chunk);
       }
-
       const rawData = Buffer.concat(chunks).toString('utf-8');
       allNews = JSON.parse(rawData);
-
-      // Clear chunks from memory
       chunks.length = 0;
     } else {
-      // Regular file reading
       const rawData = fs.readFileSync(file.path, 'utf-8');
       allNews = JSON.parse(rawData);
     }
@@ -231,11 +223,7 @@ export const insertBulkNewsFromFile = async (
 
     console.log(`📊 Total records to process: ${allNews.length}`);
 
-    // Start MongoDB session
-    session = await mongoose.startSession();
-    await session.startTransaction();
-
-    // Process in optimized batches
+    // Process in batches
     const totalBatches = Math.ceil(allNews.length / CONFIG.BATCH_SIZE);
 
     for (let i = 0; i < allNews.length; i += CONFIG.BATCH_SIZE) {
@@ -246,27 +234,37 @@ export const insertBulkNewsFromFile = async (
         `⚡ Processing batch ${batchNumber}/${totalBatches} (${batch.length} items)`,
       );
 
-      const batchResult = await processBatchWithRetry(
-        batch,
-        session,
-        batchNumber,
-      );
+      let session: ClientSession | null = null;
+      try {
+        session = await mongoose.startSession();
+        session.startTransaction();
 
-      successful += batchResult.successful;
-      failed += batchResult.failed;
+        const batchResult = await processBatchWithRetry(
+          batch,
+          session,
+          batchNumber,
+        );
 
-      if (batchResult.error) {
-        errors.push(`Batch ${batchNumber}: ${batchResult.error}`);
+        await session.commitTransaction();
+
+        successful += batchResult.successful;
+        failed += batchResult.failed;
+
+        if (batchResult.error) {
+          errors.push(`Batch ${batchNumber}: ${batchResult.error}`);
+        }
+      } catch (batchError: any) {
+        if (session) await session.abortTransaction();
+        failed += batch.length;
+        errors.push(`Batch ${batchNumber}: ${batchError.message}`);
+        console.error(`❌ Batch ${batchNumber} failed:`, batchError.message);
+      } finally {
+        if (session) await session.endSession();
       }
 
       // Memory management every 10 batches
-      if (batchNumber % 10 === 0) {
-        forceGC();
-      }
+      if (batchNumber % 10 === 0) forceGC();
     }
-
-    // Commit transaction
-    await session.commitTransaction();
 
     const processingTime = Date.now() - startTime;
     const successRate = ((successful / allNews.length) * 100).toFixed(2);
@@ -284,19 +282,11 @@ export const insertBulkNewsFromFile = async (
       ...(errors.length > 0 && { errors }),
     };
   } catch (error: any) {
-    if (session) {
-      await session.abortTransaction();
-    }
-
     throw new AppError(
       httpStatus.INTERNAL_SERVER_ERROR,
       `Import failed: ${error.message}`,
     );
   } finally {
-    if (session) {
-      await session.endSession();
-    }
-
     // Cleanup file
     try {
       fs.unlinkSync(file.path);
