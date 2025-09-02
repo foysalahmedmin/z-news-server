@@ -7,8 +7,6 @@ import * as CategoryValidations from './category.validation';
 
 const router = express.Router();
 
-// GET
-
 const upload = multer({ dest: 'uploads/' });
 
 router.post(
@@ -17,6 +15,7 @@ router.post(
   CategoryControllers.insertCategoriesFromFile,
 );
 
+// GET
 router.get('/public', CategoryControllers.getPublicCategories);
 router.get('/', auth('admin'), CategoryControllers.getCategories);
 

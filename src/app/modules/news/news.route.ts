@@ -1,5 +1,6 @@
 import express from 'express';
 import httpStatus from 'http-status';
+import multer from 'multer';
 import AppError from '../../builder/AppError';
 import auth from '../../middlewares/auth.middleware';
 import file from '../../middlewares/file.middleware';
@@ -9,6 +10,14 @@ import { folderMapWithYearMonth, getFileConfigByType } from './news.utils';
 import * as NewsValidations from './news.validation';
 
 const router = express.Router();
+
+const upload = multer({ dest: 'uploads/' });
+
+router.post(
+  '/upload-json',
+  upload.single('file'),
+  NewsControllers.insertBulkNewsFromFile,
+);
 
 // GET
 router.get('/public/featured', NewsControllers.getFeaturedPublicNews);

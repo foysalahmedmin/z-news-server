@@ -1,117 +1,311 @@
 import fs from 'fs';
 import httpStatus from 'http-status';
-import { ObjectId } from 'mongodb';
+import { ClientSession, ObjectId } from 'mongodb';
+import mongoose from 'mongoose';
 import AppError from '../../builder/AppError';
 import { slugify } from '../../utils/slugify';
 import { News } from './news.model';
 import { TNews, TNewsInput } from './news.type';
 
-const BASE_URL = 'https://www.dainikeidin.com/wp-content/uploads/';
-const NEW_URL = 'https://www.admin.dainikeidin.com/uploads/news/images/';
+// Configuration constants
+const CONFIG = {
+  BATCH_SIZE: 500,
+  MAX_RETRIES: 3,
+  RETRY_DELAY: 1000,
+  BASE_URL: 'https://www.dainikeidin.com/wp-content/uploads/',
+  NEW_URL: 'https://www.admin.dainikeidin.com/uploads/news/images/',
+  REMOVE_CATEGORIES: new Set(['86', '94', '4785', '27285', '27421']),
+  AUTHOR_ID: new ObjectId('000000000000000000000001'),
+} as const;
 
-const getImagePath = (url: string): string => {
-  if (url?.startsWith(BASE_URL)) {
-    return url.replace(BASE_URL, '');
-  }
+// Utility functions (optimized)
+const getImagePath = (url: string): string =>
+  url?.startsWith(CONFIG.BASE_URL) ? url.replace(CONFIG.BASE_URL, '') : url;
 
-  return url;
-};
-
-const getContent = (content: string): string => {
-  return content.replace(new RegExp(BASE_URL, 'g'), NEW_URL);
-};
+const getContent = (content: string): string =>
+  content.replace(new RegExp(CONFIG.BASE_URL, 'g'), CONFIG.NEW_URL);
 
 const getCategoryID = (categories: string): ObjectId => {
-  const REMOVES = ['86', '94', '4785', '27285', '27421'];
-  const ids = categories?.split(',').filter((id) => !REMOVES.includes(id));
+  if (!categories) return new ObjectId('000000000000000000000065');
 
-  const id = ids.length > 0 ? ids[ids.length - 1] : '101';
-  const objectId = new ObjectId(Number(id).toString(16).padStart(24, '0'));
+  const ids = categories
+    .split(',')
+    .filter((id) => !CONFIG.REMOVE_CATEGORIES.has(id));
+  const targetId = ids.length > 0 ? ids[ids.length - 1] : '101';
 
-  return objectId;
+  return new ObjectId(Number(targetId).toString(16).padStart(24, '0'));
 };
 
 const getCategoryIDs = (categories: string): ObjectId[] => {
-  const REMOVES = ['86', '94', '4785', '27285', '27421'];
-  const ids = categories?.split(',').filter((id) => !REMOVES.includes(id));
+  if (!categories) return [];
 
-  const objectIds = ids.map(
+  const ids = categories
+    .split(',')
+    .filter((id) => !CONFIG.REMOVE_CATEGORIES.has(id));
+  return ids.map(
     (id) => new ObjectId(Number(id).toString(16).padStart(24, '0')),
   );
-
-  return objectIds;
 };
 
 export const getDescription = (content: string): string => {
   if (!content) return '';
 
-  // 1. Remove HTML tags
-  let text = content.replace(/<[^>]*>/g, ' ');
+  let text = content
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/[\r\n\s]+/g, ' ')
+    .replace(/[^অ-হa-zA-Z0-9.,!? ]+/g, '');
 
-  // 2. Remove newlines, carriage returns, extra spaces
-  text = text.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ');
-
-  // 3. Remove unwanted special characters (keep only basic punctuation)
-  text = text.replace(/[^অ-হa-zA-Z0-9.,!? ]+/g, '');
-
-  // 4. Split into sentences (keep punctuation)
   const sentences = text.match(/[^.!?]+[.!?]?/g) || [];
-
   let description = '';
+
   for (const sentence of sentences) {
-    if ((description + sentence).length <= 250) {
-      description += sentence.trim() + ' ';
-    } else {
-      break;
-    }
+    const trimmed = sentence.trim();
+    if ((description + trimmed).length <= 250) {
+      description += trimmed + ' ';
+    } else break;
   }
 
   return description.trim();
 };
 
+// Optimized batch processor
+const processBatch = (batch: TNewsInput[]): TNews[] => {
+  return batch.map((news) => {
+    const publishedAt = new Date(news.post_date);
+    const updatedAt = new Date(news.post_modified_gmt || news.post_date);
+
+    return {
+      _id: new ObjectId(Number(news.post_id).toString(16).padStart(24, '0')),
+      title: news.post_title,
+      slug: news.post_slug_bn || slugify(news.post_title),
+      status: news.post_status === 'publish' ? 'published' : 'draft',
+      category: getCategoryID(news?.category_ids),
+      categories: getCategoryIDs(news?.category_ids),
+      thumbnail: getImagePath(news?.image_url),
+      caption: news.image_caption || '',
+      description: getDescription(news?.post_content || ''),
+      content: getContent(news?.post_content || 'সংবাদ লিপিবদ্ধ হয়নি।'),
+      author: CONFIG.AUTHOR_ID,
+      published_at: publishedAt,
+      created_at: publishedAt,
+      updated_at: updatedAt,
+      is_featured: false,
+      is_deleted: false,
+      is_premium: false,
+      views: 0,
+      layout: 'default',
+      tags: [],
+    } as TNews;
+  });
+};
+
+// Batch processing with retry and memory management
+const processBatchWithRetry = async (
+  batch: TNewsInput[],
+  session: ClientSession,
+  batchNumber: number,
+  retryCount = 0,
+): Promise<{ successful: number; failed: number; error?: string }> => {
+  try {
+    const formattedBatch = processBatch(batch);
+
+    const result = await News.insertMany(formattedBatch, {
+      session,
+      ordered: false,
+      rawResult: true,
+    });
+
+    const insertedCount = result.insertedCount || formattedBatch.length;
+    console.log(
+      `✅ Batch ${batchNumber}: ${insertedCount}/${batch.length} inserted`,
+    );
+
+    return { successful: insertedCount, failed: batch.length - insertedCount };
+  } catch (error: any) {
+    if (error.code === 11000) {
+      // Handle duplicates gracefully
+      const insertedCount = error.result?.insertedCount || 0;
+      const failedCount = batch.length - insertedCount;
+
+      console.log(
+        `⚠️  Batch ${batchNumber}: ${insertedCount} inserted, ${failedCount} duplicates`,
+      );
+      return {
+        successful: insertedCount,
+        failed: failedCount,
+        error: `${failedCount} duplicates found`,
+      };
+    }
+
+    if (retryCount < CONFIG.MAX_RETRIES) {
+      console.log(
+        `🔄 Retrying batch ${batchNumber}, attempt ${retryCount + 1}`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, CONFIG.RETRY_DELAY));
+      return processBatchWithRetry(batch, session, batchNumber, retryCount + 1);
+    }
+
+    console.error(
+      `❌ Batch ${batchNumber} failed after ${CONFIG.MAX_RETRIES} retries:`,
+      error.message,
+    );
+    return {
+      successful: 0,
+      failed: batch.length,
+      error: `Failed after ${CONFIG.MAX_RETRIES} retries: ${error.message}`,
+    };
+  }
+};
+
+// Force garbage collection
+const forceGC = (): void => {
+  if (global.gc) {
+    global.gc();
+    console.log('🧹 Garbage collection triggered');
+  }
+};
+
+// Main optimized function
 export const insertBulkNewsFromFile = async (
   file?: Express.Multer.File,
 ): Promise<{
   count: number;
+  successful: number;
+  failed: number;
+  errors?: string[];
+  processingTime: number;
 }> => {
   if (!file) {
     throw new AppError(httpStatus.BAD_REQUEST, 'No file uploaded');
   }
 
-  const rawData = fs.readFileSync(file.path, 'utf-8');
-  const all_news: TNewsInput[] = JSON.parse(rawData);
+  const startTime = Date.now();
+  let session: ClientSession | null = null;
+  let successful = 0;
+  let failed = 0;
+  const errors: string[] = [];
 
-  const formatted: TNews[] = all_news.map((news) => ({
-    _id: new ObjectId(Number(news.post_id).toString(16).padStart(24, '0')),
-    title: news.post_title,
-    slug: news.post_slug_bn || slugify(news.post_title),
-    status: news.post_status === 'publish' ? 'published' : 'draft',
-    category: getCategoryID(news?.category_ids),
-    categories: getCategoryIDs(news?.category_ids),
-    thumbnail: getImagePath(news?.image_url),
-    ...(news.image_caption ? { caption: news.image_caption } : {}),
-    caption: '',
-    description: getDescription(news?.post_content || ''),
-    content: getContent(news?.post_content || 'সংবাদ লিপিবদ্ধ হয়নি।'),
-    author: new ObjectId(Number('1').toString(16).padStart(24, '0')),
-    published_at: new Date(news.post_date),
-    created_at: new Date(news.post_date),
-    updated_at: new Date(news.post_modified_gmt || news.post_date),
-    is_featured: false,
-    is_deleted: false,
-    is_premium: false,
-    is_news_break: false,
-    is_news_headline: false,
-    views: 0,
-    layout: 'default',
-    tags: [],
-  }));
+  try {
+    // File validation
+    const fileStats = fs.statSync(file.path);
+    const fileSizeMB = fileStats.size / 1024 / 1024;
 
-  await News.insertMany(formatted, { ordered: false });
+    console.log(`📁 Processing file: ${fileSizeMB.toFixed(2)}MB`);
 
-  fs.unlinkSync(file.path);
+    if (fileSizeMB > 500) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'File too large. Maximum 500MB supported.',
+      );
+    }
 
-  return {
-    count: formatted.length,
-  };
+    // Memory-efficient file reading for large files
+    let allNews: TNewsInput[];
+
+    if (fileSizeMB > 50) {
+      // For large files, read in streaming mode
+      console.log('🌊 Using streaming mode for large file...');
+      const chunks: Buffer[] = [];
+      const readStream = fs.createReadStream(file.path, {
+        highWaterMark: 1024 * 1024,
+      }); // 1MB chunks
+
+      for await (const chunk of readStream) {
+        chunks.push(chunk);
+      }
+
+      const rawData = Buffer.concat(chunks).toString('utf-8');
+      allNews = JSON.parse(rawData);
+
+      // Clear chunks from memory
+      chunks.length = 0;
+    } else {
+      // Regular file reading
+      const rawData = fs.readFileSync(file.path, 'utf-8');
+      allNews = JSON.parse(rawData);
+    }
+
+    if (!Array.isArray(allNews) || allNews.length === 0) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Invalid or empty JSON file');
+    }
+
+    console.log(`📊 Total records to process: ${allNews.length}`);
+
+    // Start MongoDB session
+    session = await mongoose.startSession();
+    await session.startTransaction();
+
+    // Process in optimized batches
+    const totalBatches = Math.ceil(allNews.length / CONFIG.BATCH_SIZE);
+
+    for (let i = 0; i < allNews.length; i += CONFIG.BATCH_SIZE) {
+      const batchNumber = Math.floor(i / CONFIG.BATCH_SIZE) + 1;
+      const batch = allNews.slice(i, i + CONFIG.BATCH_SIZE);
+
+      console.log(
+        `⚡ Processing batch ${batchNumber}/${totalBatches} (${batch.length} items)`,
+      );
+
+      const batchResult = await processBatchWithRetry(
+        batch,
+        session,
+        batchNumber,
+      );
+
+      successful += batchResult.successful;
+      failed += batchResult.failed;
+
+      if (batchResult.error) {
+        errors.push(`Batch ${batchNumber}: ${batchResult.error}`);
+      }
+
+      // Memory management every 10 batches
+      if (batchNumber % 10 === 0) {
+        forceGC();
+      }
+    }
+
+    // Commit transaction
+    await session.commitTransaction();
+
+    const processingTime = Date.now() - startTime;
+    const successRate = ((successful / allNews.length) * 100).toFixed(2);
+
+    console.log(`🎉 Import completed in ${processingTime}ms`);
+    console.log(
+      `📈 Success rate: ${successRate}% (${successful}/${allNews.length})`,
+    );
+
+    return {
+      count: allNews.length,
+      successful,
+      failed,
+      processingTime,
+      ...(errors.length > 0 && { errors }),
+    };
+  } catch (error: any) {
+    if (session) {
+      await session.abortTransaction();
+    }
+
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      `Import failed: ${error.message}`,
+    );
+  } finally {
+    if (session) {
+      await session.endSession();
+    }
+
+    // Cleanup file
+    try {
+      fs.unlinkSync(file.path);
+      console.log('🗑️  Temporary file cleaned up');
+    } catch (unlinkError) {
+      console.warn('Failed to delete temporary file:', unlinkError);
+    }
+
+    // Final garbage collection
+    forceGC();
+  }
 };
