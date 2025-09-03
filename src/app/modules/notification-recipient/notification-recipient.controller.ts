@@ -100,6 +100,17 @@ export const updateNotificationRecipient = catchAsync(async (req, res) => {
   });
 });
 
+export const readAllNotificationRecipients = catchAsync(async (req, res) => {
+  const result =
+    await NotificationRecipientServices.readAllNotificationRecipients(req.user);
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'Notification recipients updated successfully',
+    data: result,
+  });
+});
+
 export const updateSelfNotificationRecipients = catchAsync(async (req, res) => {
   const { ids, ...payload } = req.body;
   const result =

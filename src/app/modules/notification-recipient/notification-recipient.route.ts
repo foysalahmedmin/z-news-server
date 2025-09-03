@@ -39,6 +39,12 @@ router.get(
 
 // PATCH
 router.patch(
+  '/read-all/self',
+  auth('admin', 'author', 'editor', 'contributor', 'subscriber', 'user'),
+  NotificationRecipientControllers.readAllNotificationRecipients,
+);
+
+router.patch(
   '/bulk/self',
   auth('admin', 'author', 'editor', 'contributor', 'subscriber', 'user'),
   validation(

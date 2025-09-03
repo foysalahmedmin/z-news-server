@@ -145,6 +145,17 @@ export const updateNotificationRecipient = async (
   return result!;
 };
 
+export const readAllNotificationRecipients = async (
+  user: TJwtPayload,
+): Promise<{ count: number }> => {
+  const result = await NotificationRecipient.updateMany(
+    { author: user._id },
+    { is_read: true, read_at: new Date() },
+  );
+
+  return { count: result.modifiedCount };
+};
+
 export const updateSelfNotificationRecipients = async (
   user: TJwtPayload,
   ids: string[],
