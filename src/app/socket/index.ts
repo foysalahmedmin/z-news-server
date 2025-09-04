@@ -17,11 +17,13 @@ export const initializeSocket = async (
     io = new IOServer(server, {
       cors: {
         origin: [
-          'http://localhost:5173',
-          'http://localhost:5174',
-          'http://localhost:5175',
           'http://localhost:8080',
-          'http://localhost:8081',
+          'http://localhost:3000',
+          'http://localhost:3001',
+          'https://z-news.vercel.app',
+          'https://z-news-server.vercel.app',
+          'http://admin.dainikeidin.com',
+          'http://test.dainikeidin.com',
         ],
         methods: ['GET', 'POST'],
         credentials: true,
