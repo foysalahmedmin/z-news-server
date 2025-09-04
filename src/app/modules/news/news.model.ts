@@ -23,13 +23,13 @@ const newsSchema = new Schema<TNewsDocument>(
     caption: {
       type: String,
       trim: true,
-      maxlength: 300,
+      maxlength: 3000,
     },
 
     description: {
       type: String,
       trim: true,
-      maxlength: 300,
+      maxlength: 3000,
     },
 
     content: {
@@ -171,6 +171,16 @@ const newsSchema = new Schema<TNewsDocument>(
       default: 0,
     },
 
+    is_news_break: {
+      type: Boolean,
+      default: false,
+    },
+
+    is_news_headline: {
+      type: Boolean,
+      default: false,
+    },
+
     is_deleted: {
       type: Boolean,
       default: false,
@@ -185,6 +195,18 @@ const newsSchema = new Schema<TNewsDocument>(
     toObject: { virtuals: true },
   },
 );
+
+newsSchema.index({ slug: 1 }, { unique: true });
+newsSchema.index({ title: 1 });
+newsSchema.index({ status: 1 });
+newsSchema.index({ is_featured: 1 });
+newsSchema.index({ is_news_headline: 1 });
+newsSchema.index({ is_news_break: 1 });
+
+newsSchema.index({ created_at: -1 });
+newsSchema.index({ published_at: -1 });
+
+newsSchema.index({ title: 1, description: 1 });
 
 newsSchema.virtual('news_headline', {
   ref: 'NewsHeadline',

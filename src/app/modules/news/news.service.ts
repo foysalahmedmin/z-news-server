@@ -439,15 +439,20 @@ export const getPublicBulkNews = async (
       'description',
       'content',
       'thumbnail',
+      'video',
+      'youtube',
       'author',
+      'writer',
       'category',
       'tags',
       'sequence',
       'status',
+      'layout',
       'published_at',
       'is_featured',
       'is_news_headline',
       'is_news_break',
+      'views',
     ])
     .tap((q) => q.lean());
 
@@ -534,15 +539,20 @@ export const getSelfBulkNews = async (
       'description',
       'content',
       'thumbnail',
+      'video',
+      'youtube',
       'author',
+      'writer',
       'category',
       'tags',
       'sequence',
       'status',
+      'layout',
       'published_at',
       'is_featured',
       'is_news_headline',
       'is_news_break',
+      'views',
     ])
     .tap((q) => q.lean());
 
@@ -641,16 +651,20 @@ export const getBulkNews = async (
       'description',
       'content',
       'thumbnail',
+      'video',
+      'youtube',
       'author',
       'writer',
       'category',
       'tags',
       'sequence',
       'status',
+      'layout',
       'published_at',
       'is_featured',
       'is_news_headline',
       'is_news_break',
+      'views',
     ])
     .tap((q) => q.lean());
 

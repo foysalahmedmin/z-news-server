@@ -11,7 +11,10 @@ const seoSchema = z
     image: z.string().optional(),
     title: z.string().optional(),
     description: z.string().optional(),
-    keywords: z.array(z.string()).optional(),
+    keywords: z.preprocess((val) => {
+      if (!val) return [];
+      return Array.isArray(val) ? val.filter(Boolean) : [val].filter(Boolean);
+    }, z.array(z.string()).optional()),
   })
   .optional();
 
@@ -24,21 +27,52 @@ export const createNewsValidationSchema = z.object({
       .optional(),
     title: z.string().trim().min(1, 'Title is required'),
     slug: z.string().trim().min(1),
-    caption: z.string().max(300).optional(),
-    description: z.string().max(300).optional(),
+    caption: z.string().max(3000).optional(),
+    description: z.string().max(3000).optional(),
     content: z.string().min(1, 'Content is required'),
     youtube: z.string().optional(),
-    tags: z.array(z.string().min(1)).optional(),
+    tags: z.preprocess((val) => {
+      if (!val) return [];
+      return Array.isArray(val) ? val.filter(Boolean) : [val].filter(Boolean);
+    }, z.array(z.string()).optional()),
     category: idSchema.optional(),
+    categories: z.preprocess((val) => {
+      if (!val) return [];
+      return Array.isArray(val) ? val.filter(Boolean) : [val].filter(Boolean);
+    }, z.array(idSchema).optional()),
     status: statusEnum.optional(),
     layout: z.string().optional(),
-    is_featured: z.coerce.boolean().optional(),
-    is_premium: z.coerce.boolean().optional(),
+    is_featured: z
+      .preprocess((val) => {
+        if (val === 'true' || val === true) return true;
+        if (val === 'false' || val === false) return false;
+        return val;
+      }, z.boolean())
+      .optional(),
+    is_premium: z
+      .preprocess((val) => {
+        if (val === 'true' || val === true) return true;
+        if (val === 'false' || val === false) return false;
+        return val;
+      }, z.boolean())
+      .optional(),
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
     seo: seoSchema,
-    is_news_headline: z.coerce.boolean().optional(),
-    is_news_break: z.coerce.boolean().optional(),
+    is_news_headline: z
+      .preprocess((val) => {
+        if (val === 'true' || val === true) return true;
+        if (val === 'false' || val === false) return false;
+        return val;
+      }, z.boolean())
+      .optional(),
+    is_news_break: z
+      .preprocess((val) => {
+        if (val === 'true' || val === true) return true;
+        if (val === 'false' || val === false) return false;
+        return val;
+      }, z.boolean())
+      .optional(),
   }),
 });
 
@@ -54,21 +88,52 @@ export const updateSelfNewsValidationSchema = z.object({
       .optional(),
     title: z.string().trim().min(1).optional(),
     slug: z.string().trim().min(1).optional(),
-    caption: z.string().max(300).optional(),
-    description: z.string().max(300).optional(),
+    caption: z.string().max(3000).optional(),
+    description: z.string().max(3000).optional(),
     content: z.string().min(1).optional(),
     youtube: z.string().optional(),
-    tags: z.array(z.string().min(1)).optional(),
+    tags: z.preprocess((val) => {
+      if (!val) return [];
+      return Array.isArray(val) ? val.filter(Boolean) : [val].filter(Boolean);
+    }, z.array(z.string()).optional()),
     category: idSchema.optional(),
+    categories: z.preprocess((val) => {
+      if (!val) return [];
+      return Array.isArray(val) ? val.filter(Boolean) : [val].filter(Boolean);
+    }, z.array(idSchema).optional()),
     status: statusEnum.optional(),
     layout: z.string().optional(),
-    is_featured: z.coerce.boolean().optional(),
-    is_premium: z.coerce.boolean().optional(),
+    is_featured: z
+      .preprocess((val) => {
+        if (val === 'true' || val === true) return true;
+        if (val === 'false' || val === false) return false;
+        return val;
+      }, z.boolean())
+      .optional(),
+    is_premium: z
+      .preprocess((val) => {
+        if (val === 'true' || val === true) return true;
+        if (val === 'false' || val === false) return false;
+        return val;
+      }, z.boolean())
+      .optional(),
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
     seo: seoSchema,
-    is_news_headline: z.coerce.boolean().optional(),
-    is_news_break: z.coerce.boolean().optional(),
+    is_news_headline: z
+      .preprocess((val) => {
+        if (val === 'true' || val === true) return true;
+        if (val === 'false' || val === false) return false;
+        return val;
+      }, z.boolean())
+      .optional(),
+    is_news_break: z
+      .preprocess((val) => {
+        if (val === 'true' || val === true) return true;
+        if (val === 'false' || val === false) return false;
+        return val;
+      }, z.boolean())
+      .optional(),
     thumbnail: z.string().nullable().optional(),
   }),
 });
@@ -85,20 +150,51 @@ export const updateNewsValidationSchema = z.object({
       .optional(),
     title: z.string().trim().min(1).optional(),
     slug: z.string().trim().min(1).optional(),
-    caption: z.string().max(300).optional(),
-    description: z.string().max(300).optional(),
+    caption: z.string().max(3000).optional(),
+    description: z.string().max(3000).optional(),
     content: z.string().min(1).optional(),
-    tags: z.array(z.string().min(1)).optional(),
+    tags: z.preprocess((val) => {
+      if (!val) return [];
+      return Array.isArray(val) ? val.filter(Boolean) : [val].filter(Boolean);
+    }, z.array(z.string()).optional()),
     category: idSchema.optional(),
+    categories: z.preprocess((val) => {
+      if (!val) return [];
+      return Array.isArray(val) ? val.filter(Boolean) : [val].filter(Boolean);
+    }, z.array(idSchema).optional()),
     status: statusEnum.optional(),
     layout: z.string().optional(),
-    is_featured: z.coerce.boolean().optional(),
-    is_premium: z.coerce.boolean().optional(),
+    is_featured: z
+      .preprocess((val) => {
+        if (val === 'true' || val === true) return true;
+        if (val === 'false' || val === false) return false;
+        return val;
+      }, z.boolean())
+      .optional(),
+    is_premium: z
+      .preprocess((val) => {
+        if (val === 'true' || val === true) return true;
+        if (val === 'false' || val === false) return false;
+        return val;
+      }, z.boolean())
+      .optional(),
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
     seo: seoSchema,
-    is_news_headline: z.coerce.boolean().optional(),
-    is_news_break: z.coerce.boolean().optional(),
+    is_news_headline: z
+      .preprocess((val) => {
+        if (val === 'true' || val === true) return true;
+        if (val === 'false' || val === false) return false;
+        return val;
+      }, z.boolean())
+      .optional(),
+    is_news_break: z
+      .preprocess((val) => {
+        if (val === 'true' || val === true) return true;
+        if (val === 'false' || val === false) return false;
+        return val;
+      }, z.boolean())
+      .optional(),
     thumbnail: z.string().nullable().optional(),
   }),
 });

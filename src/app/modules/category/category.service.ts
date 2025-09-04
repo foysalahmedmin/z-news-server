@@ -7,7 +7,6 @@ import AppQuery from '../../builder/AppQuery';
 import { slugify } from '../../utils/slugify';
 import { Category } from './category.model';
 import { TCategory, TCategoryInput, TCategoryTree } from './category.type';
-import { buildTree } from './category.utils';
 
 export const insertCategoriesFromFile = async (
   file?: Express.Multer.File,
@@ -141,6 +140,53 @@ export const getCategories = async (
   return result;
 };
 
+// export const getPublicCategoriesTree = async (
+//   category?: string,
+//   query: { page?: number; limit?: number } = {},
+// ): Promise<{
+//   data: TCategoryTree[];
+//   meta: { total: number; page: number; limit: number };
+// }> => {
+//   const page = Number(query.page) || 1;
+//   const limit = Number(query.limit) || 10;
+
+//   const baseMatch = {
+//     status: 'active',
+//     is_deleted: { $ne: true },
+//   };
+
+//   const matchStage =
+//     category && Types.ObjectId.isValid(category)
+//       ? { ...baseMatch, category: new Types.ObjectId(category) }
+//       : {
+//           ...baseMatch,
+//           $or: [{ category: { $exists: false } }, { category: null }],
+//         };
+//   const total = await Category.countDocuments(matchStage);
+
+//   const categories = await Category.aggregate([
+//     { $match: matchStage },
+//     { $skip: (page - 1) * limit },
+//     { $limit: limit },
+//     {
+//       $graphLookup: {
+//         from: 'categories',
+//         startWith: '$_id',
+//         connectFromField: '_id',
+//         connectToField: 'category',
+//         as: 'children',
+//         restrictSearchWithMatch: baseMatch,
+//         depthField: 'level',
+//       },
+//     },
+//   ]);
+
+//   return {
+//     data: categories,
+//     meta: { total, page, limit },
+//   };
+// };
+
 export const getPublicCategoriesTree = async (
   category?: string,
   query: { page?: number; limit?: number } = {},
@@ -163,6 +209,7 @@ export const getPublicCategoriesTree = async (
           ...baseMatch,
           $or: [{ category: { $exists: false } }, { category: null }],
         };
+
   const total = await Category.countDocuments(matchStage);
 
   const categories = await Category.aggregate([
@@ -178,32 +225,56 @@ export const getPublicCategoriesTree = async (
         as: 'descendants',
         restrictSearchWithMatch: baseMatch,
         depthField: 'level',
+        maxDepth: 10,
+      },
+    },
+    // Get max depth to know how many levels we have
+    {
+      $addFields: {
+        maxDepth: {
+          $ifNull: [{ $max: '$descendants.level' }, 0],
+        },
+      },
+    },
+    // Build tree structure using $reduce
+    {
+      $addFields: {
+        children: {
+          $reduce: {
+            input: { $range: [0, { $add: ['$maxDepth', 1] }] },
+            initialValue: [],
+            in: {
+              $cond: {
+                if: { $eq: ['$$this', 0] },
+                then: {
+                  $sortArray: {
+                    input: {
+                      $filter: {
+                        input: '$descendants',
+                        as: 'child',
+                        cond: { $eq: ['$$child.level', 0] },
+                      },
+                    },
+                    sortBy: { sequence: 1 },
+                  },
+                },
+                else: '$$value',
+              },
+            },
+          },
+        },
       },
     },
     {
       $project: {
-        combinedNodes: {
-          $concatArrays: [['$$ROOT'], '$descendants'],
-        },
+        descendants: 0,
+        maxDepth: 0,
       },
-    },
-    { $unwind: '$combinedNodes' },
-    {
-      $replaceRoot: { newRoot: '$combinedNodes' },
-    },
-    {
-      $group: {
-        _id: '$_id',
-        doc: { $first: '$$ROOT' }, // deduplicate nodes
-      },
-    },
-    {
-      $replaceRoot: { newRoot: '$doc' },
     },
   ]);
 
   return {
-    data: buildTree(categories, categories),
+    data: categories,
     meta: { total, page, limit },
   };
 };
@@ -244,32 +315,56 @@ export const getCategoriesTree = async (
         as: 'descendants',
         restrictSearchWithMatch: baseMatch,
         depthField: 'level',
+        maxDepth: 10,
+      },
+    },
+    // Get max depth to know how many levels we have
+    {
+      $addFields: {
+        maxDepth: {
+          $ifNull: [{ $max: '$descendants.level' }, 0],
+        },
+      },
+    },
+    // Build tree structure using $reduce
+    {
+      $addFields: {
+        children: {
+          $reduce: {
+            input: { $range: [0, { $add: ['$maxDepth', 1] }] },
+            initialValue: [],
+            in: {
+              $cond: {
+                if: { $eq: ['$$this', 0] },
+                then: {
+                  $sortArray: {
+                    input: {
+                      $filter: {
+                        input: '$descendants',
+                        as: 'child',
+                        cond: { $eq: ['$$child.level', 0] },
+                      },
+                    },
+                    sortBy: { sequence: 1 },
+                  },
+                },
+                else: '$$value',
+              },
+            },
+          },
+        },
       },
     },
     {
       $project: {
-        combinedNodes: {
-          $concatArrays: [['$$ROOT'], '$descendants'],
-        },
+        descendants: 0,
+        maxDepth: 0,
       },
-    },
-    { $unwind: '$combinedNodes' },
-    {
-      $replaceRoot: { newRoot: '$combinedNodes' },
-    },
-    {
-      $group: {
-        _id: '$_id',
-        doc: { $first: '$$ROOT' }, // deduplicate nodes
-      },
-    },
-    {
-      $replaceRoot: { newRoot: '$doc' },
     },
   ]);
 
   return {
-    data: buildTree(categories, categories),
+    data: categories,
     meta: { total, page, limit },
   };
 };
