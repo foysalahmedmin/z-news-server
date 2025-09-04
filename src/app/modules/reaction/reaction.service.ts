@@ -65,7 +65,12 @@ export const getSelfReaction = async (
   const result = await Reaction.findOne({
     _id: id,
     ...(user?._id ? { user: user._id } : { guest: guest.token }),
-  }).lean();
+  })
+    .populate([
+      { path: 'user', select: '_id name email image' },
+      { path: 'news', select: '_id slug title thumbnail' },
+    ])
+    .lean();
 
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
@@ -75,7 +80,12 @@ export const getSelfReaction = async (
 };
 
 export const getReaction = async (id: string): Promise<TReaction> => {
-  const result = await Reaction.findById(id).lean();
+  const result = await Reaction.findById(id)
+    .populate([
+      { path: 'user', select: '_id name email image' },
+      { path: 'news', select: '_id slug title thumbnail' },
+    ])
+    .lean();
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
   }
@@ -98,7 +108,10 @@ export const getSelfReactions = async (
   const reactionQuery = new AppQuery<TReaction>(
     Reaction.find({
       ...(user?._id ? { user: user._id } : { guest: guest.token }),
-    }),
+    }).populate([
+      { path: 'user', select: '_id name email image' },
+      { path: 'news', select: '_id slug title thumbnail' },
+    ]),
     query,
   )
     .filter()
@@ -117,7 +130,13 @@ export const getReactions = async (
   data: TReaction[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const reactionQuery = new AppQuery<TReaction>(Reaction.find(), query)
+  const reactionQuery = new AppQuery<TReaction>(
+    Reaction.find().populate([
+      { path: 'user', select: '_id name email image' },
+      { path: 'news', select: '_id slug title thumbnail' },
+    ]),
+    query,
+  )
     .filter()
     .sort()
     .paginate()

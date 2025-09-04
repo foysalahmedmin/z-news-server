@@ -38,7 +38,10 @@ export const getSelfComment = async (
     _id: id,
     ...(user?._id ? { user: user._id } : { guest: guest.token }),
   })
-    .populate([{ path: 'user', select: '_id name email image' }])
+    .populate([
+      { path: 'user', select: '_id name email image' },
+      { path: 'news', select: '_id slug title thumbnail' },
+    ])
     .lean();
 
   if (!result) {
@@ -50,7 +53,10 @@ export const getSelfComment = async (
 
 export const getComment = async (id: string): Promise<TComment> => {
   const result = await Comment.findById(id)
-    .populate([{ path: 'user', select: '_id name email image' }])
+    .populate([
+      { path: 'user', select: '_id name email image' },
+      { path: 'news', select: '_id slug title thumbnail' },
+    ])
     .lean();
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
@@ -67,6 +73,7 @@ export const getPublicComments = async (
   const commentQuery = new AppQuery<TComment>(
     Comment.find({ status: 'approved' }).populate([
       { path: 'user', select: '_id name email image' },
+      { path: 'news', select: '_id slug title thumbnail' },
     ]),
     query,
   )
@@ -96,7 +103,10 @@ export const getSelfComments = async (
   const commentQuery = new AppQuery<TComment>(
     Comment.find({
       ...(user?._id ? { user: user._id } : { guest: guest.token }),
-    }).populate([{ path: 'user', select: '_id name email image' }]),
+    }).populate([
+      { path: 'user', select: '_id name email image' },
+      { path: 'news', select: '_id slug title thumbnail' },
+    ]),
     query,
   )
     .search(['name', 'email', 'content'])
@@ -117,7 +127,10 @@ export const getComments = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const commentQuery = new AppQuery<TComment>(
-    Comment.find().populate([{ path: 'user', select: '_id name email image' }]),
+    Comment.find().populate([
+      { path: 'user', select: '_id name email image' },
+      { path: 'news', select: '_id slug title thumbnail' },
+    ]),
     query,
   )
     .search(['name', 'email', 'content'])
