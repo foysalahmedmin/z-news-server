@@ -13,7 +13,7 @@ const CONFIG = {
   MAX_RETRIES: 3,
   RETRY_DELAY: 1000,
   BASE_URL: 'https://www.dainikeidin.com/wp-content/uploads/',
-  NEW_URL: 'https://www.admin.dainikeidin.com/uploads/news/images/',
+  NEW_URL: 'https://admin.dainikeidin.com/uploads/news/images/',
   REMOVE_CATEGORIES: new Set(['86', '94', '4785', '27285', '27421', '24911']),
   AUTHOR_ID: new ObjectId('000000000000000000000001'),
 } as const;
