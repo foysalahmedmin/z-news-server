@@ -140,53 +140,6 @@ export const getCategories = async (
   return result;
 };
 
-// export const getPublicCategoriesTree = async (
-//   category?: string,
-//   query: { page?: number; limit?: number } = {},
-// ): Promise<{
-//   data: TCategoryTree[];
-//   meta: { total: number; page: number; limit: number };
-// }> => {
-//   const page = Number(query.page) || 1;
-//   const limit = Number(query.limit) || 10;
-
-//   const baseMatch = {
-//     status: 'active',
-//     is_deleted: { $ne: true },
-//   };
-
-//   const matchStage =
-//     category && Types.ObjectId.isValid(category)
-//       ? { ...baseMatch, category: new Types.ObjectId(category) }
-//       : {
-//           ...baseMatch,
-//           $or: [{ category: { $exists: false } }, { category: null }],
-//         };
-//   const total = await Category.countDocuments(matchStage);
-
-//   const categories = await Category.aggregate([
-//     { $match: matchStage },
-//     { $skip: (page - 1) * limit },
-//     { $limit: limit },
-//     {
-//       $graphLookup: {
-//         from: 'categories',
-//         startWith: '$_id',
-//         connectFromField: '_id',
-//         connectToField: 'category',
-//         as: 'children',
-//         restrictSearchWithMatch: baseMatch,
-//         depthField: 'level',
-//       },
-//     },
-//   ]);
-
-//   return {
-//     data: categories,
-//     meta: { total, page, limit },
-//   };
-// };
-
 export const getPublicCategoriesTree = async (
   category?: string,
   query: { page?: number; limit?: number } = {},
@@ -214,6 +167,11 @@ export const getPublicCategoriesTree = async (
 
   const categories = await Category.aggregate([
     { $match: matchStage },
+    {
+      $sort: {
+        sequence: 1,
+      },
+    },
     { $skip: (page - 1) * limit },
     { $limit: limit },
     {
@@ -304,6 +262,11 @@ export const getCategoriesTree = async (
 
   const categories = await Category.aggregate([
     { $match: matchStage },
+    {
+      $sort: {
+        sequence: 1,
+      },
+    },
     { $skip: (page - 1) * limit },
     { $limit: limit },
     {

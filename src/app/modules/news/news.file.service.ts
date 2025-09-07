@@ -14,7 +14,17 @@ const CONFIG = {
   RETRY_DELAY: 1000,
   BASE_URL: 'https://www.dainikeidin.com/wp-content/uploads/',
   NEW_URL: 'https://admin.dainikeidin.com/uploads/news/images/',
-  REMOVE_CATEGORIES: new Set(['86', '94', '4785', '27285', '27421', '24911']),
+  REMOVE_CATEGORIES: new Set([
+    '101',
+    '86',
+    '94',
+    '4785',
+    '27285',
+    '27421',
+    '24911',
+    '24907',
+    '28238',
+  ]),
   AUTHOR_ID: new ObjectId('000000000000000000000001'),
 } as const;
 
@@ -50,12 +60,17 @@ const getCategoryIDs = (categories: string): ObjectId[] => {
 export const getDescription = (content: string): string => {
   if (!content) return '';
 
-  let text = content
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/[\r\n\s]+/g, ' ')
-    .replace(/[^অ-হa-zA-Z0-9.,!? ]+/g, '');
+  // Remove HTML tags
+  let text = content.replace(/<[^>]*>/g, ' ');
 
-  const sentences = text.match(/[^.!?]+[.!?]?/g) || [];
+  // Keep Bangla letters, punctuation, numbers, English letters, spaces
+  text = text.replace(/[^\u0980-\u09FF0-9a-zA-Z.,!?। ]+/g, ' ');
+
+  // Collapse multiple spaces
+  text = text.replace(/\s+/g, ' ');
+
+  // Split into sentences (including Bangla "।")
+  const sentences = text.match(/[^.!?।]+[.!?।]?/g) || [];
   let description = '';
 
   for (const sentence of sentences) {
@@ -65,7 +80,7 @@ export const getDescription = (content: string): string => {
     } else break;
   }
 
-  return description.trim();
+  return description.trim() || '';
 };
 
 // Optimized batch processor
@@ -83,7 +98,7 @@ const processBatch = (batch: TNewsInput[]): TNews[] => {
       categories: getCategoryIDs(news?.category_ids),
       thumbnail: getImagePath(news?.image_url),
       caption: news.image_caption || '',
-      description: getDescription(news?.post_content || ''),
+      // description: getDescription(news?.post_content || ''),
       content: getContent(news?.post_content || 'সংবাদ লিপিবদ্ধ হয়নি।'),
       author: CONFIG.AUTHOR_ID,
       published_at: publishedAt,
