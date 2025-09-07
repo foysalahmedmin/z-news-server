@@ -70,6 +70,7 @@ categorySchema.virtual('children', {
   localField: '_id',
   foreignField: 'category',
   match: { is_deleted: { $ne: true } },
+  options: { sort: { sequence: 1 } },
 });
 
 // toJSON override to remove sensitive fields from output
