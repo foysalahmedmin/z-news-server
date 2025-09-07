@@ -26,6 +26,7 @@ export const updateSelfValidationSchema = z.object({
       .max(50, 'Name cannot exceed 50 characters')
       .optional(),
     email: z.string().email('Invalid email format').optional(),
+    image: z.string().optional(),
   }),
 });
 
@@ -44,7 +45,14 @@ export const updateUserValidationSchema = z.object({
     role: z
       .enum(['editor', 'author', 'contributor', 'subscriber', 'user'])
       .optional(),
-    is_verified: z.boolean().optional(),
+    is_verified: z
+      .preprocess((val) => {
+        if (val === 'true' || val === true) return true;
+        if (val === 'false' || val === false) return false;
+        return val;
+      }, z.boolean())
+      .optional(),
+    image: z.string().optional(),
   }),
 });
 

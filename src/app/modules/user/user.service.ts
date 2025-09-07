@@ -1,6 +1,7 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
+import { deleteFiles } from '../../utils/deleteFiles';
 import { TJwtPayload } from '../auth/auth.type';
 import { User } from './user.model';
 import { TUser } from './user.type';
@@ -50,7 +51,7 @@ export const getUsers = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const userQuery = new AppQuery<TUser>(User.find(), query)
-    .search(['name', 'email'])
+    .search(['name', 'email', 'image'])
     .filter()
     .sort()
     .paginate()
@@ -64,11 +65,23 @@ export const getUsers = async (
 
 export const updateSelf = async (
   user: TJwtPayload,
-  payload: Partial<Pick<TUser, 'name' | 'email'>>,
+  payload: Partial<Pick<TUser, 'name' | 'email' | 'image'>>,
 ): Promise<TUser> => {
   const data = await User.findById(user._id);
   if (!data) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  if (payload.email && data.email !== payload.email) {
+    const emailExists = await User.findOne({ email: payload.email }).lean();
+    if (emailExists) {
+      throw new AppError(httpStatus.CONFLICT, 'Email already exists');
+    }
+  }
+
+  if (payload?.image !== data.image && data.image) {
+    deleteFiles(data.image, 'news/images');
+    payload.image = payload.image || '';
   }
 
   const result = await User.findByIdAndUpdate(user._id, payload, {

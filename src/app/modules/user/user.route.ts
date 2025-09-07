@@ -1,5 +1,6 @@
 import express from 'express';
 import auth from '../../middlewares/auth.middleware';
+import file from '../../middlewares/file.middleware';
 import validation from '../../middlewares/validation.middleware';
 import * as UserControllers from './user.controller';
 import * as UserValidations from './user.validation';
@@ -28,6 +29,13 @@ router.get(
 router.patch(
   '/self',
   auth('admin', 'editor', 'author', 'contributor', 'subscriber', 'user'),
+  file({
+    name: 'image',
+    folder: '/users',
+    size: 5_000_000,
+    maxCount: 1,
+    allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+  }),
   validation(UserValidations.updateSelfValidationSchema),
   UserControllers.updateSelf,
 );
@@ -42,6 +50,13 @@ router.patch(
 router.patch(
   '/:id',
   auth('admin'),
+  file({
+    name: 'image',
+    folder: '/users',
+    size: 5_000_000,
+    maxCount: 1,
+    allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+  }),
   validation(UserValidations.updateUserValidationSchema),
   UserControllers.updateUser,
 );

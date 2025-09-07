@@ -47,7 +47,15 @@ export const getUsers = catchAsync(async (req, res) => {
 });
 
 export const updateSelf = catchAsync(async (req, res) => {
-  const result = await UserServices.updateSelf(req.user, req.body);
+  const files = req.files as Record<string, Express.Multer.File[]>;
+  const image = files.image?.[0]?.filename || '';
+
+  const payload = {
+    ...req.body,
+    ...(image ? { image } : {}),
+  };
+
+  const result = await UserServices.updateSelf(req.user, payload);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
@@ -58,7 +66,16 @@ export const updateSelf = catchAsync(async (req, res) => {
 
 export const updateUser = catchAsync(async (req, res) => {
   const { id } = req.params;
-  const result = await UserServices.updateUser(id, req.body);
+
+  const files = req.files as Record<string, Express.Multer.File[]>;
+  const image = files.image?.[0]?.filename || '';
+
+  const payload = {
+    ...req.body,
+    ...(image ? { image } : {}),
+  };
+
+  const result = await UserServices.updateUser(id, payload);
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
