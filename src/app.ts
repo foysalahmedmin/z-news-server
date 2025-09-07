@@ -23,13 +23,13 @@ app.use(cookieParser());
 app.use(
   cors({
     origin: [
-      'http://localhost:8080',
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'https://z-news.vercel.app',
-      'https://z-news-server.vercel.app',
+      'https://admin.dainikeidin.com',
+      'https://test.dainikeidin.com',
       'http://admin.dainikeidin.com',
       'http://test.dainikeidin.com',
+      'http://localhost:5000',
+      'http://localhost:5001',
+      'http://localhost:8080',
     ],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
