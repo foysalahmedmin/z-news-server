@@ -1,4 +1,4 @@
-﻿# Z-News Server
+﻿# Z-NEWS SERVER (<a href="https://admin.dainikeidin.com/">LIVE</a>)
 
 A robust, scalable news management backend API built with Node.js, TypeScript, and MongoDB. This server provides comprehensive functionality for managing news content, users, categories, and real-time features with WebSocket support.
 
