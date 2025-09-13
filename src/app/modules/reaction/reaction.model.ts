@@ -34,7 +34,7 @@ const reactionSchema = new Schema<TReactionDocument>(
     status: {
       type: String,
       enum: ['pending', 'approved', 'rejected'],
-      default: 'pending',
+      default: 'approved',
     },
 
     is_deleted: {
