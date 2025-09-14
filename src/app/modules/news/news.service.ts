@@ -929,7 +929,9 @@ export const deleteNews = async (id: string): Promise<void> => {
 };
 
 export const deleteNewsPermanent = async (id: string): Promise<void> => {
-  const news = await News.findById(id).lean();
+  const news = await News.findById(id)
+    .setOptions({ bypassDeleted: true })
+    .lean();
   if (!news) {
     throw new AppError(httpStatus.NOT_FOUND, 'News not found');
   }
@@ -939,7 +941,7 @@ export const deleteNewsPermanent = async (id: string): Promise<void> => {
   deleteFiles(news?.images, 'news/images');
   deleteFiles(news?.seo?.image, 'news/seo/images');
 
-  await News.findByIdAndDelete(id);
+  await News.findByIdAndDelete(id).setOptions({ bypassDeleted: true });
 };
 
 export const deleteSelfBulkNews = async (
@@ -991,11 +993,19 @@ export const deleteBulkNewsPermanent = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const allNews = await News.find({ _id: { $in: ids } }).lean();
+  const allNews = await News.find({
+    _id: { $in: ids },
+    is_deleted: true,
+  })
+    .setOptions({ bypassDeleted: true })
+    .lean();
   const foundIds = allNews.map((news) => news._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await News.deleteMany({ _id: { $in: foundIds } });
+  await News.deleteMany({
+    _id: { $in: foundIds },
+    is_deleted: true,
+  }).setOptions({ bypassDeleted: true });
 
   return {
     count: foundIds.length,

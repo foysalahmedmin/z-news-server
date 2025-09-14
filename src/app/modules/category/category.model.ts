@@ -80,25 +80,30 @@ categorySchema.methods.toJSON = function () {
   return category;
 };
 
-// Query middleware to exclude deleted categories
-categorySchema.pre(/^find/, function (this: Query<TCategory, TCategory>, next) {
-  this.setQuery({
-    ...this.getQuery(),
-    is_deleted: { $ne: true },
-  });
+categorySchema.pre(/^find/, function (next) {
+  const query = this as unknown as Query<TCategory, TCategory>;
+  const opts = query.getOptions();
+
+  if (!opts?.bypassDeleted && query.getQuery().is_deleted === undefined) {
+    query.setQuery({
+      ...query.getQuery(),
+      is_deleted: { $ne: true },
+    });
+  }
+
   next();
 });
 
-categorySchema.pre(
-  /^update/,
-  function (this: Query<TCategory, TCategory>, next) {
-    this.setQuery({
-      ...this.getQuery(),
-      is_deleted: { $ne: true },
-    });
-    next();
-  },
-);
+// categorySchema.pre(
+//   /^update/,
+//   function (this: Query<TCategory, TCategory>, next) {
+//     this.setQuery({
+//       ...this.getQuery(),
+//       is_deleted: { $ne: true },
+//     });
+//     next();
+//   },
+// );
 
 // Aggregation pipeline
 categorySchema.pre('aggregate', function (next) {

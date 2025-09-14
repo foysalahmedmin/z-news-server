@@ -207,7 +207,9 @@ export const deleteNotification = async (id: string): Promise<void> => {
 export const deleteNotificationPermanent = async (
   id: string,
 ): Promise<void> => {
-  const notification = await Notification.findById(id).lean();
+  const notification = await Notification.findById(id)
+    .setOptions({ bypassDeleted: true })
+    .lean();
   if (!notification) {
     throw new AppError(httpStatus.NOT_FOUND, 'Notification not found');
   }
@@ -244,13 +246,21 @@ export const deleteNotificationsPermanent = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const notifications = await Notification.find({ _id: { $in: ids } }).lean();
+  const notifications = await Notification.find({
+    _id: { $in: ids },
+    is_deleted: true,
+  })
+    .setOptions({ bypassDeleted: true })
+    .lean();
   const foundIds = notifications.map((notification) =>
     notification._id.toString(),
   );
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Notification.deleteMany({ _id: { $in: foundIds } });
+  await Notification.deleteMany({
+    _id: { $in: foundIds },
+    is_deleted: true,
+  }).setOptions({ bypassDeleted: true });
 
   return {
     count: foundIds.length,

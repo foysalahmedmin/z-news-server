@@ -229,7 +229,9 @@ export const deleteNotificationRecipient = async (
 export const deleteNotificationRecipientPermanent = async (
   id: string,
 ): Promise<void> => {
-  const data = await NotificationRecipient.findById(id).lean();
+  const data = await NotificationRecipient.findById(id)
+    .setOptions({ bypassDeleted: true })
+    .lean();
   if (!data)
     throw new AppError(
       httpStatus.NOT_FOUND,
@@ -277,11 +279,19 @@ export const deleteNotificationRecipients = async (
 export const deleteNotificationRecipientsPermanent = async (
   ids: string[],
 ): Promise<{ count: number; not_found_ids: string[] }> => {
-  const data = await NotificationRecipient.find({ _id: { $in: ids } }).lean();
+  const data = await NotificationRecipient.find({
+    _id: { $in: ids },
+    is_deleted: true,
+  })
+    .setOptions({ bypassDeleted: true })
+    .lean();
   const foundIds = data.map((d) => d._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await NotificationRecipient.deleteMany({ _id: { $in: foundIds } });
+  await NotificationRecipient.deleteMany({
+    _id: { $in: foundIds },
+    is_deleted: true,
+  }).setOptions({ bypassDeleted: true });
 
   return { count: foundIds.length, not_found_ids: notFoundIds };
 };

@@ -143,7 +143,7 @@ export const deleteUser = async (id: string): Promise<void> => {
 };
 
 export const deleteUserPermanent = async (id: string): Promise<void> => {
-  const user = await User.findById(id);
+  const user = await User.findById(id).setOptions({ bypassDeleted: true });
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
@@ -179,7 +179,9 @@ export const deleteUsersPermanent = async (
   const foundIds = users.map((user) => user._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await User.deleteMany({ _id: { $in: foundIds } });
+  await User.deleteMany({ _id: { $in: foundIds } }).setOptions({
+    bypassDeleted: true,
+  });
 
   return {
     count: foundIds.length,

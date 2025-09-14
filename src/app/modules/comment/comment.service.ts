@@ -288,7 +288,9 @@ export const deleteComment = async (id: string): Promise<void> => {
 };
 
 export const deleteCommentPermanent = async (id: string): Promise<void> => {
-  const comment = await Comment.findById(id).lean();
+  const comment = await Comment.findById(id)
+    .setOptions({ bypassDeleted: true })
+    .lean();
   if (!comment) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
   }
@@ -354,11 +356,18 @@ export const deleteCommentsPermanent = async (
   not_found_ids: string[];
 }> => {
   // Use lean for finding existing comments
-  const comments = await Comment.find({ _id: { $in: ids } }).lean();
+  const comments = await Comment.find({ _id: { $in: ids }, is_deleted: true })
+    .setOptions({ bypassDeleted: true })
+    .lean();
   const foundIds = comments.map((comment) => comment._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Comment.deleteMany({ _id: { $in: foundIds } });
+  await Comment.deleteMany({
+    _id: { $in: foundIds },
+    is_deleted: true,
+  }).setOptions({
+    bypassDeleted: true,
+  });
 
   return {
     count: foundIds.length,

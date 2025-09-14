@@ -92,21 +92,27 @@ commentSchema.methods.toJSON = function () {
 };
 
 // Query middleware to exclude deleted categories
-commentSchema.pre(/^find/, function (this: Query<TComment, TComment>, next) {
-  this.setQuery({
-    ...this.getQuery(),
-    is_deleted: { $ne: true },
-  });
+commentSchema.pre(/^find/, function (next) {
+  const query = this as unknown as Query<TComment, TComment>;
+  const opts = query.getOptions();
+
+  if (!opts?.bypassDeleted && query.getQuery().is_deleted === undefined) {
+    query.setQuery({
+      ...query.getQuery(),
+      is_deleted: { $ne: true },
+    });
+  }
+
   next();
 });
 
-commentSchema.pre(/^update/, function (this: Query<TComment, TComment>, next) {
-  this.setQuery({
-    ...this.getQuery(),
-    is_deleted: { $ne: true },
-  });
-  next();
-});
+// commentSchema.pre(/^update/, function (this: Query<TComment, TComment>, next) {
+//   this.setQuery({
+//     ...this.getQuery(),
+//     is_deleted: { $ne: true },
+//   });
+//   next();
+// });
 
 // Aggregation pipeline
 commentSchema.pre('aggregate', function (next) {

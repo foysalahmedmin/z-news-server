@@ -254,21 +254,27 @@ newsSchema.methods.toJSON = function () {
 };
 
 // Query middleware to exclude deleted categories
-newsSchema.pre(/^find/, function (this: Query<TNews, TNews>, next) {
-  this.setQuery({
-    ...this.getQuery(),
-    is_deleted: { $ne: true },
-  });
+newsSchema.pre(/^find/, function (next) {
+  const query = this as unknown as Query<TNews, TNews>;
+  const opts = query.getOptions();
+
+  if (!opts?.bypassDeleted && query.getQuery().is_deleted === undefined) {
+    query.setQuery({
+      ...query.getQuery(),
+      is_deleted: { $ne: true },
+    });
+  }
+
   next();
 });
 
-newsSchema.pre(/^update/, function (this: Query<TNews, TNews>, next) {
-  this.setQuery({
-    ...this.getQuery(),
-    is_deleted: { $ne: true },
-  });
-  next();
-});
+// newsSchema.pre(/^update/, function (this: Query<TNews, TNews>, next) {
+//   this.setQuery({
+//     ...this.getQuery(),
+//     is_deleted: { $ne: true },
+//   });
+//   next();
+// });
 
 // Aggregation pipeline
 newsSchema.pre('aggregate', function (next) {

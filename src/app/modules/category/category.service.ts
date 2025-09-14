@@ -381,12 +381,15 @@ export const deleteCategory = async (id: string): Promise<void> => {
 };
 
 export const deleteCategoryPermanent = async (id: string): Promise<void> => {
-  const category = await Category.findById(id).lean();
+  const category = await Category.findById(id)
+    .setOptions({ bypassDeleted: true })
+    .lean();
+
   if (!category) {
     throw new AppError(httpStatus.NOT_FOUND, 'Category not found');
   }
 
-  await Category.findByIdAndDelete(id);
+  await Category.findByIdAndDelete(id).setOptions({ bypassDeleted: true });
 };
 
 export const deleteCategories = async (
@@ -413,11 +416,20 @@ export const deleteCategoriesPermanent = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const categories = await Category.find({ _id: { $in: ids } }).lean();
+  const categories = await Category.find({
+    _id: { $in: ids },
+    is_deleted: true,
+  })
+    .setOptions({ bypassDeleted: true })
+    .lean();
+
   const foundIds = categories.map((category) => category._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Category.deleteMany({ _id: { $in: foundIds } });
+  await Category.deleteMany({
+    _id: { $in: foundIds },
+    is_deleted: true,
+  }).setOptions({ bypassDeleted: true });
 
   return {
     count: foundIds.length,
