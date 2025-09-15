@@ -11,7 +11,7 @@ const notificationActionSchema = new Schema<TNotificationAction>(
   {
     title: { type: String, required: true, trim: true },
     type: { type: String, required: true, trim: true },
-    url: { type: String, required: true, trim: true },
+    url: { type: String, trim: true },
   },
   { _id: false },
 );

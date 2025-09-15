@@ -22,19 +22,28 @@ router.post(
 // GET
 router.get('/public/featured', NewsControllers.getFeaturedPublicNews);
 router.get('/public', NewsControllers.getPublicBulkNews);
-router.get('/self', auth('admin'), NewsControllers.getSelfBulkNews);
-router.get('/', auth('admin'), NewsControllers.getBulkNews);
+router.get(
+  '/self',
+  auth('admin', 'editor', 'author', 'contributor'),
+  NewsControllers.getSelfBulkNews,
+);
+
+router.get(
+  '/',
+  auth('admin', 'editor', 'author', 'contributor'),
+  NewsControllers.getBulkNews,
+);
 
 router.get('/:slug/public', NewsControllers.getPublicNews);
 router.get(
   '/:id/self',
-  auth('admin', 'author'),
+  auth('admin', 'editor', 'author', 'contributor'),
   validation(NewsValidations.newsOperationValidationSchema),
   NewsControllers.getSelfNews,
 );
 router.get(
   '/:id',
-  auth('admin'),
+  auth('admin', 'editor', 'author', 'contributor'),
   validation(NewsValidations.newsOperationValidationSchema),
   NewsControllers.getNews,
 );

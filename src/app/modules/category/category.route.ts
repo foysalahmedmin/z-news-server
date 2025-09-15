@@ -17,15 +17,23 @@ router.post(
 
 // GET
 router.get('/public', CategoryControllers.getPublicCategories);
-router.get('/', auth('admin'), CategoryControllers.getCategories);
+router.get(
+  '/',
+  auth('admin', 'editor', 'author'),
+  CategoryControllers.getCategories,
+);
 
 router.get('/tree/public', CategoryControllers.getPublicCategoriesTree);
-router.get('/tree', auth('admin'), CategoryControllers.getCategoriesTree);
+router.get(
+  '/tree',
+  auth('admin', 'editor', 'author'),
+  CategoryControllers.getCategoriesTree,
+);
 
 router.get('/:slug/public', CategoryControllers.getPublicCategory);
 router.get(
   '/:id',
-  auth('admin'),
+  auth('admin', 'editor', 'author'),
   validation(CategoryValidations.categoryOperationValidationSchema),
   CategoryControllers.getCategory,
 );
@@ -33,14 +41,14 @@ router.get(
 // PATCH
 router.patch(
   '/bulk',
-  auth('admin'),
+  auth('admin', 'editor', 'author'),
   validation(CategoryValidations.updateCategoriesValidationSchema),
   CategoryControllers.updateCategories,
 );
 
 router.patch(
   '/:id',
-  auth('admin'),
+  auth('admin', 'editor', 'author'),
   validation(CategoryValidations.updateCategoryValidationSchema),
   CategoryControllers.updateCategory,
 );
@@ -55,7 +63,7 @@ router.delete(
 
 router.delete(
   '/bulk',
-  auth('admin'),
+  auth('admin', 'editor', 'author'),
   validation(CategoryValidations.categoriesOperationValidationSchema),
   CategoryControllers.deleteCategories,
 );
@@ -69,7 +77,7 @@ router.delete(
 
 router.delete(
   '/:id',
-  auth('admin'),
+  auth('admin', 'editor', 'author'),
   validation(CategoryValidations.categoryOperationValidationSchema),
   CategoryControllers.deleteCategory,
 );
@@ -77,7 +85,7 @@ router.delete(
 // POST
 router.post(
   '/',
-  auth('admin'),
+  auth('admin', 'editor', 'author'),
   validation(CategoryValidations.createCategoryValidationSchema),
   CategoryControllers.createCategory,
 );
