@@ -375,6 +375,7 @@ export const getPublicBulkNews = async (
     published_at_gte: q_published_at_gte,
     published_at_lte: q_published_at_lte,
     date: q_date,
+    news_ne,
     ...rest
   } = query;
 
@@ -420,6 +421,10 @@ export const getPublicBulkNews = async (
     const end = new Date();
 
     rest.published_at = { $lte: end };
+  }
+
+  if (news_ne) {
+    rest._id = { $ne: news_ne };
   }
 
   const NewsQuery = new AppQuery<TNews>(
