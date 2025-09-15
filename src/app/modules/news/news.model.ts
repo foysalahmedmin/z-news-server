@@ -13,6 +13,11 @@ const newsSchema = new Schema<TNewsDocument>(
       trim: true,
     },
 
+    sub_title: {
+      type: String,
+      trim: true,
+    },
+
     slug: {
       type: String,
       required: true,

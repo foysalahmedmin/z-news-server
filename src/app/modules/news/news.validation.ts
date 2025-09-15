@@ -26,6 +26,7 @@ export const createNewsValidationSchema = z.object({
       .nonnegative('Sequence must be 0 or greater')
       .optional(),
     title: z.string().trim().min(1, 'Title is required'),
+    sub_title: z.string().trim().optional(),
     slug: z.string().trim().min(1),
     caption: z.string().max(3000).optional(),
     description: z.string().max(3000).optional(),
@@ -87,6 +88,7 @@ export const updateSelfNewsValidationSchema = z.object({
       .nonnegative('Sequence must be 0 or greater')
       .optional(),
     title: z.string().trim().min(1).optional(),
+    sub_title: z.string().trim().optional(),
     slug: z.string().trim().min(1).optional(),
     caption: z.string().max(3000).optional(),
     description: z.string().max(3000).optional(),
@@ -149,6 +151,7 @@ export const updateNewsValidationSchema = z.object({
       .nonnegative('Sequence must be 0 or greater')
       .optional(),
     title: z.string().trim().min(1).optional(),
+    sub_title: z.string().trim().optional(),
     slug: z.string().trim().min(1).optional(),
     caption: z.string().max(3000).optional(),
     description: z.string().max(3000).optional(),

@@ -693,6 +693,8 @@ export const updateSelfNews = async (
       TNews,
       | 'writer'
       | 'title'
+      | 'sub_title'
+      | 'slug'
       | 'description'
       | 'content'
       | 'caption'
@@ -773,6 +775,8 @@ export const updateNews = async (
       TNews,
       | 'writer'
       | 'title'
+      | 'sub_title'
+      | 'slug'
       | 'description'
       | 'content'
       | 'caption'

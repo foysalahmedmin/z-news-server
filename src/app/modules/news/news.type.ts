@@ -5,6 +5,7 @@ export type TStatus = 'draft' | 'pending' | 'published' | 'archived';
 export type TNews = {
   sequence?: number;
   title: string;
+  sub_title?: string;
   slug: string;
   caption?: string;
   description?: string;
