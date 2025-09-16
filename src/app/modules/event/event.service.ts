@@ -74,7 +74,20 @@ export const getEvents = async (
     .fields()
     .tap((q) => q.lean());
 
-  const result = await eventQuery.execute();
+  const result = await eventQuery.execute([
+    {
+      key: 'active',
+      filter: { status: 'active' },
+    },
+    {
+      key: 'inactive',
+      filter: { status: 'inactive' },
+    },
+    {
+      key: 'featured',
+      filter: { is_featured: true },
+    },
+  ]);
 
   return result;
 };

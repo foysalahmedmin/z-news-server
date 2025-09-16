@@ -15,8 +15,6 @@ export const getMedias = async (
     (folder || '').trim(),
   );
 
-  console.log(uploadPath);
-
   if (!fs.existsSync(uploadPath)) {
     throw new Error('Folder not found');
   }

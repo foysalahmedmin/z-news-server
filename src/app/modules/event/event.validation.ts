@@ -29,6 +29,8 @@ export const createEventValidationSchema = z.object({
     tags: z.array(z.string().min(1)).optional(),
     layout: z.string().optional().default('default').optional(),
     is_featured: z.boolean().optional(),
+    published_at: z.coerce.date().optional(),
+    expired_at: z.coerce.date().optional(),
   }),
 });
 
@@ -58,6 +60,8 @@ export const updateEventValidationSchema = z.object({
     tags: z.array(z.string().min(1)).optional(),
     layout: z.string().optional().default('default').optional(),
     is_featured: z.boolean().optional(),
+    published_at: z.coerce.date().optional(),
+    expired_at: z.coerce.date().optional(),
   }),
 });
 

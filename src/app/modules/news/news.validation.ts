@@ -20,6 +20,7 @@ const seoSchema = z
 
 export const createNewsValidationSchema = z.object({
   body: z.object({
+    writer: z.string().optional(),
     sequence: z.coerce
       .number({ invalid_type_error: 'Sequence must be a number' })
       .int('Sequence must be an integer')
@@ -41,6 +42,7 @@ export const createNewsValidationSchema = z.object({
       if (!val) return [];
       return Array.isArray(val) ? val.filter(Boolean) : [val].filter(Boolean);
     }, z.array(idSchema).optional()),
+    event: idSchema.optional(),
     status: statusEnum.optional(),
     layout: z.string().optional(),
     is_featured: z
@@ -82,6 +84,7 @@ export const updateSelfNewsValidationSchema = z.object({
     id: idSchema,
   }),
   body: z.object({
+    writer: z.string().optional(),
     sequence: z.coerce
       .number({ invalid_type_error: 'Sequence must be a number' })
       .int('Sequence must be an integer')
@@ -103,6 +106,7 @@ export const updateSelfNewsValidationSchema = z.object({
       if (!val) return [];
       return Array.isArray(val) ? val.filter(Boolean) : [val].filter(Boolean);
     }, z.array(idSchema).optional()),
+    event: idSchema.optional(),
     status: statusEnum.optional(),
     layout: z.string().optional(),
     is_featured: z
@@ -145,6 +149,7 @@ export const updateNewsValidationSchema = z.object({
     id: idSchema,
   }),
   body: z.object({
+    writer: z.string().optional(),
     sequence: z.coerce
       .number({ invalid_type_error: 'Sequence must be a number' })
       .int('Sequence must be an integer')
@@ -165,6 +170,7 @@ export const updateNewsValidationSchema = z.object({
       if (!val) return [];
       return Array.isArray(val) ? val.filter(Boolean) : [val].filter(Boolean);
     }, z.array(idSchema).optional()),
+    event: idSchema.optional(),
     status: statusEnum.optional(),
     layout: z.string().optional(),
     is_featured: z

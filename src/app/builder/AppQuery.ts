@@ -169,9 +169,12 @@ class AppQuery<T = any> {
     };
   }> {
     const [total, stats] = await Promise.all([
-      (this.query.model as Model<DocumentType<T>>).countDocuments(
-        this.query_filter,
-      ),
+      (this.query.model as Model<DocumentType<T>>).countDocuments({
+        ...this.query_filter,
+        ...(!this.query_filter?.is_deleted && {
+          is_deleted: { $ne: true },
+        }),
+      }),
       statisticsQueries
         ? Promise.all(
             statisticsQueries.map(async (stat) => {
@@ -180,6 +183,9 @@ class AppQuery<T = any> {
               ).countDocuments({
                 ...this.query_filter,
                 ...stat.filter,
+                ...(!this.query_filter?.is_deleted && {
+                  is_deleted: { $ne: true },
+                }),
               });
               return { key: stat.key, count };
             }),

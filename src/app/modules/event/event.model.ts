@@ -9,7 +9,7 @@ const eventSchema = new Schema<TEventDocument>(
     },
     icon: {
       type: String,
-      default: 'blocks',
+      default: 'calendar',
     },
     name: {
       type: String,

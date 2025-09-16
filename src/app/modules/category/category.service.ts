@@ -117,15 +117,14 @@ export const getCategories = async (
 }> => {
   const { all = false, category, ...rest } = query;
 
-  const filter: Record<string, unknown> = {};
   if (category) {
-    filter.category = category;
+    rest.category = category;
   } else if (!all) {
-    filter.category = { $not: { $type: 'objectId' } };
+    rest.category = { $not: { $type: 'objectId' } };
   }
 
   const categoryQuery = new AppQuery<TCategory>(
-    Category.find(filter).populate([{ path: 'children' }]),
+    Category.find().populate([{ path: 'children' }]),
     rest,
   )
     .search(['name'])
@@ -135,7 +134,20 @@ export const getCategories = async (
     .fields()
     .tap((q) => q.lean());
 
-  const result = await categoryQuery.execute();
+  const result = await categoryQuery.execute([
+    {
+      key: 'active',
+      filter: { status: 'active' },
+    },
+    {
+      key: 'inactive',
+      filter: { status: 'inactive' },
+    },
+    {
+      key: 'featured',
+      filter: { is_featured: true },
+    },
+  ]);
 
   return result;
 };
