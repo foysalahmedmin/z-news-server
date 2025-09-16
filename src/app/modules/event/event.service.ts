@@ -37,14 +37,11 @@ export const getPublicEvents = async (
   const { date: q_date, ...rest } = query || {};
 
   const date = q_date ? new Date(q_date as string) : new Date();
-  date.setHours(0, 0, 0, 0);
 
   const filter = {
     status: 'active',
     published_at: { $lte: date },
-    expired_at: {
-      $or: [{ expired_at: { $exists: false } }, { expired_at: { $gte: date } }],
-    },
+    $or: [{ expired_at: { $exists: false } }, { expired_at: { $gte: date } }],
   };
 
   const eventQuery = new AppQuery<TEvent>(Event.find(filter), rest)

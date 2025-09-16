@@ -53,13 +53,10 @@ export const getPublicNewsHeadlines = async (
   const { date: q_date, ...rest } = query || {};
 
   const date = q_date ? new Date(q_date as string) : new Date();
-  date.setHours(0, 0, 0, 0);
 
   const filter = {
     published_at: { $lte: date },
-    expired_at: {
-      $or: [{ expired_at: { $exists: false } }, { expired_at: { $gte: date } }],
-    },
+    $or: [{ expired_at: { $exists: false } }, { expired_at: { $gte: date } }],
   };
 
   const NewsQuery = new AppQuery<TNewsHeadline>(
