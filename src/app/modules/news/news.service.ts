@@ -302,6 +302,7 @@ export const getPublicNews = async (slug: string): Promise<TNews> => {
     .populate([
       { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
+      { path: 'event', select: '_id name slug' },
     ])
     .lean();
 
@@ -322,6 +323,7 @@ export const getSelfNews = async (
       { path: 'comment_count' },
       { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
+      { path: 'event', select: '_id name slug' },
       {
         path: 'news_headline',
         select: '_id title published_at expired_at status',
@@ -346,6 +348,7 @@ export const getNews = async (id: string): Promise<TNews> => {
       { path: 'comment_count' },
       { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
+      { path: 'event', select: '_id name slug' },
       {
         path: 'news_headline',
         select: '_id title published_at expired_at status',
@@ -431,6 +434,7 @@ export const getPublicBulkNews = async (
     News.find({ status: 'published' }).populate([
       { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
+      { path: 'event', select: '_id name slug' },
     ]),
     rest,
   )
@@ -440,6 +444,7 @@ export const getPublicBulkNews = async (
     .paginate()
     .fields([
       'title',
+      'sub_title',
       'slug',
       'description',
       'content',
@@ -531,6 +536,7 @@ export const getSelfBulkNews = async (
     News.find({ author: user._id }).populate([
       { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
+      { path: 'event', select: '_id name slug' },
     ]),
     rest,
   )
@@ -643,6 +649,7 @@ export const getBulkNews = async (
     News.find().populate([
       { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
+      { path: 'event', select: '_id name slug' },
     ]),
     rest,
   )
