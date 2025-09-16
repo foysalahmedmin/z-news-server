@@ -64,6 +64,11 @@ const newsSchema = new Schema<TNewsDocument>(
       default: [],
     },
 
+    event: {
+      type: Schema.Types.ObjectId,
+      ref: 'Event',
+    },
+
     category: {
       type: Schema.Types.ObjectId,
       ref: 'Category',

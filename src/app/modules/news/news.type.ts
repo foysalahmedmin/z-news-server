@@ -15,6 +15,7 @@ export type TNews = {
   video?: string;
   youtube?: string;
   tags?: string[];
+  event?: Types.ObjectId;
   category: Types.ObjectId;
   categories: Types.ObjectId[];
   author: Types.ObjectId;
