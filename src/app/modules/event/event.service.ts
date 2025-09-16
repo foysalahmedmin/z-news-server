@@ -13,7 +13,7 @@ export const getPublicEvent = async (slug: string): Promise<TEvent> => {
   const result = await Event.findOne({
     slug: slug,
     status: 'active',
-  });
+  }).populate([{ path: 'category', select: '_id name slug' }]);
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'Event not found');
   }
@@ -21,7 +21,9 @@ export const getPublicEvent = async (slug: string): Promise<TEvent> => {
 };
 
 export const getEvent = async (id: string): Promise<TEvent> => {
-  const result = await Event.findById(id);
+  const result = await Event.findById(id).populate([
+    { path: 'category', select: '_id name slug' },
+  ]);
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'Event not found');
   }
@@ -44,7 +46,12 @@ export const getPublicEvents = async (
     $or: [{ expired_at: { $exists: false } }, { expired_at: { $gte: date } }],
   };
 
-  const eventQuery = new AppQuery<TEvent>(Event.find(filter), rest)
+  const eventQuery = new AppQuery<TEvent>(
+    Event.find(filter).populate([
+      { path: 'category', select: '_id name slug' },
+    ]),
+    rest,
+  )
     .search(['name'])
     .filter()
     .sort()
@@ -63,7 +70,10 @@ export const getEvents = async (
   data: TEvent[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const eventQuery = new AppQuery<TEvent>(Event.find(), query)
+  const eventQuery = new AppQuery<TEvent>(
+    Event.find().populate([{ path: 'category', select: '_id name slug' }]),
+    query,
+  )
     .search(['name'])
     .filter()
     .sort()
