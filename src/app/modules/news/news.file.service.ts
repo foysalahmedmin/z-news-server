@@ -1,7 +1,6 @@
 import fs from 'fs';
 import httpStatus from 'http-status';
 import { ClientSession, ObjectId } from 'mongodb';
-import mongoose from 'mongoose';
 import AppError from '../../builder/AppError';
 import { slugify } from '../../utils/slugify';
 import { News } from './news.model';
@@ -125,11 +124,9 @@ const processBatchWithRetry = async (
     const formattedBatch = processBatch(batch);
 
     const result = await News.insertMany(formattedBatch, {
-      session,
       ordered: false,
       rawResult: true,
     });
-
     const insertedCount = result.insertedCount || formattedBatch.length;
     console.log(
       `✅ Batch ${batchNumber}: ${insertedCount}/${batch.length} inserted`,
@@ -249,18 +246,12 @@ export const insertBulkNewsFromFile = async (
         `⚡ Processing batch ${batchNumber}/${totalBatches} (${batch.length} items)`,
       );
 
-      let session: ClientSession | null = null;
       try {
-        session = await mongoose.startSession();
-        session.startTransaction();
-
         const batchResult = await processBatchWithRetry(
           batch,
-          session,
+          null as any,
           batchNumber,
         );
-
-        await session.commitTransaction();
 
         successful += batchResult.successful;
         failed += batchResult.failed;
@@ -269,12 +260,9 @@ export const insertBulkNewsFromFile = async (
           errors.push(`Batch ${batchNumber}: ${batchResult.error}`);
         }
       } catch (batchError: any) {
-        if (session) await session.abortTransaction();
         failed += batch.length;
         errors.push(`Batch ${batchNumber}: ${batchError.message}`);
         console.error(`❌ Batch ${batchNumber} failed:`, batchError.message);
-      } finally {
-        if (session) await session.endSession();
       }
 
       // Memory management every 10 batches
