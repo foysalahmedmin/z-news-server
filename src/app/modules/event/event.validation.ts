@@ -15,11 +15,8 @@ export const createEventValidationSchema = z.object({
       .string()
       .trim()
       .min(2, 'Name must be at least 2 characters')
-      .max(50, 'Name cannot exceed 50 characters'),
-    slug: z
-      .string()
-      .min(1, 'Slug is required')
-      .max(50, 'Slug cannot exceed 50 characters'),
+      .max(100, 'Name cannot exceed 50 characters'),
+    slug: z.string().min(1, 'Slug is required'),
     description: z
       .string()
       .trim()
@@ -41,16 +38,8 @@ export const updateEventValidationSchema = z.object({
   body: z.object({
     category: idSchema.optional(),
     icon: z.string().optional(),
-    name: z
-      .string()
-      .min(2, 'Name must be at least 2 characters')
-      .max(50, 'Name cannot exceed 50 characters')
-      .optional(),
-    slug: z
-      .string()
-      .min(1, 'Slug is required')
-      .max(50, 'Slug cannot exceed 50 characters')
-      .optional(),
+    name: z.string().min(2, 'Name must be at least 2 characters').optional(),
+    slug: z.string().min(1, 'Slug is required').optional(),
     description: z
       .string()
       .trim()

@@ -17,7 +17,7 @@ const eventSchema = new Schema<TEventDocument>(
       unique: true,
       trim: true,
       minlength: [2, 'Name must be at least 2 characters'],
-      maxlength: [50, 'Name cannot exceed 50 characters'],
+      maxlength: [100, 'Name cannot exceed 50 characters'],
     },
     slug: {
       type: String,
@@ -25,7 +25,6 @@ const eventSchema = new Schema<TEventDocument>(
       unique: true,
       trim: true,
       minlength: [1, 'Code must be at least 1 character'],
-      maxlength: [20, 'Code cannot exceed 20 characters'],
     },
     description: {
       type: String,
