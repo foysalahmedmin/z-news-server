@@ -6,7 +6,12 @@ import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
 import { slugify } from '../../utils/slugify';
 import { Category } from './category.model';
-import { TCategory, TCategoryInput, TCategoryTree } from './category.type';
+import {
+  TCategory,
+  TCategoryInput,
+  TCategoryTree,
+  TStatus,
+} from './category.type';
 
 export const insertCategoriesFromFile = async (
   file?: Express.Multer.File,
@@ -179,13 +184,11 @@ export const getPublicCategoriesTree = async (
 
   const categories = await Category.aggregate([
     { $match: matchStage },
-    {
-      $sort: {
-        sequence: 1,
-      },
-    },
+    { $sort: { sequence: 1 } },
     { $skip: (page - 1) * limit },
     { $limit: limit },
+
+    // Get all descendants of each root
     {
       $graphLookup: {
         from: 'categories',
@@ -198,49 +201,38 @@ export const getPublicCategoriesTree = async (
         maxDepth: 10,
       },
     },
-    // Get max depth to know how many levels we have
+
+    // Sort descendants by level & sequence
+    { $unwind: { path: '$descendants', preserveNullAndEmptyArrays: true } },
     {
-      $addFields: {
-        maxDepth: {
-          $ifNull: [{ $max: '$descendants.level' }, 0],
-        },
+      $sort: {
+        'descendants.level': 1,
+        'descendants.sequence': 1,
       },
     },
-    // Build tree structure using $reduce
+    {
+      $group: {
+        _id: '$_id',
+        root: { $first: '$$ROOT' },
+        descendants: { $push: '$descendants' },
+      },
+    },
+
+    // Put level 0 descendants in children
     {
       $addFields: {
-        children: {
-          $reduce: {
-            input: { $range: [0, { $add: ['$maxDepth', 1] }] },
-            initialValue: [],
-            in: {
-              $cond: {
-                if: { $eq: ['$$this', 0] },
-                then: {
-                  $sortArray: {
-                    input: {
-                      $filter: {
-                        input: '$descendants',
-                        as: 'child',
-                        cond: { $eq: ['$$child.level', 0] },
-                      },
-                    },
-                    sortBy: { sequence: 1 },
-                  },
-                },
-                else: '$$value',
-              },
-            },
+        'root.children': {
+          $filter: {
+            input: '$descendants',
+            as: 'child',
+            cond: { $eq: ['$$child.level', 0] },
           },
         },
       },
     },
-    {
-      $project: {
-        descendants: 0,
-        maxDepth: 0,
-      },
-    },
+
+    { $replaceRoot: { newRoot: '$root' } },
+    { $project: { descendants: 0, maxDepth: 0 } },
   ]);
 
   return {
@@ -251,7 +243,7 @@ export const getPublicCategoriesTree = async (
 
 export const getCategoriesTree = async (
   category?: string,
-  query: { page?: number; limit?: number } = {},
+  query: { page?: number; limit?: number; status?: TStatus } = {},
 ): Promise<{
   data: TCategoryTree[];
   meta: { total: number; page: number; limit: number };
@@ -261,6 +253,7 @@ export const getCategoriesTree = async (
 
   const baseMatch = {
     is_deleted: { $ne: true },
+    ...(query?.status && { status: query?.status }),
   };
 
   const matchStage =
@@ -270,17 +263,16 @@ export const getCategoriesTree = async (
           ...baseMatch,
           $or: [{ category: { $exists: false } }, { category: null }],
         };
+
   const total = await Category.countDocuments(matchStage);
 
   const categories = await Category.aggregate([
     { $match: matchStage },
-    {
-      $sort: {
-        sequence: 1,
-      },
-    },
+    { $sort: { sequence: 1 } },
     { $skip: (page - 1) * limit },
     { $limit: limit },
+
+    // Get all descendants of each root
     {
       $graphLookup: {
         from: 'categories',
@@ -293,53 +285,42 @@ export const getCategoriesTree = async (
         maxDepth: 10,
       },
     },
-    // Get max depth to know how many levels we have
+
+    // Sort descendants by level & sequence
+    { $unwind: { path: '$descendants', preserveNullAndEmptyArrays: true } },
     {
-      $addFields: {
-        maxDepth: {
-          $ifNull: [{ $max: '$descendants.level' }, 0],
-        },
+      $sort: {
+        'descendants.level': 1,
+        'descendants.sequence': 1,
       },
     },
-    // Build tree structure using $reduce
+    {
+      $group: {
+        _id: '$_id',
+        root: { $first: '$$ROOT' },
+        descendants: { $push: '$descendants' },
+      },
+    },
+
+    // Put level 0 descendants in children
     {
       $addFields: {
-        children: {
-          $reduce: {
-            input: { $range: [0, { $add: ['$maxDepth', 1] }] },
-            initialValue: [],
-            in: {
-              $cond: {
-                if: { $eq: ['$$this', 0] },
-                then: {
-                  $sortArray: {
-                    input: {
-                      $filter: {
-                        input: '$descendants',
-                        as: 'child',
-                        cond: { $eq: ['$$child.level', 0] },
-                      },
-                    },
-                    sortBy: { sequence: 1 },
-                  },
-                },
-                else: '$$value',
-              },
-            },
+        'root.children': {
+          $filter: {
+            input: '$descendants',
+            as: 'child',
+            cond: { $eq: ['$$child.level', 0] },
           },
         },
       },
     },
-    {
-      $project: {
-        descendants: 0,
-        maxDepth: 0,
-      },
-    },
+
+    { $replaceRoot: { newRoot: '$root' } },
+    { $project: { descendants: 0, maxDepth: 0 } },
   ]);
 
   return {
-    data: categories,
+    data: categories as TCategoryTree[],
     meta: { total, page, limit },
   };
 };
