@@ -176,11 +176,6 @@ const newsSchema = new Schema<TNewsDocument>(
       default: 'default',
     },
 
-    views: {
-      type: Number,
-      default: 0,
-    },
-
     is_news_break: {
       type: Boolean,
       default: false,
@@ -230,6 +225,14 @@ newsSchema.virtual('news_break', {
   localField: '_id',
   foreignField: 'news',
   justOne: true,
+});
+
+newsSchema.virtual('view_count', {
+  ref: 'View',
+  localField: '_id',
+  foreignField: 'news',
+  count: true,
+  match: { is_deleted: { $ne: true } },
 });
 
 newsSchema.virtual('like_count', {

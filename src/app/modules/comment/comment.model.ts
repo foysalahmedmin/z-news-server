@@ -43,7 +43,6 @@ const commentSchema = new Schema<TCommentDocument>(
       type: String,
       required: true,
       lowercase: true,
-      unique: true,
       trim: true,
     },
 

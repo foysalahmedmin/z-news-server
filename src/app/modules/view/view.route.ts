@@ -17,6 +17,22 @@ router.get(
 router.get('/', auth('admin'), ViewControllers.getViews);
 
 router.get(
+  '/news/:news_id/self',
+  guest('optional'),
+  auth(
+    'admin',
+    'editor',
+    'author',
+    'contributor',
+    'subscriber',
+    'user',
+    'guest',
+  ),
+  validation(ViewValidations.newsViewOperationValidationSchema),
+  ViewControllers.getSelfNewsView,
+);
+
+router.get(
   '/:id/self',
   guest('optional'),
   auth(

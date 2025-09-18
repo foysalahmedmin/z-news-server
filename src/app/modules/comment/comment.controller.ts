@@ -45,7 +45,12 @@ export const getPublicComments = catchAsync(async (req, res) => {
     status: httpStatus.OK,
     success: true,
     message: 'Comments retrieved successfully',
-    meta: result.meta,
+    meta: {
+      ...result.meta,
+      ...(req?.cookies?.guest_token && {
+        guest_token: req.cookies.guest_token,
+      }),
+    },
     data: result.data,
   });
 });

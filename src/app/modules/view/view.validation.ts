@@ -11,6 +11,12 @@ export const createViewValidationSchema = z.object({
   }),
 });
 
+export const newsViewOperationValidationSchema = z.object({
+  params: z.object({
+    news_id: idSchema,
+  }),
+});
+
 export const viewOperationValidationSchema = z.object({
   params: z.object({
     id: idSchema,

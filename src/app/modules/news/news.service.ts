@@ -294,11 +294,7 @@ export const getFeaturedPublicNews = async (
 };
 
 export const getPublicNews = async (slug: string): Promise<TNews> => {
-  const result = await News.findOneAndUpdate(
-    { slug: slug, status: 'published' },
-    { $inc: { views: 1 } },
-    { new: true },
-  )
+  const result = await News.findOne({ slug: slug, status: 'published' })
     .populate([
       { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
@@ -319,6 +315,7 @@ export const getSelfNews = async (
 ): Promise<TNews> => {
   const result = await News.findOne({ _id: id, author: user._id })
     .populate([
+      { path: 'view_count' },
       { path: 'like_count' },
       { path: 'dislike_count' },
       { path: 'comment_count' },
@@ -326,14 +323,14 @@ export const getSelfNews = async (
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
-      {
-        path: 'news_headline',
-        select: '_id title published_at expired_at status',
-      },
-      {
-        path: 'news_break',
-        select: '_id title published_at expired_at status',
-      },
+      // {
+      //   path: 'news_headline',
+      //   select: '_id title published_at expired_at status',
+      // },
+      // {
+      //   path: 'news_break',
+      //   select: '_id title published_at expired_at status',
+      // },
     ])
     .lean();
   if (!result) {
@@ -345,6 +342,7 @@ export const getSelfNews = async (
 export const getNews = async (id: string): Promise<TNews> => {
   const result = await News.findById(id)
     .populate([
+      { path: 'view_count' },
       { path: 'like_count' },
       { path: 'dislike_count' },
       { path: 'comment_count' },
@@ -352,14 +350,14 @@ export const getNews = async (id: string): Promise<TNews> => {
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
-      {
-        path: 'news_headline',
-        select: '_id title published_at expired_at status',
-      },
-      {
-        path: 'news_break',
-        select: '_id title published_at expired_at status',
-      },
+      // {
+      //   path: 'news_headline',
+      //   select: '_id title published_at expired_at status',
+      // },
+      // {
+      //   path: 'news_break',
+      //   select: '_id title published_at expired_at status',
+      // },
     ])
     .lean();
   if (!result) {

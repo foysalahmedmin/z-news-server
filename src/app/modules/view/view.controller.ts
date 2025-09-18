@@ -13,6 +13,22 @@ export const createView = catchAsync(async (req, res) => {
   });
 });
 
+export const getSelfNewsView = catchAsync(async (req, res) => {
+  const { news_id } = req.params;
+  const { data, meta } = await ViewServices.getSelfNewsView(
+    req.user,
+    req.guest,
+    news_id,
+  );
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'Reaction retrieved successfully',
+    data: data,
+    meta: meta,
+  });
+});
+
 export const getSelfView = catchAsync(async (req, res) => {
   const { id } = req.params;
   const result = await ViewServices.getSelfView(req.user, req.guest, id);

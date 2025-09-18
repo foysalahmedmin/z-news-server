@@ -99,6 +99,38 @@ export const getViews = async (
   return result;
 };
 
+export const getSelfNewsView = async (
+  user: TJwtPayload,
+  guest: TGuest,
+  news_id: string,
+): Promise<{ data: TView | null; meta: { views: number } }> => {
+  if (!news_id) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found news_id');
+  }
+
+  const query = user?._id
+    ? { news: news_id, user: user._id }
+    : guest?.token
+      ? { news: news_id, guest: guest.token }
+      : undefined;
+
+  if (query) {
+    const isSelfViewed = await View.findOne(query).lean();
+
+    if (!isSelfViewed) {
+      await View.create({
+        news: news_id,
+        ...(user?._id ? { user: user._id } : {}),
+        ...(guest?.token ? { guest: guest.token } : {}),
+      });
+    }
+  }
+
+  const result = await View.countDocuments({ news: news_id });
+
+  return { data: null, meta: { views: result } };
+};
+
 export const deleteSelfView = async (
   user: TJwtPayload,
   guest: TGuest,
