@@ -24,9 +24,17 @@ app.use(
   cors({
     origin: [
       'https://admin.dainikeidin.com',
+      'https://www.admin.dainikeidin.com',
+      'https://dainikeidin.com',
+      'https://www.dainikeidin.com',
       'https://test.dainikeidin.com',
+      'https://www.test.dainikeidin.com',
       'http://admin.dainikeidin.com',
+      'http://www.admin.dainikeidin.com',
+      'http://dainikeidin.com',
+      'http://www.dainikeidin.com',
       'http://test.dainikeidin.com',
+      'http://www.test.dainikeidin.com',
       'http://localhost:5000',
       'http://localhost:5001',
       'http://localhost:8080',
