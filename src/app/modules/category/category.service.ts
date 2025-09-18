@@ -165,7 +165,7 @@ export const getPublicCategoriesTree = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const page = Number(query.page) || 1;
-  const limit = Number(query.limit) || 10;
+  const limit = Number(query.limit) || 30;
 
   const baseMatch = {
     status: 'active',
@@ -187,8 +187,6 @@ export const getPublicCategoriesTree = async (
     { $sort: { sequence: 1 } },
     { $skip: (page - 1) * limit },
     { $limit: limit },
-
-    // Get all descendants of each root
     {
       $graphLookup: {
         from: 'categories',
@@ -201,27 +199,9 @@ export const getPublicCategoriesTree = async (
         maxDepth: 10,
       },
     },
-
-    // Sort descendants by level & sequence
-    { $unwind: { path: '$descendants', preserveNullAndEmptyArrays: true } },
-    {
-      $sort: {
-        'descendants.level': 1,
-        'descendants.sequence': 1,
-      },
-    },
-    {
-      $group: {
-        _id: '$_id',
-        root: { $first: '$$ROOT' },
-        descendants: { $push: '$descendants' },
-      },
-    },
-
-    // Put level 0 descendants in children
     {
       $addFields: {
-        'root.children': {
+        children: {
           $filter: {
             input: '$descendants',
             as: 'child',
@@ -230,9 +210,7 @@ export const getPublicCategoriesTree = async (
         },
       },
     },
-
-    { $replaceRoot: { newRoot: '$root' } },
-    { $project: { descendants: 0, maxDepth: 0 } },
+    { $project: { descendants: 0 } },
   ]);
 
   return {
@@ -249,7 +227,7 @@ export const getCategoriesTree = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const page = Number(query.page) || 1;
-  const limit = Number(query.limit) || 10;
+  const limit = Number(query.limit) || 30;
 
   const baseMatch = {
     is_deleted: { $ne: true },
@@ -271,8 +249,6 @@ export const getCategoriesTree = async (
     { $sort: { sequence: 1 } },
     { $skip: (page - 1) * limit },
     { $limit: limit },
-
-    // Get all descendants of each root
     {
       $graphLookup: {
         from: 'categories',
@@ -285,27 +261,9 @@ export const getCategoriesTree = async (
         maxDepth: 10,
       },
     },
-
-    // Sort descendants by level & sequence
-    { $unwind: { path: '$descendants', preserveNullAndEmptyArrays: true } },
-    {
-      $sort: {
-        'descendants.level': 1,
-        'descendants.sequence': 1,
-      },
-    },
-    {
-      $group: {
-        _id: '$_id',
-        root: { $first: '$$ROOT' },
-        descendants: { $push: '$descendants' },
-      },
-    },
-
-    // Put level 0 descendants in children
     {
       $addFields: {
-        'root.children': {
+        children: {
           $filter: {
             input: '$descendants',
             as: 'child',
@@ -314,9 +272,7 @@ export const getCategoriesTree = async (
         },
       },
     },
-
-    { $replaceRoot: { newRoot: '$root' } },
-    { $project: { descendants: 0, maxDepth: 0 } },
+    { $project: { descendants: 0 } },
   ]);
 
   return {
