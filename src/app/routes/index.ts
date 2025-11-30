@@ -3,6 +3,7 @@ import authRoutes from '../modules/auth/auth.route';
 import categoryRoutes from '../modules/category/category.route';
 import CommentRoutes from '../modules/comment/comment.route';
 import eventRoutes from '../modules/event/event.route';
+import fileRoutes from '../modules/file/file.route';
 import guestRoutes from '../modules/guest/guest.route';
 import mediaRoutes from '../modules/media/media.route';
 import NewsBreakRoutes from '../modules/news-break/news-break.route';
@@ -40,6 +41,10 @@ const moduleRoutes = [
   {
     path: '/event',
     route: eventRoutes,
+  },
+  {
+    path: '/file',
+    route: fileRoutes,
   },
   {
     path: '/category',
