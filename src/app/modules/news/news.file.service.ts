@@ -11,8 +11,8 @@ const CONFIG = {
   BATCH_SIZE: 500,
   MAX_RETRIES: 3,
   RETRY_DELAY: 1000,
-  BASE_URL: 'https://www.dainikeidin.com/wp-content/uploads/',
-  NEW_URL: 'https://admin.dainikeidin.com/uploads/news/images/',
+  BASE_URL: 'https://www.z-news.com/wp-content/uploads/',
+  NEW_URL: 'https://admin.z-news.com/uploads/news/images/',
   REMOVE_CATEGORIES: new Set([
     '101',
     '86',

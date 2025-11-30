@@ -47,10 +47,10 @@ export const getPublicEvents = async (
   };
 
   const eventQuery = new AppQuery<TEvent>(
-    Event.find(filter).populate([
+    Event.find().populate([
       { path: 'category', select: '_id name slug' },
     ]),
-    rest,
+    { ...filter, ...rest },
   )
     .search(['name'])
     .filter()

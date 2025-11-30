@@ -71,11 +71,11 @@ export const getPublicComments = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const commentQuery = new AppQuery<TComment>(
-    Comment.find({ status: 'approved' }).populate([
+    Comment.find().populate([
       { path: 'user', select: '_id name email image' },
       { path: 'news', select: '_id slug title thumbnail' },
     ]),
-    query,
+    { status: 'approved', ...query },
   )
     .search(['name', 'email', 'content'])
     .filter()
@@ -100,14 +100,16 @@ export const getSelfComments = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
+  const filter = {
+    ...(user?._id ? { user: user._id } : { guest: guest.token }),
+  };
+
   const commentQuery = new AppQuery<TComment>(
-    Comment.find({
-      ...(user?._id ? { user: user._id } : { guest: guest.token }),
-    }).populate([
+    Comment.find().populate([
       { path: 'user', select: '_id name email image' },
       { path: 'news', select: '_id slug title thumbnail' },
     ]),
-    query,
+    { ...filter, ...query },
   )
     .search(['name', 'email', 'content'])
     .filter()

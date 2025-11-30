@@ -60,11 +60,11 @@ export const getPublicNewsHeadlines = async (
   };
 
   const NewsQuery = new AppQuery<TNewsHeadline>(
-    NewsHeadline.find({ status: 'published', ...filter }).populate([
+    NewsHeadline.find().populate([
       { path: 'author', select: '_id name email' },
       { path: 'news', select: '_id title slug' },
     ]),
-    rest,
+    { status: 'published', ...filter, ...rest },
   )
     .search(['title', 'description'])
     .filter()
@@ -85,11 +85,11 @@ export const getSelfNewsHeadlines = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const NewsQuery = new AppQuery<TNewsHeadline>(
-    NewsHeadline.find({ author: user._id }).populate([
+    NewsHeadline.find().populate([
       { path: 'author', select: '_id name email' },
       { path: 'news', select: '_id title slug' },
     ]),
-    query,
+    { author: user._id, ...query },
   )
     .search(['title', 'description'])
     .filter()

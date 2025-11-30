@@ -52,11 +52,11 @@ export const getSelfNotificationRecipients = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const notificationQuery = new AppQuery<TNotificationRecipient>(
-    NotificationRecipient.find({ author: user._id }).populate([
+    NotificationRecipient.find().populate([
       { path: 'recipient', select: '_id name email image' },
       { path: 'notification', select: '_id title type sender' },
     ]),
-    query,
+    { author: user._id, ...query },
   )
     .filter()
     .sort()

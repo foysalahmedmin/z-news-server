@@ -432,13 +432,13 @@ export const getPublicBulkNews = async (
   }
 
   const NewsQuery = new AppQuery<TNews>(
-    News.find({ status: 'published' }).populate([
+    News.find().populate([
       { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
     ]),
-    rest,
+    { status: 'published', ...rest },
   )
     .search(['title', 'description'])
     .filter()
@@ -535,13 +535,13 @@ export const getSelfBulkNews = async (
   // }
 
   const NewsQuery = new AppQuery<TNews>(
-    News.find({ author: user._id }).populate([
+    News.find().populate([
       { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
     ]),
-    rest,
+    { author: user._id, ...rest },
   )
     .search(['title', 'description'])
     .filter()
