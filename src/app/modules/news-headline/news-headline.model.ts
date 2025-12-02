@@ -11,38 +11,10 @@ const newsHeadlineSchema = new Schema<TNewsHeadlineDocument>(
       type: Number,
     },
 
-    title: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
-    description: {
-      type: String,
-      trim: true,
-      maxlength: 300,
-    },
-
-    tags: {
-      type: [String],
-      default: [],
-    },
-
-    category: {
-      type: Schema.Types.ObjectId,
-      ref: 'Category',
-      required: true,
-    },
-
-    author: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-
     news: {
       type: Schema.Types.ObjectId,
       ref: 'News',
+      required: true,
     },
 
     status: {
@@ -90,15 +62,6 @@ const newsHeadlineSchema = new Schema<TNewsHeadlineDocument>(
       },
     },
 
-    is_edited: {
-      type: Boolean,
-      default: false,
-    },
-
-    edited_at: {
-      type: Date,
-    },
-
     is_deleted: {
       type: Boolean,
       default: false,
@@ -118,7 +81,6 @@ newsHeadlineSchema.index(
   { news: 1 },
   {
     unique: true,
-    partialFilterExpression: { news: { $exists: true, $ne: null } },
   },
 );
 

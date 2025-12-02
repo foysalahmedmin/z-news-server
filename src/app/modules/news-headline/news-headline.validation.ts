@@ -14,11 +14,7 @@ export const createNewsHeadlineValidationSchema = z.object({
       .int('Sequence must be an integer')
       .nonnegative('Sequence must be 0 or greater')
       .optional(),
-    title: z.string().trim().min(1),
-    description: z.string().max(300).optional(),
-    tags: z.array(z.string().min(1)).optional(),
-    category: idSchema.optional(),
-    news: idSchema.optional(),
+    news: idSchema,
     status: statusEnum.optional(),
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
@@ -35,10 +31,6 @@ export const updateSelfNewsHeadlineValidationSchema = z.object({
       .int('Sequence must be an integer')
       .nonnegative('Sequence must be 0 or greater')
       .optional(),
-    title: z.string().trim().min(1),
-    description: z.string().max(300).optional(),
-    tags: z.array(z.string().min(1)).optional(),
-    category: idSchema.optional(),
     news: idSchema.optional(),
     status: statusEnum.optional(),
     published_at: z.coerce.date().optional(),
@@ -68,10 +60,6 @@ export const updateNewsHeadlineValidationSchema = z.object({
       .int('Sequence must be an integer')
       .nonnegative('Sequence must be 0 or greater')
       .optional(),
-    title: z.string().trim().min(1),
-    description: z.string().max(300).optional(),
-    tags: z.array(z.string().min(1)).optional(),
-    category: idSchema.optional(),
     news: idSchema.optional(),
     status: statusEnum.optional(),
     published_at: z.coerce.date().optional(),

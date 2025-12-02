@@ -6,32 +6,16 @@ const idSchema = z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), {
 
 const statusEnum = z.enum(['draft', 'pending', 'published', 'archived']);
 
-const seoSchema = z
-  .object({
-    image: z.string().optional(),
-    title: z.string().optional(),
-    description: z.string().optional(),
-    keywords: z.preprocess((val) => {
-      if (!val) return [];
-      return Array.isArray(val) ? val.filter(Boolean) : [val].filter(Boolean);
-    }, z.array(z.string()).optional()),
-  })
-  .optional();
-
 export const createNewsValidationSchema = z.object({
   body: z.object({
     writer: z.string().optional(),
-    sequence: z.coerce
-      .number({ invalid_type_error: 'Sequence must be a number' })
-      .int('Sequence must be an integer')
-      .nonnegative('Sequence must be 0 or greater')
-      .optional(),
     title: z.string().trim().min(1, 'Title is required'),
     sub_title: z.string().trim().optional(),
     slug: z.string().trim().min(1),
-    caption: z.string().max(3000).optional(),
     description: z.string().max(3000).optional(),
     content: z.string().min(1, 'Content is required'),
+    thumbnail: idSchema.optional(),
+    video: idSchema.optional(),
     youtube: z.string().optional(),
     tags: z.preprocess((val) => {
       if (!val) return [];
@@ -52,30 +36,8 @@ export const createNewsValidationSchema = z.object({
         return val;
       }, z.boolean())
       .optional(),
-    is_premium: z
-      .preprocess((val) => {
-        if (val === 'true' || val === true) return true;
-        if (val === 'false' || val === false) return false;
-        return val;
-      }, z.boolean())
-      .optional(),
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
-    seo: seoSchema,
-    is_news_headline: z
-      .preprocess((val) => {
-        if (val === 'true' || val === true) return true;
-        if (val === 'false' || val === false) return false;
-        return val;
-      }, z.boolean())
-      .optional(),
-    is_news_break: z
-      .preprocess((val) => {
-        if (val === 'true' || val === true) return true;
-        if (val === 'false' || val === false) return false;
-        return val;
-      }, z.boolean())
-      .optional(),
   }),
 });
 
@@ -85,17 +47,13 @@ export const updateSelfNewsValidationSchema = z.object({
   }),
   body: z.object({
     writer: z.string().optional(),
-    sequence: z.coerce
-      .number({ invalid_type_error: 'Sequence must be a number' })
-      .int('Sequence must be an integer')
-      .nonnegative('Sequence must be 0 or greater')
-      .optional(),
     title: z.string().trim().min(1).optional(),
     sub_title: z.string().trim().optional(),
     slug: z.string().trim().min(1).optional(),
-    caption: z.string().max(3000).optional(),
     description: z.string().max(3000).optional(),
     content: z.string().min(1).optional(),
+    thumbnail: idSchema.nullable().optional(),
+    video: idSchema.nullable().optional(),
     youtube: z.string().optional(),
     tags: z.preprocess((val) => {
       if (!val) return [];
@@ -116,31 +74,8 @@ export const updateSelfNewsValidationSchema = z.object({
         return val;
       }, z.boolean())
       .optional(),
-    is_premium: z
-      .preprocess((val) => {
-        if (val === 'true' || val === true) return true;
-        if (val === 'false' || val === false) return false;
-        return val;
-      }, z.boolean())
-      .optional(),
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
-    seo: seoSchema,
-    is_news_headline: z
-      .preprocess((val) => {
-        if (val === 'true' || val === true) return true;
-        if (val === 'false' || val === false) return false;
-        return val;
-      }, z.boolean())
-      .optional(),
-    is_news_break: z
-      .preprocess((val) => {
-        if (val === 'true' || val === true) return true;
-        if (val === 'false' || val === false) return false;
-        return val;
-      }, z.boolean())
-      .optional(),
-    thumbnail: z.string().nullable().optional(),
   }),
 });
 
@@ -150,17 +85,14 @@ export const updateNewsValidationSchema = z.object({
   }),
   body: z.object({
     writer: z.string().optional(),
-    sequence: z.coerce
-      .number({ invalid_type_error: 'Sequence must be a number' })
-      .int('Sequence must be an integer')
-      .nonnegative('Sequence must be 0 or greater')
-      .optional(),
     title: z.string().trim().min(1).optional(),
     sub_title: z.string().trim().optional(),
     slug: z.string().trim().min(1).optional(),
-    caption: z.string().max(3000).optional(),
     description: z.string().max(3000).optional(),
     content: z.string().min(1).optional(),
+    thumbnail: idSchema.nullable().optional(),
+    video: idSchema.nullable().optional(),
+    youtube: z.string().optional(),
     tags: z.preprocess((val) => {
       if (!val) return [];
       return Array.isArray(val) ? val.filter(Boolean) : [val].filter(Boolean);
@@ -180,31 +112,8 @@ export const updateNewsValidationSchema = z.object({
         return val;
       }, z.boolean())
       .optional(),
-    is_premium: z
-      .preprocess((val) => {
-        if (val === 'true' || val === true) return true;
-        if (val === 'false' || val === false) return false;
-        return val;
-      }, z.boolean())
-      .optional(),
     published_at: z.coerce.date().optional(),
     expired_at: z.coerce.date().optional(),
-    seo: seoSchema,
-    is_news_headline: z
-      .preprocess((val) => {
-        if (val === 'true' || val === true) return true;
-        if (val === 'false' || val === false) return false;
-        return val;
-      }, z.boolean())
-      .optional(),
-    is_news_break: z
-      .preprocess((val) => {
-        if (val === 'true' || val === true) return true;
-        if (val === 'false' || val === false) return false;
-        return val;
-      }, z.boolean())
-      .optional(),
-    thumbnail: z.string().nullable().optional(),
   }),
 });
 

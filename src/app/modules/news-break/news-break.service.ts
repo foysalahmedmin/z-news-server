@@ -13,12 +13,7 @@ export const createNewsBreak = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const update = {
-    ...payload,
-    author: user._id,
-  };
-
-  const result = await NewsBreak.create(update);
+  const result = await NewsBreak.create(payload);
   return result.toObject();
 };
 
@@ -26,10 +21,7 @@ export const getSelfNewsBreak = async (
   user: TJwtPayload,
   id: string,
 ): Promise<TNewsBreak> => {
-  const result = await NewsBreak.findOne({
-    _id: id,
-    author: user._id,
-  }).lean();
+  const result = await NewsBreak.findById(id).lean();
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'News-Break not found');
   }
@@ -63,7 +55,6 @@ export const getPublicNewsBreaks = async (
     NewsBreak.find({ status: 'published', ...filter }),
     rest,
   )
-    .search(['title', 'description'])
     .filter()
     .sort()
     .paginate()
@@ -82,10 +73,9 @@ export const getSelfNewsBreaks = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const NewsQuery = new AppQuery<TNewsBreak>(
-    NewsBreak.find({ author: user._id }),
+    NewsBreak.find(),
     query,
   )
-    .search(['title', 'description'])
     .filter()
     .sort()
     .paginate()
@@ -103,7 +93,6 @@ export const getNewsBreaks = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const NewsQuery = new AppQuery<TNewsBreak>(NewsBreak.find(), query)
-    .search(['title', 'description'])
     .filter()
     .sort()
     .paginate()
@@ -117,19 +106,14 @@ export const getNewsBreaks = async (
 export const updateSelfNewsBreak = async (
   user: TJwtPayload,
   id: string,
-  payload: Partial<Pick<TNewsBreak, 'title' | 'description'>>,
+  payload: Partial<TNewsBreak>,
 ): Promise<TNewsBreak> => {
-  const data = await NewsBreak.findOne({ _id: id, author: user._id }).lean();
+  const data = await NewsBreak.findById(id).lean();
   if (!data) {
     throw new AppError(httpStatus.NOT_FOUND, 'News-Break not found');
   }
 
   const update: Partial<TNewsBreak> = { ...payload };
-
-  if (Object.keys(payload).includes('content')) {
-    update.is_edited = true;
-    update.edited_at = new Date();
-  }
 
   const result = await NewsBreak.findByIdAndUpdate(id, update, {
     new: true,
@@ -141,7 +125,7 @@ export const updateSelfNewsBreak = async (
 
 export const updateNewsBreak = async (
   id: string,
-  payload: Partial<Pick<TNewsBreak, 'title' | 'description'>>,
+  payload: Partial<TNewsBreak>,
 ): Promise<TNewsBreak> => {
   const data = await NewsBreak.findById(id).lean();
   if (!data) {
@@ -149,11 +133,6 @@ export const updateNewsBreak = async (
   }
 
   const update: Partial<TNewsBreak> = { ...payload };
-
-  if (Object.keys(payload).includes('content')) {
-    update.is_edited = true;
-    update.edited_at = new Date();
-  }
 
   const result = await NewsBreak.findByIdAndUpdate(id, update, {
     new: true,
@@ -173,13 +152,12 @@ export const updateSelfNewsBreaks = async (
 }> => {
   const newsBreaks = await NewsBreak.find({
     _id: { $in: ids },
-    author: user._id,
   }).lean();
   const foundIds = newsBreaks.map((newsBreak) => newsBreak._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   const result = await NewsBreak.updateMany(
-    { _id: { $in: foundIds }, author: user._id },
+    { _id: { $in: foundIds } },
     { ...payload },
   );
 
@@ -215,7 +193,7 @@ export const deleteSelfNewsBreak = async (
   user: TJwtPayload,
   id: string,
 ): Promise<void> => {
-  const newsBreak = await NewsBreak.findOne({ _id: id, author: user._id });
+  const newsBreak = await NewsBreak.findById(id);
   if (!newsBreak) {
     throw new AppError(httpStatus.NOT_FOUND, 'News-Break not found');
   }
@@ -250,13 +228,12 @@ export const deleteSelfNewsBreaks = async (
 }> => {
   const newsBreaks = await NewsBreak.find({
     _id: { $in: ids },
-    author: user._id,
   }).lean();
   const foundIds = newsBreaks.map((newsBreak) => newsBreak._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await NewsBreak.updateMany(
-    { _id: { $in: foundIds }, author: user._id },
+    { _id: { $in: foundIds } },
     { is_deleted: true },
   );
 
@@ -307,7 +284,7 @@ export const restoreSelfNewsBreak = async (
   id: string,
 ): Promise<TNewsBreak> => {
   const newsBreak = await NewsBreak.findOneAndUpdate(
-    { _id: id, is_deleted: true, author: user._id },
+    { _id: id, is_deleted: true },
     { is_deleted: false },
     { new: true },
   ).lean();
@@ -347,13 +324,12 @@ export const restoreSelfNewsBreaks = async (
   not_found_ids: string[];
 }> => {
   const result = await NewsBreak.updateMany(
-    { _id: { $in: ids }, is_deleted: true, author: user._id },
+    { _id: { $in: ids }, is_deleted: true },
     { is_deleted: false },
   );
 
   const restoredNewsBreaks = await NewsBreak.find({
     _id: { $in: ids },
-    author: user._id,
   }).lean();
   const restoredIds = restoredNewsBreaks.map((newsBreak) =>
     newsBreak._id.toString(),

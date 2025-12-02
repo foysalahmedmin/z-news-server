@@ -11,38 +11,10 @@ const newsBreakSchema = new Schema<TNewsBreakDocument>(
       type: Number,
     },
 
-    title: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
-    description: {
-      type: String,
-      trim: true,
-      maxlength: 300,
-    },
-
-    tags: {
-      type: [String],
-      default: [],
-    },
-
-    category: {
-      type: Schema.Types.ObjectId,
-      ref: 'Category',
-      required: true,
-    },
-
-    author: {
-      type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-
     news: {
       type: Schema.Types.ObjectId,
       ref: 'News',
+      required: true,
     },
 
     status: {
@@ -90,15 +62,6 @@ const newsBreakSchema = new Schema<TNewsBreakDocument>(
       },
     },
 
-    is_edited: {
-      type: Boolean,
-      default: false,
-    },
-
-    edited_at: {
-      type: Date,
-    },
-
     is_deleted: {
       type: Boolean,
       default: false,
@@ -118,7 +81,6 @@ newsBreakSchema.index(
   { news: 1 },
   {
     unique: true,
-    partialFilterExpression: { news: { $exists: true, $ne: null } },
   },
 );
 

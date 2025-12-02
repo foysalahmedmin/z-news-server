@@ -4,17 +4,10 @@ export type TStatus = 'draft' | 'pending' | 'published' | 'archived';
 
 export type TNewsBreak = {
   sequence: number;
-  title: string;
-  description?: string;
-  tags?: string[];
-  category: Types.ObjectId;
-  author: Types.ObjectId;
-  news?: Types.ObjectId;
+  news: Types.ObjectId;
   status: TStatus;
   published_at?: Date;
   expired_at?: Date;
-  is_edited?: boolean;
-  edited_at?: Date;
   is_deleted: boolean;
 };
 

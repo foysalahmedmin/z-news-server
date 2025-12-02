@@ -6,7 +6,7 @@ import auth from '../../middlewares/auth.middleware';
 import file from '../../middlewares/file.middleware';
 import validation from '../../middlewares/validation.middleware';
 import * as NewsControllers from './news.controller';
-import { folderMapWithYearMonth, getFileConfigByType } from './news.utils';
+import { getFileConfigByType } from './news.utils';
 import * as NewsValidations from './news.validation';
 
 const router = express.Router();
@@ -59,29 +59,6 @@ router.patch(
 router.patch(
   '/:id/self',
   auth('admin', 'author'),
-  file(
-    {
-      name: 'thumbnail',
-      folder: folderMapWithYearMonth.thumbnail,
-      size: 5_000_000,
-      maxCount: 1,
-      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
-    },
-    {
-      name: 'images',
-      folder: folderMapWithYearMonth.image,
-      size: 5_000_000,
-      maxCount: 4,
-      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
-    },
-    {
-      name: 'seo[image]',
-      folder: folderMapWithYearMonth.seo,
-      size: 5_000_000,
-      maxCount: 1,
-      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
-    },
-  ),
   validation(NewsValidations.updateSelfNewsValidationSchema),
   NewsControllers.updateSelfNews,
 );
@@ -96,29 +73,6 @@ router.patch(
 router.patch(
   '/:id',
   auth('admin', 'editor'),
-  file(
-    {
-      name: 'thumbnail',
-      folder: folderMapWithYearMonth.thumbnail,
-      size: 5_000_000,
-      maxCount: 1,
-      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
-    },
-    {
-      name: 'images',
-      folder: folderMapWithYearMonth.image,
-      size: 5_000_000,
-      maxCount: 4,
-      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
-    },
-    {
-      name: 'seo[image]',
-      folder: folderMapWithYearMonth.seo,
-      size: 5_000_000,
-      maxCount: 1,
-      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
-    },
-  ),
   validation(NewsValidations.updateNewsValidationSchema),
   NewsControllers.updateNews,
 );
@@ -197,29 +151,6 @@ router.post(
 router.post(
   '/',
   auth('admin', 'author'),
-  file(
-    {
-      name: 'thumbnail',
-      folder: folderMapWithYearMonth.thumbnail,
-      size: 5_000_000,
-      maxCount: 1,
-      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
-    },
-    {
-      name: 'images',
-      folder: folderMapWithYearMonth.image,
-      size: 5_000_000,
-      maxCount: 4,
-      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
-    },
-    {
-      name: 'seo[image]',
-      folder: folderMapWithYearMonth.seo,
-      size: 5_000_000,
-      maxCount: 1,
-      allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
-    },
-  ),
   validation(NewsValidations.createNewsValidationSchema),
   NewsControllers.createNews,
 );

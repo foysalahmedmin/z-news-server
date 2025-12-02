@@ -3,10 +3,6 @@ import { TNews, TNewsDocument, TNewsModel } from './news.type';
 
 const newsSchema = new Schema<TNewsDocument>(
   {
-    sequence: {
-      type: Number,
-    },
-
     title: {
       type: String,
       required: true,
@@ -25,12 +21,6 @@ const newsSchema = new Schema<TNewsDocument>(
       lowercase: true,
     },
 
-    caption: {
-      type: String,
-      trim: true,
-      maxlength: 3000,
-    },
-
     description: {
       type: String,
       trim: true,
@@ -43,16 +33,13 @@ const newsSchema = new Schema<TNewsDocument>(
     },
 
     thumbnail: {
-      type: String,
-    },
-
-    images: {
-      type: [String],
-      default: [],
+      type: Schema.Types.ObjectId,
+      ref: 'File',
     },
 
     video: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: 'File',
     },
 
     youtube: {
@@ -105,17 +92,6 @@ const newsSchema = new Schema<TNewsDocument>(
     is_featured: {
       type: Boolean,
       default: false,
-    },
-
-    is_premium: {
-      type: Boolean,
-      default: false,
-    },
-
-    seo: {
-      title: String,
-      description: String,
-      keywords: [String],
     },
 
     published_at: {
@@ -176,16 +152,6 @@ const newsSchema = new Schema<TNewsDocument>(
       default: 'default',
     },
 
-    is_news_break: {
-      type: Boolean,
-      default: false,
-    },
-
-    is_news_headline: {
-      type: Boolean,
-      default: false,
-    },
-
     is_deleted: {
       type: Boolean,
       default: false,
@@ -205,8 +171,6 @@ newsSchema.index({ slug: 1 }, { unique: true });
 newsSchema.index({ title: 1 });
 newsSchema.index({ status: 1 });
 newsSchema.index({ is_featured: 1 });
-newsSchema.index({ is_news_headline: 1 });
-newsSchema.index({ is_news_break: 1 });
 
 newsSchema.index({ created_at: -1 });
 newsSchema.index({ published_at: -1 });

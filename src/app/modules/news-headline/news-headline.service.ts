@@ -13,12 +13,7 @@ export const createNewsHeadline = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const update = {
-    ...payload,
-    author: user._id,
-  };
-
-  const result = await NewsHeadline.create(update);
+  const result = await NewsHeadline.create(payload);
   return result.toObject();
 };
 
@@ -26,10 +21,7 @@ export const getSelfNewsHeadline = async (
   user: TJwtPayload,
   id: string,
 ): Promise<TNewsHeadline> => {
-  const result = await NewsHeadline.findOne({
-    _id: id,
-    author: user._id,
-  }).lean();
+  const result = await NewsHeadline.findById(id).lean();
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'News-Headline not found');
   }
@@ -61,12 +53,10 @@ export const getPublicNewsHeadlines = async (
 
   const NewsQuery = new AppQuery<TNewsHeadline>(
     NewsHeadline.find().populate([
-      { path: 'author', select: '_id name email' },
       { path: 'news', select: '_id title slug' },
     ]),
     { status: 'published', ...filter, ...rest },
   )
-    .search(['title', 'description'])
     .filter()
     .sort()
     .paginate()
@@ -86,12 +76,10 @@ export const getSelfNewsHeadlines = async (
 }> => {
   const NewsQuery = new AppQuery<TNewsHeadline>(
     NewsHeadline.find().populate([
-      { path: 'author', select: '_id name email' },
       { path: 'news', select: '_id title slug' },
     ]),
-    { author: user._id, ...query },
+    query,
   )
-    .search(['title', 'description'])
     .filter()
     .sort()
     .paginate()
@@ -110,12 +98,10 @@ export const getNewsHeadlines = async (
 }> => {
   const NewsQuery = new AppQuery<TNewsHeadline>(
     NewsHeadline.find().populate([
-      { path: 'author', select: '_id name email' },
       { path: 'news', select: '_id title slug' },
     ]),
     query,
   )
-    .search(['title', 'description'])
     .filter()
     .sort()
     .paginate()
@@ -129,19 +115,14 @@ export const getNewsHeadlines = async (
 export const updateSelfNewsHeadline = async (
   user: TJwtPayload,
   id: string,
-  payload: Partial<Pick<TNewsHeadline, 'title' | 'description'>>,
+  payload: Partial<TNewsHeadline>,
 ): Promise<TNewsHeadline> => {
-  const data = await NewsHeadline.findOne({ _id: id, author: user._id }).lean();
+  const data = await NewsHeadline.findById(id).lean();
   if (!data) {
     throw new AppError(httpStatus.NOT_FOUND, 'News-Headline not found');
   }
 
   const update: Partial<TNewsHeadline> = { ...payload };
-
-  if (Object.keys(payload).includes('content')) {
-    update.is_edited = true;
-    update.edited_at = new Date();
-  }
 
   const result = await NewsHeadline.findByIdAndUpdate(id, update, {
     new: true,
@@ -153,7 +134,7 @@ export const updateSelfNewsHeadline = async (
 
 export const updateNewsHeadline = async (
   id: string,
-  payload: Partial<Pick<TNewsHeadline, 'title' | 'description'>>,
+  payload: Partial<TNewsHeadline>,
 ): Promise<TNewsHeadline> => {
   const data = await NewsHeadline.findById(id).lean();
   if (!data) {
@@ -161,11 +142,6 @@ export const updateNewsHeadline = async (
   }
 
   const update: Partial<TNewsHeadline> = { ...payload };
-
-  if (Object.keys(payload).includes('content')) {
-    update.is_edited = true;
-    update.edited_at = new Date();
-  }
 
   const result = await NewsHeadline.findByIdAndUpdate(id, update, {
     new: true,
@@ -185,7 +161,6 @@ export const updateSelfNewsHeadlines = async (
 }> => {
   const newsHeadlines = await NewsHeadline.find({
     _id: { $in: ids },
-    author: user._id,
   }).lean();
   const foundIds = newsHeadlines.map((newsHeadline) =>
     newsHeadline._id.toString(),
@@ -193,7 +168,7 @@ export const updateSelfNewsHeadlines = async (
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   const result = await NewsHeadline.updateMany(
-    { _id: { $in: foundIds }, author: user._id },
+    { _id: { $in: foundIds } },
     { ...payload },
   );
 
@@ -231,10 +206,7 @@ export const deleteSelfNewsHeadline = async (
   user: TJwtPayload,
   id: string,
 ): Promise<void> => {
-  const newsHeadline = await NewsHeadline.findOne({
-    _id: id,
-    author: user._id,
-  });
+  const newsHeadline = await NewsHeadline.findById(id);
   if (!newsHeadline) {
     throw new AppError(httpStatus.NOT_FOUND, 'News-Headline not found');
   }
@@ -271,7 +243,6 @@ export const deleteSelfNewsHeadlines = async (
 }> => {
   const newsHeadlines = await NewsHeadline.find({
     _id: { $in: ids },
-    author: user._id,
   }).lean();
   const foundIds = newsHeadlines.map((newsHeadline) =>
     newsHeadline._id.toString(),
@@ -279,7 +250,7 @@ export const deleteSelfNewsHeadlines = async (
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await NewsHeadline.updateMany(
-    { _id: { $in: foundIds }, author: user._id },
+    { _id: { $in: foundIds } },
     { is_deleted: true },
   );
 
@@ -337,7 +308,7 @@ export const restoreSelfNewsHeadline = async (
   id: string,
 ): Promise<TNewsHeadline> => {
   const newsHeadline = await NewsHeadline.findOneAndUpdate(
-    { _id: id, is_deleted: true, author: user._id },
+    { _id: id, is_deleted: true },
     { is_deleted: false },
     { new: true },
   ).lean();
@@ -379,13 +350,12 @@ export const restoreSelfNewsHeadlines = async (
   not_found_ids: string[];
 }> => {
   const result = await NewsHeadline.updateMany(
-    { _id: { $in: ids }, is_deleted: true, author: user._id },
+    { _id: { $in: ids }, is_deleted: true },
     { is_deleted: false },
   );
 
   const restoredNewsHeadlines = await NewsHeadline.find({
     _id: { $in: ids },
-    author: user._id,
   }).lean();
   const restoredIds = restoredNewsHeadlines.map((newsHeadline) =>
     newsHeadline._id.toString(),

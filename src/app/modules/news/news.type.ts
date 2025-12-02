@@ -3,16 +3,13 @@ import { Document, Model, Types } from 'mongoose';
 export type TStatus = 'draft' | 'pending' | 'published' | 'archived';
 
 export type TNews = {
-  sequence?: number;
   title: string;
   sub_title?: string;
   slug: string;
-  caption?: string;
   description?: string;
   content: string;
-  thumbnail?: string;
-  images?: string[];
-  video?: string;
+  thumbnail?: Types.ObjectId;
+  video?: Types.ObjectId;
   youtube?: string;
   tags?: string[];
   event?: Types.ObjectId;
@@ -23,13 +20,6 @@ export type TNews = {
   collaborators?: Types.ObjectId[];
   status: TStatus;
   is_featured?: boolean;
-  is_premium: boolean;
-  seo?: {
-    image?: string;
-    title?: string;
-    description?: string;
-    keywords?: string[];
-  };
   published_at?: Date;
   expired_at?: Date;
   is_edited?: boolean;
@@ -38,8 +28,6 @@ export type TNews = {
   layout?: string;
   views?: number;
   is_deleted: boolean;
-  is_news_headline?: boolean;
-  is_news_break?: boolean;
 };
 
 export type TNewsInput = {

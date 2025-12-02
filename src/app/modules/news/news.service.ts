@@ -178,10 +178,7 @@ export const deleteNewsFile = async (path: string) => {
 
 export const createNews = async (
   user: TJwtPayload,
-  payload: TNews & {
-    is_news_headline?: boolean;
-    is_news_break?: boolean;
-  },
+  payload: TNews,
 ): Promise<TNews> => {
   const created_news = await News.create({ ...payload, author: user._id });
 
@@ -198,7 +195,7 @@ export const createNews = async (
 
 export const getFeaturedPublicNews = async (
   query: Record<string, unknown>,
-): Promise<(TNewsDocument | null)[]> => {
+): Promise<TNewsDocument[]> => {
   const { date: q_date } = query;
 
   const baseQuery: Record<string, unknown> = {
@@ -218,79 +215,12 @@ export const getFeaturedPublicNews = async (
     baseQuery.published_at = { $lte: end };
   }
 
-  const results = await News.aggregate<{
-    seq1: TNewsDocument[];
-    seq2: TNewsDocument[];
-    seq3: TNewsDocument[];
-    seq4: TNewsDocument[];
-    seq5: TNewsDocument[];
-    seq6: TNewsDocument[];
-    seq7: TNewsDocument[];
-    seq8: TNewsDocument[];
-  }>([
-    {
-      $match: {
-        ...baseQuery,
-      },
-    },
-    {
-      $facet: {
-        seq1: [
-          { $match: { sequence: 1 } },
-          { $sort: { published_at: -1 } },
-          { $limit: 1 },
-        ],
-        seq2: [
-          { $match: { sequence: 2 } },
-          { $sort: { published_at: -1 } },
-          { $limit: 1 },
-        ],
-        seq3: [
-          { $match: { sequence: 3 } },
-          { $sort: { published_at: -1 } },
-          { $limit: 1 },
-        ],
-        seq4: [
-          { $match: { sequence: 4 } },
-          { $sort: { published_at: -1 } },
-          { $limit: 1 },
-        ],
-        seq5: [
-          { $match: { sequence: 5 } },
-          { $sort: { published_at: -1 } },
-          { $limit: 1 },
-        ],
-        seq6: [
-          { $match: { sequence: 6 } },
-          { $sort: { published_at: -1 } },
-          { $limit: 1 },
-        ],
-        seq7: [
-          { $match: { sequence: 7 } },
-          { $sort: { published_at: -1 } },
-          { $limit: 1 },
-        ],
-        seq8: [
-          { $match: { sequence: 8 } },
-          { $sort: { published_at: -1 } },
-          { $limit: 1 },
-        ],
-      },
-    },
-  ]);
+  const results = await News.find(baseQuery)
+    .sort({ published_at: -1 })
+    .limit(8)
+    .lean();
 
-  // facet result সর্বদা array দেয় → [ { seq1: [...], seq2: [...], ... } ]
-  const data = results[0];
-
-  return [
-    data.seq1[0] || null,
-    data.seq2[0] || null,
-    data.seq3[0] || null,
-    data.seq4[0] || null,
-    data.seq5[0] || null,
-    data.seq6[0] || null,
-    data.seq7[0] || null,
-  ];
+  return results;
 };
 
 export const getPublicNews = async (slug: string): Promise<TNews> => {
@@ -300,6 +230,8 @@ export const getPublicNews = async (slug: string): Promise<TNews> => {
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
+      { path: 'thumbnail', select: '_id url name' },
+      { path: 'video', select: '_id url name' },
     ])
     .lean();
 
@@ -323,14 +255,8 @@ export const getSelfNews = async (
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
-      // {
-      //   path: 'news_headline',
-      //   select: '_id title published_at expired_at status',
-      // },
-      // {
-      //   path: 'news_break',
-      //   select: '_id title published_at expired_at status',
-      // },
+      { path: 'thumbnail', select: '_id url name' },
+      { path: 'video', select: '_id url name' },
     ])
     .lean();
   if (!result) {
@@ -350,14 +276,8 @@ export const getNews = async (id: string): Promise<TNews> => {
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
-      // {
-      //   path: 'news_headline',
-      //   select: '_id title published_at expired_at status',
-      // },
-      // {
-      //   path: 'news_break',
-      //   select: '_id title published_at expired_at status',
-      // },
+      { path: 'thumbnail', select: '_id url name' },
+      { path: 'video', select: '_id url name' },
     ])
     .lean();
   if (!result) {
@@ -437,6 +357,8 @@ export const getPublicBulkNews = async (
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
+      { path: 'thumbnail', select: '_id url name' },
+      { path: 'video', select: '_id url name' },
     ]),
     { status: 'published', ...rest },
   )
@@ -457,13 +379,10 @@ export const getPublicBulkNews = async (
       'writer',
       'category',
       'tags',
-      'sequence',
       'status',
       'layout',
       'published_at',
       'is_featured',
-      'is_news_headline',
-      'is_news_break',
       'views',
     ])
     .tap((q) => q.lean());
@@ -540,6 +459,8 @@ export const getSelfBulkNews = async (
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
+      { path: 'thumbnail', select: '_id url name' },
+      { path: 'video', select: '_id url name' },
     ]),
     { author: user._id, ...rest },
   )
@@ -654,6 +575,8 @@ export const getBulkNews = async (
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
+      { path: 'thumbnail', select: '_id url name' },
+      { path: 'video', select: '_id url name' },
     ]),
     rest,
   )
@@ -713,18 +636,14 @@ export const updateSelfNews = async (
       | 'slug'
       | 'description'
       | 'content'
-      | 'caption'
       | 'thumbnail'
-      | 'images'
+      | 'video'
       | 'youtube'
-      | 'caption'
-      | 'seo'
       | 'tags'
       | 'category'
       | 'author'
       | 'status'
       | 'is_featured'
-      | 'is_premium'
       | 'published_at'
       | 'expired_at'
     >
@@ -745,32 +664,6 @@ export const updateSelfNews = async (
     update.is_edited = true;
     update.edited_at = new Date();
     update.editor = user._id as any;
-  }
-
-  // === File cleanup using utility ===
-  if (payload?.thumbnail !== data.thumbnail && data.thumbnail) {
-    deleteFiles(data.thumbnail, 'news/images');
-    update.thumbnail = payload.thumbnail || '';
-  }
-
-  if (payload.seo?.image !== data.seo?.image && data.seo?.image) {
-    deleteFiles(data.seo.image, 'news/seo/images');
-
-    const seo = update.seo ?? (update.seo = {});
-    seo.image = payload.seo?.image || '';
-  }
-
-  if (data.images?.length) {
-    const oldImages = data.images || [];
-    const newImages = payload.images || [];
-
-    const imagesToDelete = oldImages.filter(
-      (oldImage) => !newImages.includes(oldImage),
-    );
-
-    if (imagesToDelete.length > 0) {
-      deleteFiles(imagesToDelete, 'news/images');
-    }
   }
 
   const flatten = Flattener.flatten(update, { safe: true });
@@ -795,18 +688,14 @@ export const updateNews = async (
       | 'slug'
       | 'description'
       | 'content'
-      | 'caption'
       | 'thumbnail'
-      | 'images'
+      | 'video'
       | 'youtube'
-      | 'caption'
-      | 'seo'
       | 'tags'
       | 'category'
       | 'author'
       | 'status'
       | 'is_featured'
-      | 'is_premium'
       | 'published_at'
       | 'expired_at'
     >
@@ -827,32 +716,6 @@ export const updateNews = async (
     update.is_edited = true;
     update.edited_at = new Date();
     update.editor = user._id as any;
-  }
-
-  // === File cleanup using utility ===
-  if (payload?.thumbnail !== data.thumbnail && data.thumbnail) {
-    deleteFiles(data.thumbnail, 'news/images');
-    update.thumbnail = payload.thumbnail || '';
-  }
-
-  if (payload.seo?.image !== data.seo?.image && data.seo?.image) {
-    deleteFiles(data.seo.image, 'news/seo/images');
-
-    const seo = update.seo ?? (update.seo = {});
-    seo.image = payload.seo?.image || '';
-  }
-
-  if (data.images?.length) {
-    const oldImages = data.images || [];
-    const newImages = payload.images || [];
-
-    const imagesToDelete = oldImages.filter(
-      (oldImage) => !newImages.includes(oldImage),
-    );
-
-    if (imagesToDelete.length > 0) {
-      deleteFiles(imagesToDelete, 'news/images');
-    }
   }
 
   const flatten = Flattener.flatten(update, { safe: true });
@@ -957,9 +820,6 @@ export const deleteNewsPermanent = async (id: string): Promise<void> => {
   }
 
   // === File cleanup using utility ===
-  deleteFiles(news?.thumbnail, 'news/images');
-  deleteFiles(news?.images, 'news/images');
-  deleteFiles(news?.seo?.image, 'news/seo/images');
 
   await News.findByIdAndDelete(id).setOptions({ bypassDeleted: true });
 };
