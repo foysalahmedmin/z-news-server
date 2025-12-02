@@ -193,36 +193,6 @@ export const createNews = async (
   return created_news.toObject();
 };
 
-export const getFeaturedPublicNews = async (
-  query: Record<string, unknown>,
-): Promise<TNewsDocument[]> => {
-  const { date: q_date } = query;
-
-  const baseQuery: Record<string, unknown> = {
-    status: 'published',
-    is_featured: true,
-    is_deleted: false,
-  };
-
-  if (q_date) {
-    const end = new Date(q_date as string);
-    end.setHours(23, 59, 59, 999);
-
-    baseQuery.published_at = { $lte: end };
-  } else {
-    const end = new Date();
-
-    baseQuery.published_at = { $lte: end };
-  }
-
-  const results = await News.find(baseQuery)
-    .sort({ published_at: -1 })
-    .limit(8)
-    .lean();
-
-  return results;
-};
-
 export const getPublicNews = async (slug: string): Promise<TNews> => {
   const result = await News.findOne({ slug: slug, status: 'published' })
     .populate([
@@ -480,13 +450,10 @@ export const getSelfBulkNews = async (
       'writer',
       'category',
       'tags',
-      'sequence',
       'status',
       'layout',
       'published_at',
       'is_featured',
-      'is_news_headline',
-      'is_news_break',
       'views',
     ])
     .tap((q) => q.lean());
@@ -596,13 +563,10 @@ export const getBulkNews = async (
       'writer',
       'category',
       'tags',
-      'sequence',
       'status',
       'layout',
       'published_at',
       'is_featured',
-      'is_news_headline',
-      'is_news_break',
       'views',
     ])
     .tap((q) => q.lean());
