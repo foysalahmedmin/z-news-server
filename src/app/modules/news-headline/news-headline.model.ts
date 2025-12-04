@@ -7,10 +7,6 @@ import {
 
 const newsHeadlineSchema = new Schema<TNewsHeadlineDocument>(
   {
-    sequence: {
-      type: Number,
-    },
-
     news: {
       type: Schema.Types.ObjectId,
       ref: 'News',

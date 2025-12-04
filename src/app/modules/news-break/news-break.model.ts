@@ -7,10 +7,6 @@ import {
 
 const newsBreakSchema = new Schema<TNewsBreakDocument>(
   {
-    sequence: {
-      type: Number,
-    },
-
     news: {
       type: Schema.Types.ObjectId,
       ref: 'News',

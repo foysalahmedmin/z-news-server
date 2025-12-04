@@ -9,11 +9,6 @@ const statusEnum = z.enum(['draft', 'pending', 'published', 'archived']);
 
 export const createNewsBreakValidationSchema = z.object({
   body: z.object({
-    sequence: z
-      .number({ invalid_type_error: 'Sequence must be a number' })
-      .int('Sequence must be an integer')
-      .nonnegative('Sequence must be 0 or greater')
-      .optional(),
     news: idSchema,
     status: statusEnum.optional(),
     published_at: z.coerce.date().optional(),
@@ -26,11 +21,6 @@ export const updateSelfNewsBreakValidationSchema = z.object({
     id: idSchema,
   }),
   body: z.object({
-    sequence: z
-      .number({ invalid_type_error: 'Sequence must be a number' })
-      .int('Sequence must be an integer')
-      .nonnegative('Sequence must be 0 or greater')
-      .optional(),
     news: idSchema.optional(),
     status: statusEnum.optional(),
     published_at: z.coerce.date().optional(),
@@ -55,11 +45,6 @@ export const updateNewsBreakValidationSchema = z.object({
     id: idSchema,
   }),
   body: z.object({
-    sequence: z
-      .number({ invalid_type_error: 'Sequence must be a number' })
-      .int('Sequence must be an integer')
-      .nonnegative('Sequence must be 0 or greater')
-      .optional(),
     news: idSchema.optional(),
     status: statusEnum.optional(),
     published_at: z.coerce.date().optional(),

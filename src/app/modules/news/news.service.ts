@@ -199,8 +199,8 @@ export const getPublicNews = async (slug: string): Promise<TNews> => {
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
-      { path: 'thumbnail', select: '_id url name' },
-      { path: 'video', select: '_id url name' },
+      { path: 'thumbnail', select: '_id url name path file_name type caption' },
+      { path: 'video', select: '_id url name path file_name type caption' },
     ])
     .lean();
 
@@ -224,8 +224,10 @@ export const getSelfNews = async (
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
-      { path: 'thumbnail', select: '_id url name' },
-      { path: 'video', select: '_id url name' },
+      { path: 'thumbnail', select: '_id url name path file_name type caption' },
+      { path: 'video', select: '_id url name path file_name type caption' },
+      { path: 'news_headline', select: '_id status published_at expired_at' },
+      { path: 'news_break', select: '_id status published_at expired_at' },
     ])
     .lean();
   if (!result) {
@@ -245,8 +247,10 @@ export const getNews = async (id: string): Promise<TNews> => {
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
-      { path: 'thumbnail', select: '_id url name' },
-      { path: 'video', select: '_id url name' },
+      { path: 'thumbnail', select: '_id url name path file_name type caption' },
+      { path: 'video', select: '_id url name path file_name type caption' },
+      { path: 'news_headline', select: '_id status published_at expired_at' },
+      { path: 'news_break', select: '_id status published_at expired_at' },
     ])
     .lean();
   if (!result) {
@@ -326,8 +330,8 @@ export const getPublicBulkNews = async (
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
-      { path: 'thumbnail', select: '_id url name' },
-      { path: 'video', select: '_id url name' },
+      { path: 'thumbnail', select: '_id url name path file_name type caption' },
+      { path: 'video', select: '_id url name path file_name type caption' },
     ]),
     { status: 'published', ...rest },
   )
@@ -428,8 +432,8 @@ export const getSelfBulkNews = async (
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
-      { path: 'thumbnail', select: '_id url name' },
-      { path: 'video', select: '_id url name' },
+      { path: 'thumbnail', select: '_id url name path file_name type caption' },
+      { path: 'video', select: '_id url name path file_name type caption' },
     ]),
     { author: user._id, ...rest },
   )
@@ -541,8 +545,8 @@ export const getBulkNews = async (
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
-      { path: 'thumbnail', select: '_id url name' },
-      { path: 'video', select: '_id url name' },
+      { path: 'thumbnail', select: '_id url name path file_name type caption' },
+      { path: 'video', select: '_id url name path file_name type caption' },
     ]),
     rest,
   )
@@ -640,8 +644,8 @@ export const updateSelfNews = async (
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
-      { path: 'thumbnail', select: '_id url name' },
-      { path: 'video', select: '_id url name' },
+      { path: 'thumbnail', select: '_id url name path file_name type caption' },
+      { path: 'video', select: '_id url name path file_name type caption' },
     ])
     .lean();
 
@@ -701,14 +705,16 @@ export const updateNews = async (
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
-      { path: 'thumbnail', select: '_id url name' },
-      { path: 'video', select: '_id url name' },
+      { path: 'thumbnail', select: '_id url name path file_name type caption' },
+      { path: 'video', select: '_id url name path file_name type caption' },
     ])
     .lean();
 
   if (
     result &&
-    user._id !== result.author.toString() &&
+    result.author &&
+    result.author._id &&
+    user._id.toString() !== result.author._id.toString() &&
     data.status !== result.status &&
     result.status !== 'pending' &&
     result.status !== 'draft'

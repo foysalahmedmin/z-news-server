@@ -3,7 +3,6 @@ import { Document, Model, Types } from 'mongoose';
 export type TStatus = 'draft' | 'pending' | 'published' | 'archived';
 
 export type TNewsBreak = {
-  sequence: number;
   news: Types.ObjectId;
   status: TStatus;
   published_at?: Date;
