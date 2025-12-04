@@ -64,14 +64,26 @@ export const sendNewsNotification = async (payload: {
 
       await NotificationRecipient.insertMany(recipients);
 
-      const result = await NotificationRecipient.findOne({
+      // Emit to each admin individually
+      const populatedRecipients = await NotificationRecipient.find({
         notification: notification._id,
       })
-        .populate('notification')
-        .populate('recipient', 'name email role');
+        .populate([
+          { path: 'notification', select: '_id title message type sender priority channels created_at' },
+          { path: 'recipient', select: '_id name email image role' },
+        ])
+        .lean();
 
-      // Send to admin role room
-      emitToRole('admin', 'notification-recipient-created', result);
+      // Send to each admin individually for better targeting
+      for (const recipient of populatedRecipients) {
+        if (recipient.recipient && typeof recipient.recipient === 'object' && '_id' in recipient.recipient) {
+          emitToUser(
+            recipient.recipient._id.toString(),
+            'notification-recipient-created',
+            recipient,
+          );
+        }
+      }
     }
     if (type === 'news-request-response' && news && sender) {
       const notificationPayload: TNotification = {
@@ -102,20 +114,29 @@ export const sendNewsNotification = async (payload: {
         },
       };
 
-      await NotificationRecipient.create(recipient);
+      const createdRecipient = await NotificationRecipient.create(recipient);
 
       const result = await NotificationRecipient.findOne({
-        notification: notification._id,
+        _id: createdRecipient._id,
       })
-        .populate('notification')
-        .populate('recipient', 'name email role');
+        .populate([
+          { path: 'notification', select: '_id title message type sender priority channels created_at' },
+          { path: 'recipient', select: '_id name email image role' },
+        ])
+        .lean();
 
-      // Send to admin role room
-      emitToUser(
-        news.author.toString(),
-        'notification-recipient-created',
-        result,
-      );
+      // Send to the news author
+      if (result && news.author) {
+        const authorId = typeof news.author === 'object' && '_id' in news.author
+          ? news.author._id.toString()
+          : news.author.toString();
+        
+        emitToUser(
+          authorId,
+          'notification-recipient-created',
+          result,
+        );
+      }
     }
   } catch (error) {
     console.error('❌ Failed to send news request notification:', error);
