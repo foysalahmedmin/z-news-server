@@ -7,10 +7,10 @@ dotenv.config({ path: path.join(process.cwd(), '.env') });
 
 export default {
   node_dev: process.env.NODE_ENV as string,
-  port: (process.env.PORT as string) || 3000,
+  port: (process.env.PORT as string) || 5000,
   url:
     (process.env.URL as string) ||
-    `http://localhost:${process.env.PORT || 3000}`,
+    `http://localhost:${process.env.PORT || 5000}`,
   cluster_enabled: process.env.CLUSTER_ENABLED === 'true' ? true : false,
   redis_enabled: !!(
     process.env.REDIS_ENABLED === 'true' && !!process.env.REDIS_URL

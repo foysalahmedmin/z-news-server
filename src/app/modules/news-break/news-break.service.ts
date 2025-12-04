@@ -52,7 +52,9 @@ export const getPublicNewsBreaks = async (
   };
 
   const NewsQuery = new AppQuery<TNewsBreak>(
-    NewsBreak.find({ status: 'published', ...filter }),
+    NewsBreak.find({ status: 'published', ...filter }).populate([
+      { path: 'news', select: '_id title slug' },
+    ]),
     rest,
   )
     .filter()

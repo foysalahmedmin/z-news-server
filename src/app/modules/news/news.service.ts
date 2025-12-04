@@ -4,12 +4,11 @@ import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQuery from '../../builder/AppQuery';
-import { deleteFiles } from '../../utils/deleteFiles';
 import { TJwtPayload } from '../auth/auth.type';
 import { Category } from '../category/category.model';
 import { sendNewsNotification } from '../notification/notification.service';
 import { News } from './news.model';
-import { TNews, TNewsDocument } from './news.type';
+import { TNews } from './news.type';
 
 const getCategoryIds = async ({
   category,
@@ -635,7 +634,16 @@ export const updateSelfNews = async (
   const result = await News.findByIdAndUpdate(id, flatten, {
     new: true,
     runValidators: true,
-  }).lean();
+  })
+    .populate([
+      { path: 'author', select: '_id name email image' },
+      { path: 'category', select: '_id name slug' },
+      { path: 'categories', select: '_id name slug' },
+      { path: 'event', select: '_id name slug' },
+      { path: 'thumbnail', select: '_id url name' },
+      { path: 'video', select: '_id url name' },
+    ])
+    .lean();
 
   return result!;
 };
@@ -687,7 +695,16 @@ export const updateNews = async (
   const result = await News.findByIdAndUpdate(id, flatten, {
     new: true,
     runValidators: true,
-  }).lean();
+  })
+    .populate([
+      { path: 'author', select: '_id name email image' },
+      { path: 'category', select: '_id name slug' },
+      { path: 'categories', select: '_id name slug' },
+      { path: 'event', select: '_id name slug' },
+      { path: 'thumbnail', select: '_id url name' },
+      { path: 'video', select: '_id url name' },
+    ])
+    .lean();
 
   if (
     result &&
@@ -933,3 +950,4 @@ export const restoreBulkNews = async (
     not_found_ids: notFoundIds,
   };
 };
+

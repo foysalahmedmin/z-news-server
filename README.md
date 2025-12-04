@@ -363,7 +363,7 @@ Create a `.env` file in the root directory:
 ```env
 # Server Configuration
 NODE_ENV=development
-PORT=3000
+PORT=5000
 CLUSTER_ENABLED=false
 
 # Database
@@ -394,9 +394,9 @@ AUTH_USER_EMAIL=your_email@gmail.com
 AUTH_USER_EMAIL_PASSWORD=your_app_password
 
 # Frontend URLs
-FRONT_END_URL=http://localhost:3000
-RESET_PASSWORD_UI_LINK=http://localhost:3000/reset-password
-EMAIL_VERIFICATION_UI_LINK=http://localhost:3000/verify-email
+FRONT_END_URL=http://localhost:5000
+RESET_PASSWORD_UI_LINK=http://localhost:5000/reset-password
+EMAIL_VERIFICATION_UI_LINK=http://localhost:5000/verify-email
 
 # Security
 BCRYPT_SALT_ROUNDS=12

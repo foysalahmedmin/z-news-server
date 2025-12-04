@@ -35,6 +35,8 @@ app.use(
       'http://www.z-news.com',
       'http://test.z-news.com',
       'http://www.test.z-news.com',
+      'http://localhost:3000',
+      'http://localhost:3001',
       'http://localhost:5000',
       'http://localhost:5001',
       'http://localhost:8080',
