@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
 import AppQueryFind from '../../builder/app-query-find';
-import { TJwtPayload } from '../auth/auth.type';
+import { TJwtPayload } from '../../types/jsonwebtoken.type';
 import { TGuest } from '../guest/guest.type';
 import { View } from './view.model';
 import { TView } from './view.type';

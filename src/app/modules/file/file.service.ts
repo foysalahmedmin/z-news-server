@@ -1,8 +1,8 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
 import AppQueryFind from '../../builder/app-query-find';
+import { TJwtPayload } from '../../types/jsonwebtoken.type';
 import { deleteFiles as deleteFilesFromDisk } from '../../utils/delete-files';
-import { TJwtPayload } from '../auth/auth.type';
 import { File } from './file.model';
 import { TFile, TFileInput } from './file.type';
 import { getExtensionFromFilename, getFileTypeFromMime } from './file.utils';
@@ -61,9 +61,7 @@ export const getFiles = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const fileQuery = new AppQueryFind(File, query)
-    .populate([
-      { path: 'author', select: '_id name email image' },
-    ])
+    .populate([{ path: 'author', select: '_id name email image' }])
     .search(['name', 'file_name', 'description'])
     .filter()
     .sort()
@@ -125,9 +123,7 @@ export const getSelfFiles = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const fileQuery = new AppQueryFind(File, { author: user._id, ...query })
-    .populate([
-      { path: 'author', select: '_id name email image' },
-    ])
+    .populate([{ path: 'author', select: '_id name email image' }])
     .search(['name', 'file_name', 'description'])
     .filter()
     .sort()
@@ -142,7 +138,9 @@ export const getSelfFiles = async (
 
 export const updateFile = async (
   id: string,
-  payload: Partial<Pick<TFile, 'name' | 'description' | 'category' | 'caption' | 'status'>>,
+  payload: Partial<
+    Pick<TFile, 'name' | 'description' | 'category' | 'caption' | 'status'>
+  >,
 ): Promise<TFile> => {
   const data = await File.findById(id).lean();
 
@@ -272,10 +270,7 @@ export const restoreFile = async (id: string): Promise<TFile> => {
     .lean();
 
   if (!file) {
-    throw new AppError(
-      httpStatus.NOT_FOUND,
-      'File not found or not deleted',
-    );
+    throw new AppError(httpStatus.NOT_FOUND, 'File not found or not deleted');
   }
 
   return file;
@@ -301,4 +296,3 @@ export const restoreFiles = async (
     not_found_ids: notFoundIds,
   };
 };
-

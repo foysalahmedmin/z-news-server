@@ -2,7 +2,7 @@ import { RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 import mongoose, { Schema, Types } from 'mongoose';
 import config from '../config';
-import { TJwtPayload } from '../modules/auth/auth.type';
+import { TJwtPayload } from '../types/jsonwebtoken.type';
 
 // Log type
 type TLog = {

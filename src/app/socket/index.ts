@@ -3,8 +3,8 @@ import http from 'http';
 import jwt from 'jsonwebtoken';
 import { Server as IOServer, Socket } from 'socket.io';
 import config from '../config';
-import { TJwtPayload } from '../modules/auth/auth.type';
 import { pubClient, subClient } from '../redis';
+import { TJwtPayload } from '../types/jsonwebtoken.type';
 
 export let io: IOServer;
 

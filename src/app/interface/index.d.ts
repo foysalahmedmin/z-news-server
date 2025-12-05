@@ -1,7 +1,7 @@
 import { Session, SessionData } from 'express-session';
 import { JwtPayload } from 'jsonwebtoken';
-import { TJwtPayload } from '../modules/auth/auth.type';
 import { TGuest } from '../modules/guest/guest.type';
+import { TJwtPayload } from '../types/jsonwebtoken.type';
 
 declare global {
   namespace Express {

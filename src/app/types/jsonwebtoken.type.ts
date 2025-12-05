@@ -1,4 +1,11 @@
-export type TRole = 'super-admin' | 'admin' | 'user';
+export type TRole =
+  | 'super-admin'
+  | 'admin'
+  | 'editor'
+  | 'author'
+  | 'contributor'
+  | 'subscriber'
+  | 'user';
 
 export type TJwtPayload = {
   _id: string;

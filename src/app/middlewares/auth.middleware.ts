@@ -4,10 +4,9 @@ import httpStatus from 'http-status';
 import jwt, { JwtPayload, TokenExpiredError } from 'jsonwebtoken';
 import AppError from '../builder/app-error';
 import config from '../config';
-import { TJwtPayload } from '../modules/auth/auth.type';
 import { User } from '../modules/user/user.model';
-import { TRole } from '../modules/user/user.type';
 import { cacheClient } from '../redis';
+import { TJwtPayload, TRole } from '../types/jsonwebtoken.type';
 import catchAsync from '../utils/catch-async';
 
 const getUser = async (_id: string) => {

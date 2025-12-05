@@ -1,8 +1,8 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
 import AppQueryFind from '../../builder/app-query-find';
+import { TJwtPayload } from '../../types/jsonwebtoken.type';
 import { deleteFiles } from '../../utils/delete-files';
-import { TJwtPayload } from '../auth/auth.type';
 import { User } from './user.model';
 import { TUser } from './user.type';
 
@@ -28,7 +28,10 @@ export const getWritersUsers = async (
   data: TUser[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const userQuery = new AppQueryFind(User, { role: { $in: ['admin', 'author'] }, ...query })
+  const userQuery = new AppQueryFind(User, {
+    role: { $in: ['admin', 'author'] },
+    ...query,
+  })
     .search(['name', 'email'])
     .filter()
     .sort()

@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
 import AppQueryFind from '../../builder/app-query-find';
-import { TJwtPayload } from '../auth/auth.type';
+import { TJwtPayload } from '../../types/jsonwebtoken.type';
 import { TGuest } from '../guest/guest.type';
 import { Comment } from './comment.model';
 import { TComment } from './comment.type';
@@ -70,7 +70,10 @@ export const getPublicComments = async (
   data: TComment[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const commentQuery = new AppQueryFind(Comment, { status: 'approved', ...query })
+  const commentQuery = new AppQueryFind(Comment, {
+    status: 'approved',
+    ...query,
+  })
     .populate([
       { path: 'user', select: '_id name email image' },
       { path: 'news', select: '_id slug title thumbnail' },

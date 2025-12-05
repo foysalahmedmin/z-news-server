@@ -1,5 +1,3 @@
-import { TRole } from '../user/user.type';
-
 export type TSignin = {
   email: string;
   password: string;
@@ -23,12 +21,4 @@ export type TForgetPassword = {
 
 export type TResetPassword = {
   password: string;
-};
-
-export type TJwtPayload = {
-  _id: string;
-  image?: string;
-  name: string;
-  email: string;
-  role: TRole;
 };

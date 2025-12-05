@@ -1,13 +1,5 @@
 import { Document, Model, Types } from 'mongoose';
-
-export type TRole =
-  | 'super-admin'
-  | 'admin'
-  | 'editor'
-  | 'author'
-  | 'contributor'
-  | 'subscriber'
-  | 'user';
+import { TRole } from '../../types/jsonwebtoken.type';
 
 export type TStatus = 'in-progress' | 'blocked';
 

@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
 import AppQueryFind from '../../builder/app-query-find';
-import { TJwtPayload } from '../auth/auth.type';
+import { TJwtPayload } from '../../types/jsonwebtoken.type';
 import { NewsBreak } from './news-break.model';
 import { TNewsBreak } from './news-break.type';
 
@@ -51,10 +51,12 @@ export const getPublicNewsBreaks = async (
     $or: [{ expired_at: { $exists: false } }, { expired_at: { $gte: date } }],
   };
 
-  const NewsQuery = new AppQueryFind(NewsBreak, { status: 'published', ...filter, ...rest })
-    .populate([
-      { path: 'news', select: '_id title slug' },
-    ])
+  const NewsQuery = new AppQueryFind(NewsBreak, {
+    status: 'published',
+    ...filter,
+    ...rest,
+  })
+    .populate([{ path: 'news', select: '_id title slug' }])
     .filter()
     .sort()
     .paginate()
@@ -229,10 +231,7 @@ export const deleteSelfNewsBreaks = async (
   const foundIds = newsBreaks.map((newsBreak) => newsBreak._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await NewsBreak.updateMany(
-    { _id: { $in: foundIds } },
-    { is_deleted: true },
-  );
+  await NewsBreak.updateMany({ _id: { $in: foundIds } }, { is_deleted: true });
 
   return {
     count: foundIds.length,

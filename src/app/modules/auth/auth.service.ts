@@ -3,12 +3,12 @@ import httpStatus from 'http-status';
 import { JwtPayload } from 'jsonwebtoken';
 import AppError from '../../builder/app-error';
 import config from '../../config';
+import { TJwtPayload } from '../../types/jsonwebtoken.type';
 import { sendEmail } from '../../utils/send-email';
 import { User } from '../user/user.model';
 import {
   TChangePassword,
   TForgetPassword,
-  TJwtPayload,
   TResetPassword,
   TSignin,
   TSignup,
@@ -127,11 +127,16 @@ export const refreshToken = async (token: string) => {
     throw new AppError(httpStatus.FORBIDDEN, 'User is blocked!');
   }
 
-  if (user?.password_changed_at && user.isPasswordChanged(iat)) {
-    throw new AppError(
-      httpStatus.UNAUTHORIZED,
-      'You do not have the necessary permissions to access this resource.',
-    );
+  if (user?.password_changed_at) {
+    const passwordChangedAt = new Date(user.password_changed_at).getTime();
+    const tokenIssuedAt = iat * 1000; // convert seconds → ms
+
+    if (passwordChangedAt > tokenIssuedAt) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        'Password recently changed. Please login again.',
+      );
+    }
   }
 
   const jwtPayload: TJwtPayload = {

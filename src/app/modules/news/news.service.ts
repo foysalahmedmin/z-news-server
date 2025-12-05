@@ -4,7 +4,7 @@ import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import AppError from '../../builder/app-error';
 import AppQueryFind from '../../builder/app-query-find';
-import { TJwtPayload } from '../auth/auth.type';
+import { TJwtPayload } from '../../types/jsonwebtoken.type';
 import { Category } from '../category/category.model';
 import { sendNewsNotification } from '../notification/notification.service';
 import { News } from './news.model';
@@ -950,4 +950,3 @@ export const restoreBulkNews = async (
     not_found_ids: notFoundIds,
   };
 };
-
