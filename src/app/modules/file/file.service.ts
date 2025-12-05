@@ -1,7 +1,8 @@
 import httpStatus from 'http-status';
+import { Model } from 'mongoose';
 import AppError from '../../builder/AppError';
-import AppQuery from '../../builder/AppQuery';
-import { deleteFiles } from '../../utils/deleteFiles';
+import AppQueryFind from '../../builder/AppQueryFind';
+import { deleteFiles as deleteFilesFromDisk } from '../../utils/deleteFiles';
 import { TJwtPayload } from '../auth/auth.type';
 import { File } from './file.model';
 import { TFile, TFileInput } from './file.type';
@@ -60,12 +61,10 @@ export const getFiles = async (
   data: TFile[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const fileQuery = new AppQuery<TFile>(
-    File.find().populate([
+  const fileQuery = new AppQueryFind<TFile>(File as Model<TFile & import('mongoose').Document>, query)
+    .populate([
       { path: 'author', select: '_id name email image' },
-    ]),
-    query,
-  )
+    ])
     .search(['name', 'file_name', 'description'])
     .filter()
     .sort()
@@ -126,12 +125,10 @@ export const getSelfFiles = async (
   data: TFile[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const fileQuery = new AppQuery<TFile>(
-    File.find().populate([
+  const fileQuery = new AppQueryFind(File, { author: user._id, ...query })
+    .populate([
       { path: 'author', select: '_id name email image' },
-    ]),
-    { author: user._id, ...query },
-  )
+    ])
     .search(['name', 'file_name', 'description'])
     .filter()
     .sort()
@@ -224,7 +221,7 @@ export const deleteFilePermanent = async (id: string): Promise<void> => {
 
   // Delete physical file
   if (file.path) {
-    await deleteFiles(file.path);
+    await deleteFilesFromDisk(file.path);
   }
 
   await File.findByIdAndDelete(id).setOptions({ bypassDeleted: true });
@@ -252,7 +249,7 @@ export const deleteFilesPermanent = async (
     .filter((path): path is string => Boolean(path));
 
   if (filePaths.length > 0) {
-    await deleteFiles(filePaths);
+    await deleteFilesFromDisk(filePaths);
   }
 
   await File.deleteMany({

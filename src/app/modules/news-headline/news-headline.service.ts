@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/AppError';
-import AppQuery from '../../builder/AppQuery';
+import AppQueryFind from '../../builder/AppQueryFind';
 import { TJwtPayload } from '../auth/auth.type';
 import { NewsHeadline } from './news-headline.model';
 import { TNewsHeadline } from './news-headline.type';
@@ -51,12 +51,10 @@ export const getPublicNewsHeadlines = async (
     $or: [{ expired_at: { $exists: false } }, { expired_at: { $gte: date } }],
   };
 
-  const NewsQuery = new AppQuery<TNewsHeadline>(
-    NewsHeadline.find().populate([
+  const NewsQuery = new AppQueryFind(NewsHeadline, { status: 'published', ...filter, ...rest })
+    .populate([
       { path: 'news', select: '_id title slug' },
-    ]),
-    { status: 'published', ...filter, ...rest },
-  )
+    ])
     .filter()
     .sort()
     .paginate()
@@ -74,12 +72,10 @@ export const getSelfNewsHeadlines = async (
   data: TNewsHeadline[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const NewsQuery = new AppQuery<TNewsHeadline>(
-    NewsHeadline.find().populate([
+  const NewsQuery = new AppQueryFind(NewsHeadline, query)
+    .populate([
       { path: 'news', select: '_id title slug' },
-    ]),
-    query,
-  )
+    ])
     .filter()
     .sort()
     .paginate()
@@ -96,12 +92,10 @@ export const getNewsHeadlines = async (
   data: TNewsHeadline[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const NewsQuery = new AppQuery<TNewsHeadline>(
-    NewsHeadline.find().populate([
+  const NewsQuery = new AppQueryFind(NewsHeadline, query)
+    .populate([
       { path: 'news', select: '_id title slug' },
-    ]),
-    query,
-  )
+    ])
     .filter()
     .sort()
     .paginate()

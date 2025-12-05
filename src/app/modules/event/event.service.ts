@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/AppError';
-import AppQuery from '../../builder/AppQuery';
+import AppQueryFind from '../../builder/AppQueryFind';
 import { Event } from './event.model';
 import { TEvent } from './event.type';
 
@@ -46,12 +46,10 @@ export const getPublicEvents = async (
     $or: [{ expired_at: { $exists: false } }, { expired_at: { $gte: date } }],
   };
 
-  const eventQuery = new AppQuery<TEvent>(
-    Event.find().populate([
+  const eventQuery = new AppQueryFind(Event, { ...filter, ...rest })
+    .populate([
       { path: 'category', select: '_id name slug' },
-    ]),
-    { ...filter, ...rest },
-  )
+    ])
     .search(['name'])
     .filter()
     .sort()
@@ -70,10 +68,8 @@ export const getEvents = async (
   data: TEvent[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const eventQuery = new AppQuery<TEvent>(
-    Event.find().populate([{ path: 'category', select: '_id name slug' }]),
-    query,
-  )
+  const eventQuery = new AppQueryFind(Event, query)
+    .populate([{ path: 'category', select: '_id name slug' }])
     .search(['name'])
     .filter()
     .sort()

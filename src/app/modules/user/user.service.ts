@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/AppError';
-import AppQuery from '../../builder/AppQuery';
+import AppQueryFind from '../../builder/AppQueryFind';
 import { deleteFiles } from '../../utils/deleteFiles';
 import { TJwtPayload } from '../auth/auth.type';
 import { User } from './user.model';
@@ -28,10 +28,7 @@ export const getWritersUsers = async (
   data: TUser[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const userQuery = new AppQuery<TUser>(
-    User.find({ role: { $in: ['admin', 'author'] } }),
-    query,
-  )
+  const userQuery = new AppQueryFind(User, { role: { $in: ['admin', 'author'] }, ...query })
     .search(['name', 'email'])
     .filter()
     .sort()
@@ -50,7 +47,7 @@ export const getUsers = async (
   data: TUser[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const userQuery = new AppQuery<TUser>(User.find(), query)
+  const userQuery = new AppQueryFind(User, query)
     .search(['name', 'email', 'image'])
     .filter()
     .sort()

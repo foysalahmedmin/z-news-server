@@ -3,7 +3,7 @@ import httpStatus from 'http-status';
 import { ObjectId } from 'mongodb';
 import { Types } from 'mongoose';
 import AppError from '../../builder/AppError';
-import AppQuery from '../../builder/AppQuery';
+import AppQueryFind from '../../builder/AppQueryFind';
 import { slugify } from '../../utils/slugify';
 import { Category } from './category.model';
 import {
@@ -98,10 +98,8 @@ export const getPublicCategories = async (
     filter.category = { $not: { $type: 'objectId' } };
   }
 
-  const categoryQuery = new AppQuery<TCategory>(
-    Category.find().populate([{ path: 'children' }]),
-    { ...filter, ...rest },
-  )
+  const categoryQuery = new AppQueryFind(Category, { ...filter, ...rest })
+    .populate([{ path: 'children' }])
     .search(['name'])
     .filter()
     .sort()
@@ -128,10 +126,8 @@ export const getCategories = async (
     rest.category = { $not: { $type: 'objectId' } };
   }
 
-  const categoryQuery = new AppQuery<TCategory>(
-    Category.find().populate([{ path: 'children' }]),
-    rest,
-  )
+  const categoryQuery = new AppQueryFind(Category, rest)
+    .populate([{ path: 'children' }])
     .search(['name'])
     .filter()
     .sort()

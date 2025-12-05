@@ -3,7 +3,7 @@ import fs from 'fs';
 import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import AppError from '../../builder/AppError';
-import AppQuery from '../../builder/AppQuery';
+import AppQueryFind from '../../builder/AppQueryFind';
 import { TJwtPayload } from '../auth/auth.type';
 import { Category } from '../category/category.model';
 import { sendNewsNotification } from '../notification/notification.service';
@@ -324,17 +324,15 @@ export const getPublicBulkNews = async (
     rest._id = { $ne: news_ne };
   }
 
-  const NewsQuery = new AppQuery<TNews>(
-    News.find().populate([
+  const NewsQuery = new AppQueryFind(News, { status: 'published', ...rest })
+    .populate([
       { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
       { path: 'thumbnail', select: '_id url name path file_name type caption' },
       { path: 'video', select: '_id url name path file_name type caption' },
-    ]),
-    { status: 'published', ...rest },
-  )
+    ])
     .search(['title', 'description'])
     .filter()
     .sort()
@@ -426,17 +424,15 @@ export const getSelfBulkNews = async (
   //   rest.published_at = { $lte: end };
   // }
 
-  const NewsQuery = new AppQuery<TNews>(
-    News.find().populate([
+  const NewsQuery = new AppQueryFind(News, { author: user._id, ...rest })
+    .populate([
       { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
       { path: 'thumbnail', select: '_id url name path file_name type caption' },
       { path: 'video', select: '_id url name path file_name type caption' },
-    ]),
-    { author: user._id, ...rest },
-  )
+    ])
     .search(['title', 'description'])
     .filter()
     .sort()
@@ -539,17 +535,15 @@ export const getBulkNews = async (
   //   rest.published_at = { $lte: end };
   // }
 
-  const NewsQuery = new AppQuery<TNews>(
-    News.find().populate([
+  const NewsQuery = new AppQueryFind(News, rest)
+    .populate([
       { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
       { path: 'thumbnail', select: '_id url name path file_name type caption' },
       { path: 'video', select: '_id url name path file_name type caption' },
-    ]),
-    rest,
-  )
+    ])
     .search(['title', 'description'])
     .filter()
     .sort()

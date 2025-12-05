@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/AppError';
-import AppQuery from '../../builder/AppQuery';
+import AppQueryFind from '../../builder/AppQueryFind';
 import { TJwtPayload } from '../auth/auth.type';
 import { TGuest } from '../guest/guest.type';
 import { View } from './view.model';
@@ -66,12 +66,10 @@ export const getSelfViews = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const viewQuery = new AppQuery<TView>(
-    View.find({
-      ...(user?._id ? { user: user._id } : { guest: guest.token }),
-    }),
-    query,
-  )
+  const viewQuery = new AppQueryFind(View, {
+    ...(user?._id ? { user: user._id } : { guest: guest.token }),
+    ...query,
+  })
     .filter()
     .sort()
     .paginate()
@@ -88,7 +86,7 @@ export const getViews = async (
   data: TView[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const viewQuery = new AppQuery<TView>(View.find(), query)
+  const viewQuery = new AppQueryFind(View, query)
     .filter()
     .sort()
     .paginate()

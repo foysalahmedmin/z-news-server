@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/AppError';
-import AppQuery from '../../builder/AppQuery';
+import AppQueryFind from '../../builder/AppQueryFind';
 import { TJwtPayload } from '../auth/auth.type';
 import { TGuest } from '../guest/guest.type';
 import { Comment } from './comment.model';
@@ -70,13 +70,11 @@ export const getPublicComments = async (
   data: TComment[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const commentQuery = new AppQuery<TComment>(
-    Comment.find().populate([
+  const commentQuery = new AppQueryFind(Comment, { status: 'approved', ...query })
+    .populate([
       { path: 'user', select: '_id name email image' },
       { path: 'news', select: '_id slug title thumbnail' },
-    ]),
-    { status: 'approved', ...query },
-  )
+    ])
     .search(['name', 'email', 'content'])
     .filter()
     .sort()
@@ -104,13 +102,11 @@ export const getSelfComments = async (
     ...(user?._id ? { user: user._id } : { guest: guest.token }),
   };
 
-  const commentQuery = new AppQuery<TComment>(
-    Comment.find().populate([
+  const commentQuery = new AppQueryFind(Comment, { ...filter, ...query })
+    .populate([
       { path: 'user', select: '_id name email image' },
       { path: 'news', select: '_id slug title thumbnail' },
-    ]),
-    { ...filter, ...query },
-  )
+    ])
     .search(['name', 'email', 'content'])
     .filter()
     .sort()
@@ -128,13 +124,11 @@ export const getComments = async (
   data: TComment[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const commentQuery = new AppQuery<TComment>(
-    Comment.find().populate([
+  const commentQuery = new AppQueryFind(Comment, query)
+    .populate([
       { path: 'user', select: '_id name email image' },
       { path: 'news', select: '_id slug title thumbnail' },
-    ]),
-    query,
-  )
+    ])
     .search(['name', 'email', 'content'])
     .filter()
     .sort()

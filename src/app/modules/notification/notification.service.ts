@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/AppError';
-import AppQuery from '../../builder/AppQuery';
+import AppQueryFind from '../../builder/AppQueryFind';
 import { emitToRole, emitToUser } from '../../socket';
 import { News } from '../news/news.model';
 import { NotificationRecipient } from '../notification-recipient/notification-recipient.model';
@@ -157,10 +157,7 @@ export const getNotifications = async (
   data: TNotification[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const notificationQuery = new AppQuery<TNotification>(
-    Notification.find(),
-    query,
-  )
+  const notificationQuery = new AppQueryFind(Notification, query)
     .search(['title', 'message', 'type', 'priority'])
     .filter()
     .sort()

@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/AppError';
-import AppQuery from '../../builder/AppQuery';
+import AppQueryFind from '../../builder/AppQueryFind';
 import { TJwtPayload } from '../auth/auth.type';
 import { TGuest } from '../guest/guest.type';
 import { Reaction } from './reaction.model';
@@ -105,15 +105,14 @@ export const getSelfReactions = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const reactionQuery = new AppQuery<TReaction>(
-    Reaction.find({
-      ...(user?._id ? { user: user._id } : { guest: guest.token }),
-    }).populate([
+  const reactionQuery = new AppQueryFind(Reaction, {
+    ...(user?._id ? { user: user._id } : { guest: guest.token }),
+    ...query,
+  })
+    .populate([
       { path: 'user', select: '_id name email image' },
       { path: 'news', select: '_id slug title thumbnail' },
-    ]),
-    query,
-  )
+    ])
     .filter()
     .sort()
     .paginate()
@@ -130,13 +129,11 @@ export const getReactions = async (
   data: TReaction[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const reactionQuery = new AppQuery<TReaction>(
-    Reaction.find().populate([
+  const reactionQuery = new AppQueryFind(Reaction, query)
+    .populate([
       { path: 'user', select: '_id name email image' },
       { path: 'news', select: '_id slug title thumbnail' },
-    ]),
-    query,
-  )
+    ])
     .filter()
     .sort()
     .paginate()

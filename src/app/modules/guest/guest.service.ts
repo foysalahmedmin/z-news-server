@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/AppError';
-import AppQuery from '../../builder/AppQuery';
+import AppQueryFind from '../../builder/AppQueryFind';
 import { Guest } from './guest.model';
 import { TGuest } from './guest.type';
 
@@ -26,7 +26,7 @@ export const getGuests = async (
   data: TGuest[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const guestQuery = new AppQuery<TGuest>(Guest.find().lean(), query)
+  const guestQuery = new AppQueryFind(Guest, query)
     .search(['name', 'email'])
     .filter()
     .sort()

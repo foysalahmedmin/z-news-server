@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/AppError';
-import AppQuery from '../../builder/AppQuery';
+import AppQueryFind from '../../builder/AppQueryFind';
 import { TJwtPayload } from '../auth/auth.type';
 import { NotificationRecipient } from './notification-recipient.model';
 import { TNotificationRecipient } from './notification-recipient.type';
@@ -56,17 +56,15 @@ export const getSelfNotificationRecipients = async (
   data: TNotificationRecipient[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const notificationQuery = new AppQuery<TNotificationRecipient>(
-    NotificationRecipient.find().populate([
+  const notificationQuery = new AppQueryFind(NotificationRecipient, { recipient: user._id, ...query })
+    .populate([
       { path: 'recipient', select: '_id name email image' },
       { 
         path: 'notification', 
         select: '_id title message type sender priority channels created_at',
         populate: { path: 'sender', select: '_id name email image' },
       },
-    ]),
-    { recipient: user._id, ...query },
-  )
+    ])
     .filter()
     .sort()
     .paginate()
@@ -87,13 +85,11 @@ export const getNotificationRecipients = async (
   data: TNotificationRecipient[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const notificationQuery = new AppQuery<TNotificationRecipient>(
-    NotificationRecipient.find().populate([
+  const notificationQuery = new AppQueryFind(NotificationRecipient, query)
+    .populate([
       { path: 'recipient', select: '_id name email image' },
       { path: 'notification', select: '_id title type sender' },
-    ]),
-    query,
-  )
+    ])
     .filter()
     .sort()
     .paginate()

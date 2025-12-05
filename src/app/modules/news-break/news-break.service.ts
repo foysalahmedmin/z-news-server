@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/AppError';
-import AppQuery from '../../builder/AppQuery';
+import AppQueryFind from '../../builder/AppQueryFind';
 import { TJwtPayload } from '../auth/auth.type';
 import { NewsBreak } from './news-break.model';
 import { TNewsBreak } from './news-break.type';
@@ -51,12 +51,10 @@ export const getPublicNewsBreaks = async (
     $or: [{ expired_at: { $exists: false } }, { expired_at: { $gte: date } }],
   };
 
-  const NewsQuery = new AppQuery<TNewsBreak>(
-    NewsBreak.find({ status: 'published', ...filter }).populate([
+  const NewsQuery = new AppQueryFind(NewsBreak, { status: 'published', ...filter, ...rest })
+    .populate([
       { path: 'news', select: '_id title slug' },
-    ]),
-    rest,
-  )
+    ])
     .filter()
     .sort()
     .paginate()
@@ -74,10 +72,7 @@ export const getSelfNewsBreaks = async (
   data: TNewsBreak[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const NewsQuery = new AppQuery<TNewsBreak>(
-    NewsBreak.find(),
-    query,
-  )
+  const NewsQuery = new AppQueryFind(NewsBreak, query)
     .filter()
     .sort()
     .paginate()
@@ -94,7 +89,7 @@ export const getNewsBreaks = async (
   data: TNewsBreak[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const NewsQuery = new AppQuery<TNewsBreak>(NewsBreak.find(), query)
+  const NewsQuery = new AppQueryFind(NewsBreak, query)
     .filter()
     .sort()
     .paginate()
