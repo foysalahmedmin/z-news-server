@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
-import catchAsync from '../../utils/catchAsync';
-import sendResponse from '../../utils/sendResponse';
+import catchAsync from '../../utils/catch-async';
+import sendResponse from '../../utils/send-response';
 import * as NewsBreakServices from './news-break.service';
 
 export const createNewsBreak = catchAsync(async (req, res) => {

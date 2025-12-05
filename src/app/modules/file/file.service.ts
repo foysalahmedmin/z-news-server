@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
-import AppError from '../../builder/AppError';
-import AppQueryFind from '../../builder/AppQueryFind';
-import { deleteFiles as deleteFilesFromDisk } from '../../utils/deleteFiles';
+import AppError from '../../builder/app-error';
+import AppQueryFind from '../../builder/app-query-find';
+import { deleteFiles as deleteFilesFromDisk } from '../../utils/delete-files';
 import { TJwtPayload } from '../auth/auth.type';
 import { File } from './file.model';
 import { TFile, TFileInput } from './file.type';

@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
-import catchAsync from '../../utils/catchAsync';
-import sendResponse from '../../utils/sendResponse';
+import catchAsync from '../../utils/catch-async';
+import sendResponse from '../../utils/send-response';
 import * as EventServices from './event.service';
 
 export const createEvent = catchAsync(async (req, res) => {

@@ -1,4 +1,4 @@
-import { dirYearMonth } from '../../utils/dirYearMonth';
+import { dirYearMonth } from '../../utils/dir-year-month';
 
 export const folderMap = {
   thumbnail: 'news/images',

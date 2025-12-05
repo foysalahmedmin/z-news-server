@@ -579,3 +579,4 @@ class AppQueryAggregation<T = any> {
 }
 
 export default AppQueryAggregation;
+

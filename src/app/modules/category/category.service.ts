@@ -2,8 +2,8 @@ import fs from 'fs';
 import httpStatus from 'http-status';
 import { ObjectId } from 'mongodb';
 import { Types } from 'mongoose';
-import AppError from '../../builder/AppError';
-import AppQueryFind from '../../builder/AppQueryFind';
+import AppError from '../../builder/app-error';
+import AppQueryFind from '../../builder/app-query-find';
 import { slugify } from '../../utils/slugify';
 import { Category } from './category.model';
 import {

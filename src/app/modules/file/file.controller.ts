@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
-import AppError from '../../builder/AppError';
-import catchAsync from '../../utils/catchAsync';
-import sendResponse from '../../utils/sendResponse';
+import AppError from '../../builder/app-error';
+import catchAsync from '../../utils/catch-async';
+import sendResponse from '../../utils/send-response';
 import * as FileServices from './file.service';
 
 export const createFile = catchAsync(async (req, res) => {

@@ -7,3 +7,4 @@ const catchAsync = (fn: RequestHandler) => {
 };
 
 export default catchAsync;
+

@@ -1,6 +1,6 @@
 import express from 'express';
 import httpStatus from 'http-status';
-import AppError from '../../builder/AppError';
+import AppError from '../../builder/app-error';
 import auth from '../../middlewares/auth.middleware';
 import file from '../../middlewares/file.middleware';
 import validation from '../../middlewares/validation.middleware';

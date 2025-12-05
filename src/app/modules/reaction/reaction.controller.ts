@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
-import catchAsync from '../../utils/catchAsync';
-import sendResponse from '../../utils/sendResponse';
+import catchAsync from '../../utils/catch-async';
+import sendResponse from '../../utils/send-response';
 import * as ReactionServices from './reaction.service';
 
 export const createReaction = catchAsync(async (req, res) => {

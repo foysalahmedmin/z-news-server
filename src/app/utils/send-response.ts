@@ -13,3 +13,4 @@ const sendResponse = <T>(res: Response, payload: TResponse<T>) => {
 };
 
 export default sendResponse;
+

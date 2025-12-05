@@ -1,10 +1,10 @@
 import crypto from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 import httpStatus from 'http-status';
-import AppError from '../builder/AppError';
+import AppError from '../builder/app-error';
 import { Guest } from '../modules/guest/guest.model';
 import { TGuest } from '../modules/guest/guest.type';
-import catchAsync from '../utils/catchAsync';
+import catchAsync from '../utils/catch-async';
 
 const COOKIE_NAME = 'guest_token';
 const COOKIE_MAX_AGE = 1000 * 60 * 60 * 24 * 365;

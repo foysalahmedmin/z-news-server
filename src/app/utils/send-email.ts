@@ -30,3 +30,4 @@ export const sendEmail = async ({
     html,
   });
 };
+

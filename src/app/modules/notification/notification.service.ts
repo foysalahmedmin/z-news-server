@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
-import AppError from '../../builder/AppError';
-import AppQueryFind from '../../builder/AppQueryFind';
+import AppError from '../../builder/app-error';
+import AppQueryFind from '../../builder/app-query-find';
 import { emitToRole, emitToUser } from '../../socket';
 import { News } from '../news/news.model';
 import { NotificationRecipient } from '../notification-recipient/notification-recipient.model';

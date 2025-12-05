@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
-import AppError from '../../builder/AppError';
-import AppQueryFind from '../../builder/AppQueryFind';
-import { deleteFiles } from '../../utils/deleteFiles';
+import AppError from '../../builder/app-error';
+import AppQueryFind from '../../builder/app-query-find';
+import { deleteFiles } from '../../utils/delete-files';
 import { TJwtPayload } from '../auth/auth.type';
 import { User } from './user.model';
 import { TUser } from './user.type';
@@ -77,7 +77,7 @@ export const updateSelf = async (
   }
 
   if (payload?.image !== data.image && data.image) {
-    deleteFiles(data.image, 'uploads/news/images');
+    deleteFiles(data.image, 'uploads/users');
     payload.image = payload.image || '';
   }
 

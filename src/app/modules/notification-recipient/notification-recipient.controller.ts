@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import { emitToUser } from '../../socket';
-import catchAsync from '../../utils/catchAsync';
-import sendResponse from '../../utils/sendResponse';
+import catchAsync from '../../utils/catch-async';
+import sendResponse from '../../utils/send-response';
 import * as NotificationRecipientServices from './notification-recipient.service';
 
 export const createNotificationRecipient = catchAsync(async (req, res) => {

@@ -224,3 +224,4 @@ class AppQuery<T = any> {
 }
 
 export default AppQuery;
+

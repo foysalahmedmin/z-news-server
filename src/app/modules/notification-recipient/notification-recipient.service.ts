@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
-import AppError from '../../builder/AppError';
-import AppQueryFind from '../../builder/AppQueryFind';
+import AppError from '../../builder/app-error';
+import AppQueryFind from '../../builder/app-query-find';
 import { TJwtPayload } from '../auth/auth.type';
 import { NotificationRecipient } from './notification-recipient.model';
 import { TNotificationRecipient } from './notification-recipient.type';

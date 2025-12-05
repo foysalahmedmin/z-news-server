@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
-import catchAsync from '../../utils/catchAsync';
-import sendResponse from '../../utils/sendResponse';
+import catchAsync from '../../utils/catch-async';
+import sendResponse from '../../utils/send-response';
 import * as CommentServices from './comment.service';
 
 export const createComment = catchAsync(async (req, res) => {

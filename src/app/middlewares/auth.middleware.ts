@@ -2,13 +2,13 @@
 import { NextFunction, Request, Response } from 'express';
 import httpStatus from 'http-status';
 import jwt, { JwtPayload, TokenExpiredError } from 'jsonwebtoken';
-import AppError from '../builder/AppError';
+import AppError from '../builder/app-error';
 import config from '../config';
 import { TJwtPayload } from '../modules/auth/auth.type';
 import { User } from '../modules/user/user.model';
 import { TRole } from '../modules/user/user.type';
 import { cacheClient } from '../redis';
-import catchAsync from '../utils/catchAsync';
+import catchAsync from '../utils/catch-async';
 
 const getUser = async (_id: string) => {
   const redisKey = `auth:user:${_id}`;
@@ -76,8 +76,16 @@ const auth = (...roles: (TRole | 'guest')[]) => {
         throw new AppError(httpStatus.FORBIDDEN, 'User is blocked');
       }
 
-      if (user?.password_changed_at && user?.isPasswordChanged(iat)) {
-        throw new AppError(httpStatus.FORBIDDEN, 'Password recently changed');
+      if (user?.password_changed_at) {
+        const passwordChangedAt = new Date(user.password_changed_at).getTime();
+        const tokenIssuedAt = iat * 1000; // convert seconds → ms
+
+        if (passwordChangedAt > tokenIssuedAt) {
+          throw new AppError(
+            httpStatus.FORBIDDEN,
+            'Password recently changed. Please login again.',
+          );
+        }
       }
 
       if (!roles.includes(role) || !roles.includes(user?.role)) {

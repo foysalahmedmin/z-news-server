@@ -1,11 +1,11 @@
 import { ErrorRequestHandler } from 'express';
 import { ZodError } from 'zod';
-import AppError from '../builder/AppError';
+import AppError from '../builder/app-error';
 import config from '../config';
-import handleCastError from '../errors/handleCastError';
-import handleDuplicateError from '../errors/handleDuplicateError';
-import handleValidationError from '../errors/handleValidationError';
-import handleZodError from '../errors/handleZodError';
+import handleCastError from '../errors/handle-cast-error';
+import handleDuplicateError from '../errors/handle-duplicate-error';
+import handleValidationError from '../errors/handle-validation-error';
+import handleZodError from '../errors/handle-zod-error';
 import { TErrorSources } from '../types/error-response.type';
 
 const error: ErrorRequestHandler = (error, _req, res, _next) => {

@@ -152,13 +152,6 @@ userSchema.methods.softDelete = async function () {
   return await this.save();
 };
 
-userSchema.methods.isPasswordChanged = function (jwtTimestamp: number) {
-  const passwordChangedTimestamp = Math.floor(
-    this.password_changed_at.getTime() / 1000,
-  );
-  return jwtTimestamp < passwordChangedTimestamp;
-};
-
 export const User = mongoose.model<TUserDocument, TUserModel>(
   'User',
   userSchema,

@@ -26,7 +26,6 @@ export type TUser = {
 export interface TUserDocument extends TUser, Document {
   _id: Types.ObjectId;
   softDelete(): Promise<TUserDocument | null>;
-  isPasswordChanged(jwtTimestamp: number): boolean;
 }
 
 export type TUserModel = Model<TUserDocument> & {
