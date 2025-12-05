@@ -1,5 +1,4 @@
 import httpStatus from 'http-status';
-import { Model } from 'mongoose';
 import AppError from '../../builder/AppError';
 import AppQueryFind from '../../builder/AppQueryFind';
 import { deleteFiles as deleteFilesFromDisk } from '../../utils/deleteFiles';
@@ -61,7 +60,7 @@ export const getFiles = async (
   data: TFile[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const fileQuery = new AppQueryFind<TFile>(File as Model<TFile & import('mongoose').Document>, query)
+  const fileQuery = new AppQueryFind(File, query)
     .populate([
       { path: 'author', select: '_id name email image' },
     ])

@@ -127,9 +127,12 @@ export const sendNewsNotification = async (payload: {
 
       // Send to the news author
       if (result && news.author) {
-        const authorId = typeof news.author === 'object' && '_id' in news.author
-          ? news.author._id.toString()
-          : news.author.toString();
+        let authorId: string;
+        if (typeof news.author === 'object' && news.author !== null && '_id' in news.author) {
+          authorId = (news.author as { _id: { toString(): string } })._id.toString();
+        } else {
+          authorId = String(news.author);
+        }
         
         emitToUser(
           authorId,

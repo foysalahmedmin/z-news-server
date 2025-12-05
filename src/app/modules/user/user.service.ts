@@ -77,7 +77,7 @@ export const updateSelf = async (
   }
 
   if (payload?.image !== data.image && data.image) {
-    deleteFiles(data.image, 'news/images');
+    deleteFiles(data.image, 'uploads/news/images');
     payload.image = payload.image || '';
   }
 
