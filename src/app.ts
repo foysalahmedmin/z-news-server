@@ -4,19 +4,29 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { Application } from 'express';
 import session from 'express-session';
+import helmet from 'helmet';
 import path from 'path';
 import config from './app/config';
 import error from './app/middlewares/error.middleware';
 import log from './app/middlewares/log.middleware';
 import notfound from './app/middlewares/not-found.middleware';
+import { globalRateLimiter } from './app/middlewares/rate-limit.middleware';
+import sanitize from './app/middlewares/sanitize.middleware';
 import router from './app/routes';
 
 dotenv.config();
 const app: Application = express();
 
+app.use(helmet());
+
+// Apply global rate limiting
+app.use(globalRateLimiter);
+
 app.set('trust proxy', true);
 
 app.use(express.json({ limit: '1mb' }));
+
+app.use(sanitize);
 
 app.use(cookieParser());
 

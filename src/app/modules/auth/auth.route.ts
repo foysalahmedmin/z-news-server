@@ -1,11 +1,14 @@
 import express from 'express';
 import auth from '../../middlewares/auth.middleware';
 import file from '../../middlewares/file.middleware';
+import { authRateLimiter } from '../../middlewares/rate-limit.middleware';
 import validation from '../../middlewares/validation.middleware';
 import * as AuthControllers from './auth.controller';
 import * as AuthValidations from './auth.validation';
 
 const router = express.Router();
+
+router.use(authRateLimiter);
 
 router.post(
   '/signin',
