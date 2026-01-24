@@ -12,6 +12,7 @@ import NewsRoutes from '../modules/news/news.route';
 import NotificationRecipientRoutes from '../modules/notification-recipient/notification-recipient.route';
 import notificationRoutes from '../modules/notification/notification.route';
 import ReactionRoutes from '../modules/reaction/reaction.route';
+import storageRoutes from '../modules/storage/storage.route';
 import userRoutes from '../modules/user/user.route';
 import ViewRoutes from '../modules/view/view.route';
 
@@ -77,6 +78,10 @@ const moduleRoutes = [
   {
     path: '/media',
     route: mediaRoutes,
+  },
+  {
+    path: '/storage',
+    route: storageRoutes,
   },
 ];
 
