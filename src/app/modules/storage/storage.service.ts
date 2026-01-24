@@ -6,7 +6,7 @@ import AppQueryFind from '../../builder/app-query-find';
 import config from '../../config';
 import { TStorageResult } from '../../middlewares/storage.middleware';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
-import { Asset } from './storage.model';
+import { StorageModel } from './storage.model';
 import { TStorage, TStorageInput } from './storage.type';
 
 // Initialize GCS client for service methods
@@ -44,12 +44,12 @@ export const createStorage = async (
     is_deleted: false,
   }));
 
-  const result = await Asset.create(storagesData);
+  const result = await StorageModel.create(storagesData);
   return result.map((item) => item.toObject());
 };
 
 export const getStorage = async (id: string): Promise<TStorage> => {
-  const result = await Asset.findById(id)
+  const result = await StorageModel.findById(id)
     .populate([{ path: 'author', select: '_id name email image' }])
     .lean();
 
@@ -66,7 +66,7 @@ export const getStorages = async (
   data: TStorage[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const storageQuery = new AppQueryFind(Asset, query)
+  const storageQuery = new AppQueryFind(StorageModel, query)
     .populate([{ path: 'author', select: '_id name email image' }])
     .search(['file_name', 'original_name', 'description'])
     .filter()
@@ -86,7 +86,7 @@ export const getSelfStorages = async (
   data: TStorage[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const storageQuery = new AppQueryFind(Asset, {
+  const storageQuery = new AppQueryFind(StorageModel, {
     author: user._id,
     ...query,
   })
@@ -108,13 +108,13 @@ export const updateStorage = async (
     Pick<TStorage, 'description' | 'category' | 'caption' | 'status'>
   >,
 ): Promise<TStorage> => {
-  const data = await Asset.findById(id).lean();
+  const data = await StorageModel.findById(id).lean();
 
   if (!data) {
     throw new AppError(httpStatus.NOT_FOUND, 'Storage record not found');
   }
 
-  const result = await Asset.findByIdAndUpdate(id, payload, {
+  const result = await StorageModel.findByIdAndUpdate(id, payload, {
     new: true,
     runValidators: true,
   })
@@ -131,11 +131,11 @@ export const updateStorages = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const items = await Asset.find({ _id: { $in: ids } }).lean();
+  const items = await StorageModel.find({ _id: { $in: ids } }).lean();
   const foundIds = items.map((item: any) => item._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  const result = await Asset.updateMany(
+  const result = await StorageModel.updateMany(
     { _id: { $in: foundIds } },
     { ...payload },
   );
@@ -147,7 +147,7 @@ export const updateStorages = async (
 };
 
 export const deleteStorage = async (id: string): Promise<void> => {
-  const item = await Asset.findById(id);
+  const item = await StorageModel.findById(id);
   if (!item) {
     throw new AppError(httpStatus.NOT_FOUND, 'Storage record not found');
   }
@@ -161,11 +161,14 @@ export const deleteStorages = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const items = await Asset.find({ _id: { $in: ids } }).lean();
+  const items = await StorageModel.find({ _id: { $in: ids } }).lean();
   const foundIds = items.map((item: any) => item._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Asset.updateMany({ _id: { $in: foundIds } }, { is_deleted: true });
+  await StorageModel.updateMany(
+    { _id: { $in: foundIds } },
+    { is_deleted: true },
+  );
 
   return {
     count: foundIds.length,
@@ -174,7 +177,7 @@ export const deleteStorages = async (
 };
 
 export const deleteStoragePermanent = async (id: string): Promise<void> => {
-  const item = await Asset.findById(id)
+  const item = await StorageModel.findById(id)
     .setOptions({ bypassDeleted: true })
     .lean();
 
@@ -193,7 +196,7 @@ export const deleteStoragePermanent = async (id: string): Promise<void> => {
     }
   }
 
-  await Asset.findByIdAndDelete(id).setOptions({ bypassDeleted: true });
+  await StorageModel.findByIdAndDelete(id).setOptions({ bypassDeleted: true });
 };
 
 export const deleteStoragesPermanent = async (
@@ -202,7 +205,7 @@ export const deleteStoragesPermanent = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const items = await Asset.find({
+  const items = await StorageModel.find({
     _id: { $in: ids },
     is_deleted: true,
   })
@@ -228,7 +231,7 @@ export const deleteStoragesPermanent = async (
     }
   }
 
-  await Asset.deleteMany({
+  await StorageModel.deleteMany({
     _id: { $in: foundIds },
     is_deleted: true,
   }).setOptions({ bypassDeleted: true });
@@ -240,7 +243,7 @@ export const deleteStoragesPermanent = async (
 };
 
 export const restoreStorage = async (id: string): Promise<TStorage> => {
-  const item = await Asset.findOneAndUpdate(
+  const item = await StorageModel.findOneAndUpdate(
     { _id: id, is_deleted: true },
     { is_deleted: false },
     { new: true },
@@ -264,12 +267,12 @@ export const restoreStorages = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const result = await Asset.updateMany(
+  const result = await StorageModel.updateMany(
     { _id: { $in: ids }, is_deleted: true },
     { is_deleted: false },
   );
 
-  const restored = await Asset.find({ _id: { $in: ids } }).lean();
+  const restored = await StorageModel.find({ _id: { $in: ids } }).lean();
   const restoredIds = restored.map((item: any) => item._id.toString());
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 

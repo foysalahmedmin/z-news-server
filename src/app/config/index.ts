@@ -48,7 +48,7 @@ export default {
   gcp: {
     project_id: process.env.GOOGLE_CLOUD_PROJECT_ID as string,
     credentials_path: process.env.GOOGLE_APPLICATION_CREDENTIALS as string,
-    bucket: process.env.GOOGLE_CLOUD_STORAGE_BUCKET || 'z-news-public-assets',
+    bucket: process.env.GOOGLE_CLOUD_STORAGE_BUCKET || 'z-news-public-storage',
   },
 };
 

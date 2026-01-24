@@ -123,7 +123,7 @@ storageSchema.methods.softDelete = async function () {
   return await this.save();
 };
 
-export const Asset = mongoose.model<TStorageDocument, TStorageModel>(
+export const StorageModel = mongoose.model<TStorageDocument, TStorageModel>(
   'Storage',
   storageSchema,
 );

@@ -223,8 +223,8 @@ erDiagram
     News ||--o{ Reaction : "has_reactions"
     News ||--o{ View : "has_views"
     News ||--o| Event : "contextualized_by"
-    News ||--o| File : "thumbnail_asset"
-    News ||--o| File : "video_asset"
+    News ||--o| Storage : "cloud_thumbnail"
+    News ||--o| File : "local_thumbnail"
 
     %% Taxonomy & Hierarchy
     Category ||--o{ Category : "parent_of"
@@ -345,14 +345,23 @@ erDiagram
         date expired_at
     }
 
-    File {
+    Storage {
         ObjectId _id PK
-        string url "CDN/Cloud Storage Link"
-        string path "Internal Bucket Path"
-        string filename
+        string file_name "Cloud Identifier"
+        string bucket "GCS Bucket Name"
+        string url "Public CDN Link"
         string mimetype
         number size
-        string provider "local|gcs"
+        ObjectId author FK
+        string status "active|archived"
+    }
+
+    File {
+        ObjectId _id PK
+        string url "Local Server Link"
+        string path "Server Disk Path"
+        string mimetype
+        number size
     }
 ```
 
@@ -372,7 +381,8 @@ The system exposes the service layer via the `/api` namespace:
 - **Engagement**: `/api/comment`, `/api/reaction`, `/api/view`
 - **Awareness**: `/api/notification`, `/api/notification-recipient`
 - **Personnel**: `/api/user`, `/api/guest`
-- **Assets**: `/api/file`, `/api/media`, `/api/storage`
+- **Cloud Assets**: `/api/storage` (Google Cloud Storage Management)
+- **Local Assets**: `/api/file`, `/api/media`
 - **Events**: `/api/event`
 
 ---
