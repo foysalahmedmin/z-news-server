@@ -3,8 +3,9 @@ import { NextFunction, Request, Response } from 'express';
 import httpStatus from 'http-status';
 import multer, { FileFilterCallback } from 'multer';
 import path from 'node:path';
-import AppError from '../builder/AppError';
-import catchAsync from '../utils/catchAsync';
+import AppError from '../builder/app-error';
+import config from '../config';
+import catchAsync from '../utils/catch-async';
 
 export type TStorageResult = {
   fieldName: string;
@@ -29,21 +30,20 @@ export type TStorageFile = {
 
 const storage = (...files: TStorageFile[]) => {
   // Resolve credentials path relative to project root
-  const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
-    ? path.resolve(process.cwd(), process.env.GOOGLE_APPLICATION_CREDENTIALS)
+  const credentialsPath = config.gcp.credentials_path
+    ? path.resolve(process.cwd(), config.gcp.credentials_path)
     : undefined;
 
   // Initialize Google Cloud Storage client
   const storageClient = new Storage({
     ...(credentialsPath && { keyFilename: credentialsPath }),
-    ...(process.env.GOOGLE_CLOUD_PROJECT_ID && {
-      projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
+    ...(config.gcp.project_id && {
+      projectId: config.gcp.project_id,
     }),
   });
 
   // Get default bucket from environment with fallback
-  const defaultBucket =
-    process.env.GOOGLE_CLOUD_STORAGE_BUCKET || 'shothik-public-assets';
+  const defaultBucket = config.gcp.bucket;
 
   // Use memory storage since we'll upload to cloud
   const memoryStorage = multer.memoryStorage();

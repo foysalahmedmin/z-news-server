@@ -2,9 +2,17 @@ import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
 import AppQueryFind from '../../builder/app-query-find';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
+import {
+  generateCacheKey,
+  invalidateCacheByPattern,
+  withCache,
+} from '../../utils/cache.utils';
 import { TGuest } from '../guest/guest.type';
 import { Reaction } from './reaction.model';
 import { TReaction } from './reaction.type';
+
+const CACHE_PREFIX = 'reaction';
+const CACHE_TTL = 300; // 5 minutes
 
 export const createReaction = async (
   user: TJwtPayload,
@@ -22,6 +30,11 @@ export const createReaction = async (
   };
 
   const result = await Reaction.create(update);
+  if (result) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+    // Also invalidate news cache because reaction counts might be cached there or used by news
+    await invalidateCacheByPattern(`news:*`);
+  }
   return result.toObject();
 };
 
@@ -38,19 +51,27 @@ export const getSelfNewsReaction = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found news_id');
   }
 
-  const query = user?._id
-    ? { news: news_id, user: user._id }
-    : guest?.token
-      ? { news: news_id, guest: guest.token }
-      : null;
-
-  const [data, likes, dislikes] = await Promise.all([
-    query ? Reaction.findOne(query).lean() : Promise.resolve(null),
-    Reaction.countDocuments({ news: news_id, type: 'like' }),
-    Reaction.countDocuments({ news: news_id, type: 'dislike' }),
+  const cacheKey = generateCacheKey(CACHE_PREFIX, [
+    'news',
+    news_id,
+    'self',
+    user?._id || guest?.token,
   ]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const query = user?._id
+      ? { news: news_id, user: user._id }
+      : guest?.token
+        ? { news: news_id, guest: guest.token }
+        : null;
 
-  return { data, meta: { likes, dislikes }, guest };
+    const [data, likes, dislikes] = await Promise.all([
+      query ? Reaction.findOne(query).lean() : Promise.resolve(null),
+      Reaction.countDocuments({ news: news_id, type: 'like' }),
+      Reaction.countDocuments({ news: news_id, type: 'dislike' }),
+    ]);
+
+    return { data, meta: { likes, dislikes }, guest };
+  });
 };
 
 export const getSelfReaction = async (
@@ -62,34 +83,47 @@ export const getSelfReaction = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const result = await Reaction.findOne({
-    _id: id,
-    ...(user?._id ? { user: user._id } : { guest: guest.token }),
-  })
-    .populate([
-      { path: 'user', select: '_id name email image' },
-      { path: 'news', select: '_id slug title thumbnail' },
-    ])
-    .lean();
+  const cacheKey = generateCacheKey(CACHE_PREFIX, [
+    'self',
+    user?._id || guest?.token,
+    id,
+  ]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const result = await Reaction.findOne({
+      _id: id,
+      ...(user?._id ? { user: user._id } : { guest: guest.token }),
+    })
+      .populate([
+        { path: 'user', select: '_id name email image' },
+        { path: 'news', select: '_id slug title thumbnail' },
+      ])
+      .lean();
 
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
-  }
+    if (!result) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
+    }
 
-  return result;
+    return result;
+  });
 };
 
 export const getReaction = async (id: string): Promise<TReaction> => {
-  const result = await Reaction.findById(id)
-    .populate([
-      { path: 'user', select: '_id name email image' },
-      { path: 'news', select: '_id slug title thumbnail' },
-    ])
-    .lean();
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
-  }
-  return result;
+  return await withCache(
+    generateCacheKey(CACHE_PREFIX, ['id', id]),
+    CACHE_TTL,
+    async () => {
+      const result = await Reaction.findById(id)
+        .populate([
+          { path: 'user', select: '_id name email image' },
+          { path: 'news', select: '_id slug title thumbnail' },
+        ])
+        .lean();
+      if (!result) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
+      }
+      return result;
+    },
+  );
 };
 
 export const getSelfReactions = async (
@@ -100,27 +134,34 @@ export const getSelfReactions = async (
   data: TReaction[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  console.log(user, guest);
-  if (!user?._id && !guest?.token) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
-  }
+  const cacheKey = generateCacheKey(CACHE_PREFIX, [
+    'self',
+    user?._id || guest?.token,
+    'list',
+    query,
+  ]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    if (!user?._id && !guest?.token) {
+      throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+    }
 
-  const reactionQuery = new AppQueryFind(Reaction, {
-    ...(user?._id ? { user: user._id } : { guest: guest.token }),
-    ...query,
-  })
-    .populate([
-      { path: 'user', select: '_id name email image' },
-      { path: 'news', select: '_id slug title thumbnail' },
-    ])
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
+    const reactionQuery = new AppQueryFind(Reaction, {
+      ...(user?._id ? { user: user._id } : { guest: guest.token }),
+      ...query,
+    })
+      .populate([
+        { path: 'user', select: '_id name email image' },
+        { path: 'news', select: '_id slug title thumbnail' },
+      ])
+      .filter()
+      .sort()
+      .paginate()
+      .fields()
+      .tap((q) => q.lean());
 
-  const result = await reactionQuery.execute();
-  return result;
+    const result = await reactionQuery.execute();
+    return result;
+  });
 };
 
 export const getReactions = async (
@@ -129,19 +170,22 @@ export const getReactions = async (
   data: TReaction[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const reactionQuery = new AppQueryFind(Reaction, query)
-    .populate([
-      { path: 'user', select: '_id name email image' },
-      { path: 'news', select: '_id slug title thumbnail' },
-    ])
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
+  const cacheKey = generateCacheKey(CACHE_PREFIX, ['admin', 'list', query]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const reactionQuery = new AppQueryFind(Reaction, query)
+      .populate([
+        { path: 'user', select: '_id name email image' },
+        { path: 'news', select: '_id slug title thumbnail' },
+      ])
+      .filter()
+      .sort()
+      .paginate()
+      .fields()
+      .tap((q) => q.lean());
 
-  const result = await reactionQuery.execute();
-  return result;
+    const result = await reactionQuery.execute();
+    return result;
+  });
 };
 
 export const updateSelfReaction = async (
@@ -170,6 +214,11 @@ export const updateSelfReaction = async (
     runValidators: true,
   }).lean();
 
+  if (result) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+    await invalidateCacheByPattern(`news:*`);
+  }
+
   return result!;
 };
 
@@ -188,6 +237,11 @@ export const updateReaction = async (
     new: true,
     runValidators: true,
   }).lean();
+
+  if (result) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+    await invalidateCacheByPattern(`news:*`);
+  }
 
   return result!;
 };
@@ -257,10 +311,15 @@ export const deleteSelfReaction = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  await Reaction.findOneAndDelete({
+  const result = await Reaction.findOneAndDelete({
     _id: id,
     ...(user?._id ? { user: user._id } : { guest: guest.token }),
   });
+
+  if (result) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+    await invalidateCacheByPattern(`news:*`);
+  }
 };
 
 export const deleteReaction = async (id: string): Promise<void> => {
@@ -270,6 +329,8 @@ export const deleteReaction = async (id: string): Promise<void> => {
   }
 
   await Reaction.findByIdAndDelete(id);
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  await invalidateCacheByPattern(`news:*`);
 };
 
 export const deleteSelfReactions = async (

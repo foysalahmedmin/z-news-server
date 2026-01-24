@@ -5,10 +5,18 @@ import mongoose from 'mongoose';
 import AppError from '../../builder/app-error';
 import AppQueryFind from '../../builder/app-query-find';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
+import {
+  generateCacheKey,
+  invalidateCacheByPattern,
+  withCache,
+} from '../../utils/cache.utils';
 import { Category } from '../category/category.model';
 import { sendNewsNotification } from '../notification/notification.service';
 import { News } from './news.model';
 import { TNews } from './news.type';
+
+const CACHE_PREFIX = 'news';
+const CACHE_TTL = 1800; // 30 minutes
 
 const getCategoryIds = async ({
   category,
@@ -189,74 +197,111 @@ export const createNews = async (
     });
   }
 
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  await invalidateCacheByPattern(`news-break:*`);
+  await invalidateCacheByPattern(`news-headline:*`);
+
   return created_news.toObject();
 };
 
 export const getPublicNews = async (slug: string): Promise<TNews> => {
-  const result = await News.findOne({ slug: slug, status: 'published' })
-    .populate([
-      { path: 'author', select: '_id name email image' },
-      { path: 'category', select: '_id name slug' },
-      { path: 'categories', select: '_id name slug' },
-      { path: 'event', select: '_id name slug' },
-      { path: 'thumbnail', select: '_id url name path file_name type caption' },
-      { path: 'video', select: '_id url name path file_name type caption' },
-    ])
-    .lean();
+  return await withCache(
+    generateCacheKey(CACHE_PREFIX, ['slug', slug]),
+    CACHE_TTL,
+    async () => {
+      const result = await News.findOne({ slug: slug, status: 'published' })
+        .populate([
+          { path: 'author', select: '_id name email image' },
+          { path: 'category', select: '_id name slug' },
+          { path: 'categories', select: '_id name slug' },
+          { path: 'event', select: '_id name slug' },
+          {
+            path: 'thumbnail',
+            select: '_id url name path file_name type caption',
+          },
+          { path: 'video', select: '_id url name path file_name type caption' },
+        ])
+        .lean();
 
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'News not found');
-  }
-  return result;
+      if (!result) {
+        throw new AppError(httpStatus.NOT_FOUND, 'News not found');
+      }
+      return result;
+    },
+  );
 };
 
 export const getSelfNews = async (
   user: TJwtPayload,
   id: string,
 ): Promise<TNews> => {
-  const result = await News.findOne({ _id: id, author: user._id })
-    .populate([
-      { path: 'view_count' },
-      { path: 'like_count' },
-      { path: 'dislike_count' },
-      { path: 'comment_count' },
-      { path: 'author', select: '_id name email image' },
-      { path: 'category', select: '_id name slug' },
-      { path: 'categories', select: '_id name slug' },
-      { path: 'event', select: '_id name slug' },
-      { path: 'thumbnail', select: '_id url name path file_name type caption' },
-      { path: 'video', select: '_id url name path file_name type caption' },
-      { path: 'news_headline', select: '_id status published_at expired_at' },
-      { path: 'news_break', select: '_id status published_at expired_at' },
-    ])
-    .lean();
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'News not found');
-  }
-  return result;
+  return await withCache(
+    generateCacheKey(CACHE_PREFIX, ['id', id]),
+    CACHE_TTL,
+    async () => {
+      const result = await News.findOne({ _id: id, author: user._id })
+        .populate([
+          { path: 'view_count' },
+          { path: 'like_count' },
+          { path: 'dislike_count' },
+          { path: 'comment_count' },
+          { path: 'author', select: '_id name email image' },
+          { path: 'category', select: '_id name slug' },
+          { path: 'categories', select: '_id name slug' },
+          { path: 'event', select: '_id name slug' },
+          {
+            path: 'thumbnail',
+            select: '_id url name path file_name type caption',
+          },
+          { path: 'video', select: '_id url name path file_name type caption' },
+          {
+            path: 'news_headline',
+            select: '_id status published_at expired_at',
+          },
+          { path: 'news_break', select: '_id status published_at expired_at' },
+        ])
+        .lean();
+      if (!result) {
+        throw new AppError(httpStatus.NOT_FOUND, 'News not found');
+      }
+      return result;
+    },
+  );
 };
 
 export const getNews = async (id: string): Promise<TNews> => {
-  const result = await News.findById(id)
-    .populate([
-      { path: 'view_count' },
-      { path: 'like_count' },
-      { path: 'dislike_count' },
-      { path: 'comment_count' },
-      { path: 'author', select: '_id name email image' },
-      { path: 'category', select: '_id name slug' },
-      { path: 'categories', select: '_id name slug' },
-      { path: 'event', select: '_id name slug' },
-      { path: 'thumbnail', select: '_id url name path file_name type caption' },
-      { path: 'video', select: '_id url name path file_name type caption' },
-      { path: 'news_headline', select: '_id status published_at expired_at' },
-      { path: 'news_break', select: '_id status published_at expired_at' },
-    ])
-    .lean();
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'News not found');
-  }
-  return result;
+  return await withCache(
+    generateCacheKey(CACHE_PREFIX, ['id', id]),
+    CACHE_TTL,
+    async () => {
+      const result = await News.findById(id)
+        .populate([
+          { path: 'view_count' },
+          { path: 'like_count' },
+          { path: 'dislike_count' },
+          { path: 'comment_count' },
+          { path: 'author', select: '_id name email image' },
+          { path: 'category', select: '_id name slug' },
+          { path: 'categories', select: '_id name slug' },
+          { path: 'event', select: '_id name slug' },
+          {
+            path: 'thumbnail',
+            select: '_id url name path file_name type caption',
+          },
+          { path: 'video', select: '_id url name path file_name type caption' },
+          {
+            path: 'news_headline',
+            select: '_id status published_at expired_at',
+          },
+          { path: 'news_break', select: '_id status published_at expired_at' },
+        ])
+        .lean();
+      if (!result) {
+        throw new AppError(httpStatus.NOT_FOUND, 'News not found');
+      }
+      return result;
+    },
+  );
 };
 
 export const getPublicBulkNews = async (
@@ -265,101 +310,107 @@ export const getPublicBulkNews = async (
   data: TNews[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const {
-    category: q_category,
-    category_slug: q_category_slug,
-    published_at: q_published_at,
-    published_at_gte: q_published_at_gte,
-    published_at_lte: q_published_at_lte,
-    date: q_date,
-    news_ne,
-    ...rest
-  } = query;
+  const cacheKey = generateCacheKey(CACHE_PREFIX, ['public', 'list', query]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const {
+      category: q_category,
+      category_slug: q_category_slug,
+      published_at: q_published_at,
+      published_at_gte: q_published_at_gte,
+      published_at_lte: q_published_at_lte,
+      date: q_date,
+      news_ne,
+      ...rest
+    } = query;
 
-  const category = q_category as string;
-  const category_slug = q_category_slug as string;
+    const category = q_category as string;
+    const category_slug = q_category_slug as string;
 
-  const categories_ids = await getCategoryIds({ category, category_slug });
+    const categories_ids = await getCategoryIds({ category, category_slug });
 
-  if (categories_ids.length > 0) {
-    rest.category = { $in: categories_ids };
-  }
+    if (categories_ids.length > 0) {
+      rest.category = { $in: categories_ids };
+    }
 
-  if (q_published_at) {
-    const start = new Date(q_published_at as string);
-    start.setHours(0, 0, 0, 0);
-
-    const end = new Date(q_published_at as string);
-    end.setHours(23, 59, 59, 999);
-
-    rest.published_at = { $gte: start, $lte: end };
-  } else if (q_published_at_gte || q_published_at_lte) {
-    const filter: Record<string, Date> = {};
-
-    if (q_published_at_gte) {
-      const start = new Date(q_published_at_gte as string);
+    if (q_published_at) {
+      const start = new Date(q_published_at as string);
       start.setHours(0, 0, 0, 0);
-      filter.$gte = start;
-    }
 
-    if (q_published_at_lte) {
-      const end = new Date(q_published_at_lte as string);
+      const end = new Date(q_published_at as string);
       end.setHours(23, 59, 59, 999);
-      filter.$lte = end;
+
+      rest.published_at = { $gte: start, $lte: end };
+    } else if (q_published_at_gte || q_published_at_lte) {
+      const filter: Record<string, Date> = {};
+
+      if (q_published_at_gte) {
+        const start = new Date(q_published_at_gte as string);
+        start.setHours(0, 0, 0, 0);
+        filter.$gte = start;
+      }
+
+      if (q_published_at_lte) {
+        const end = new Date(q_published_at_lte as string);
+        end.setHours(23, 59, 59, 999);
+        filter.$lte = end;
+      }
+
+      rest.published_at = filter;
+    } else if (q_date) {
+      const end = new Date(q_date as string);
+      end.setHours(23, 59, 59, 999);
+
+      rest.published_at = { $lte: end };
+    } else {
+      const end = new Date();
+
+      rest.published_at = { $lte: end };
     }
 
-    rest.published_at = filter;
-  } else if (q_date) {
-    const end = new Date(q_date as string);
-    end.setHours(23, 59, 59, 999);
+    if (news_ne) {
+      rest._id = { $ne: news_ne };
+    }
 
-    rest.published_at = { $lte: end };
-  } else {
-    const end = new Date();
+    const NewsQuery = new AppQueryFind(News, { status: 'published', ...rest })
+      .populate([
+        { path: 'author', select: '_id name email image' },
+        { path: 'category', select: '_id name slug' },
+        { path: 'categories', select: '_id name slug' },
+        { path: 'event', select: '_id name slug' },
+        {
+          path: 'thumbnail',
+          select: '_id url name path file_name type caption',
+        },
+        { path: 'video', select: '_id url name path file_name type caption' },
+      ])
+      .search(['title', 'description'])
+      .filter()
+      .sort()
+      .paginate()
+      .fields([
+        'title',
+        'sub_title',
+        'slug',
+        'description',
+        'content',
+        'thumbnail',
+        'video',
+        'youtube',
+        'author',
+        'writer',
+        'category',
+        'tags',
+        'status',
+        'layout',
+        'published_at',
+        'is_featured',
+        'views',
+      ])
+      .tap((q) => q.lean());
 
-    rest.published_at = { $lte: end };
-  }
-
-  if (news_ne) {
-    rest._id = { $ne: news_ne };
-  }
-
-  const NewsQuery = new AppQueryFind(News, { status: 'published', ...rest })
-    .populate([
-      { path: 'author', select: '_id name email image' },
-      { path: 'category', select: '_id name slug' },
-      { path: 'categories', select: '_id name slug' },
-      { path: 'event', select: '_id name slug' },
-      { path: 'thumbnail', select: '_id url name path file_name type caption' },
-      { path: 'video', select: '_id url name path file_name type caption' },
-    ])
-    .search(['title', 'description'])
-    .filter()
-    .sort()
-    .paginate()
-    .fields([
-      'title',
-      'sub_title',
-      'slug',
-      'description',
-      'content',
-      'thumbnail',
-      'video',
-      'youtube',
-      'author',
-      'writer',
-      'category',
-      'tags',
-      'status',
-      'layout',
-      'published_at',
-      'is_featured',
-      'views',
-    ])
-    .tap((q) => q.lean());
-
-  const result = await NewsQuery.execute();
-  return result;
+    const result = await NewsQuery.execute();
+    return result;
+  });
 };
 
 export const getSelfBulkNews = async (
@@ -369,109 +420,115 @@ export const getSelfBulkNews = async (
   data: TNews[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const {
-    category: q_category,
-    category_slug: q_category_slug,
-    published_at: q_published_at,
-    published_at_gte: q_published_at_gte,
-    published_at_lte: q_published_at_lte,
-    date: q_date,
-    ...rest
-  } = query;
-
-  const category = q_category as string;
-  const category_slug = q_category_slug as string;
-
-  const categories_ids = await getCategoryIds({ category, category_slug });
-
-  if (categories_ids.length > 0) {
-    rest.category = { $in: categories_ids };
-  }
-
-  if (q_published_at) {
-    const start = new Date(q_published_at as string);
-    start.setHours(0, 0, 0, 0);
-
-    const end = new Date(q_published_at as string);
-    end.setHours(23, 59, 59, 999);
-
-    rest.published_at = { $gte: start, $lte: end };
-  } else if (q_published_at_gte || q_published_at_lte) {
-    const filter: Record<string, Date> = {};
-
-    if (q_published_at_gte) {
-      const start = new Date(q_published_at_gte as string);
-      start.setHours(0, 0, 0, 0);
-      filter.$gte = start;
-    }
-
-    if (q_published_at_lte) {
-      const end = new Date(q_published_at_lte as string);
-      end.setHours(23, 59, 59, 999);
-      filter.$lte = end;
-    }
-
-    rest.published_at = filter;
-  } else if (q_date) {
-    const end = new Date(q_date as string);
-    end.setHours(23, 59, 59, 999);
-
-    rest.published_at = { $lte: end };
-  }
-  // else {
-  //   const end = new Date();
-
-  //   rest.published_at = { $lte: end };
-  // }
-
-  const NewsQuery = new AppQueryFind(News, { author: user._id, ...rest })
-    .populate([
-      { path: 'author', select: '_id name email image' },
-      { path: 'category', select: '_id name slug' },
-      { path: 'categories', select: '_id name slug' },
-      { path: 'event', select: '_id name slug' },
-      { path: 'thumbnail', select: '_id url name path file_name type caption' },
-      { path: 'video', select: '_id url name path file_name type caption' },
-    ])
-    .search(['title', 'description'])
-    .filter()
-    .sort()
-    .paginate()
-    .fields([
-      'title',
-      'slug',
-      'description',
-      'content',
-      'thumbnail',
-      'video',
-      'youtube',
-      'author',
-      'writer',
-      'category',
-      'tags',
-      'status',
-      'layout',
-      'published_at',
-      'is_featured',
-      'views',
-    ])
-    .tap((q) => q.lean());
-
-  const result = await NewsQuery.execute([
-    {
-      key: 'published',
-      filter: { status: 'published' },
-    },
-    {
-      key: 'draft',
-      filter: { status: 'draft' },
-    },
-    {
-      key: 'pending',
-      filter: { status: 'pending' },
-    },
+  const cacheKey = generateCacheKey(CACHE_PREFIX, [
+    'self',
+    user._id,
+    'list',
+    query,
   ]);
-  return result;
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const {
+      category: q_category,
+      category_slug: q_category_slug,
+      published_at: q_published_at,
+      published_at_gte: q_published_at_gte,
+      published_at_lte: q_published_at_lte,
+      date: q_date,
+      ...rest
+    } = query;
+
+    const category = q_category as string;
+    const category_slug = q_category_slug as string;
+
+    const categories_ids = await getCategoryIds({ category, category_slug });
+
+    if (categories_ids.length > 0) {
+      rest.category = { $in: categories_ids };
+    }
+
+    if (q_published_at) {
+      const start = new Date(q_published_at as string);
+      start.setHours(0, 0, 0, 0);
+
+      const end = new Date(q_published_at as string);
+      end.setHours(23, 59, 59, 999);
+
+      rest.published_at = { $gte: start, $lte: end };
+    } else if (q_published_at_gte || q_published_at_lte) {
+      const filter: Record<string, Date> = {};
+
+      if (q_published_at_gte) {
+        const start = new Date(q_published_at_gte as string);
+        start.setHours(0, 0, 0, 0);
+        filter.$gte = start;
+      }
+
+      if (q_published_at_lte) {
+        const end = new Date(q_published_at_lte as string);
+        end.setHours(23, 59, 59, 999);
+        filter.$lte = end;
+      }
+
+      rest.published_at = filter;
+    } else if (q_date) {
+      const end = new Date(q_date as string);
+      end.setHours(23, 59, 59, 999);
+
+      rest.published_at = { $lte: end };
+    }
+
+    const NewsQuery = new AppQueryFind(News, { author: user._id, ...rest })
+      .populate([
+        { path: 'author', select: '_id name email image' },
+        { path: 'category', select: '_id name slug' },
+        { path: 'categories', select: '_id name slug' },
+        { path: 'event', select: '_id name slug' },
+        {
+          path: 'thumbnail',
+          select: '_id url name path file_name type caption',
+        },
+        { path: 'video', select: '_id url name path file_name type caption' },
+      ])
+      .search(['title', 'description'])
+      .filter()
+      .sort()
+      .paginate()
+      .fields([
+        'title',
+        'slug',
+        'description',
+        'content',
+        'thumbnail',
+        'video',
+        'youtube',
+        'author',
+        'writer',
+        'category',
+        'tags',
+        'status',
+        'layout',
+        'published_at',
+        'is_featured',
+        'views',
+      ])
+      .tap((q) => q.lean());
+
+    const result = await NewsQuery.execute([
+      {
+        key: 'published',
+        filter: { status: 'published' },
+      },
+      {
+        key: 'draft',
+        filter: { status: 'draft' },
+      },
+      {
+        key: 'pending',
+        filter: { status: 'pending' },
+      },
+    ]);
+    return result;
+  });
 };
 
 export const getBulkNews = async (
@@ -480,109 +537,110 @@ export const getBulkNews = async (
   data: TNews[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const {
-    category: q_category,
-    category_slug: q_category_slug,
-    published_at: q_published_at,
-    published_at_gte: q_published_at_gte,
-    published_at_lte: q_published_at_lte,
-    date: q_date,
-    ...rest
-  } = query;
+  const cacheKey = generateCacheKey(CACHE_PREFIX, ['admin', 'list', query]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const {
+      category: q_category,
+      category_slug: q_category_slug,
+      published_at: q_published_at,
+      published_at_gte: q_published_at_gte,
+      published_at_lte: q_published_at_lte,
+      date: q_date,
+      ...rest
+    } = query;
 
-  const category = q_category as string;
-  const category_slug = q_category_slug as string;
+    const category = q_category as string;
+    const category_slug = q_category_slug as string;
 
-  const categories_ids = await getCategoryIds({ category, category_slug });
+    const categories_ids = await getCategoryIds({ category, category_slug });
 
-  if (categories_ids.length > 0) {
-    rest.category = { $in: categories_ids };
-  }
+    if (categories_ids.length > 0) {
+      rest.category = { $in: categories_ids };
+    }
 
-  if (q_published_at) {
-    const start = new Date(q_published_at as string);
-    start.setHours(0, 0, 0, 0);
-
-    const end = new Date(q_published_at as string);
-    end.setHours(23, 59, 59, 999);
-
-    rest.published_at = { $gte: start, $lte: end };
-  } else if (q_published_at_gte || q_published_at_lte) {
-    const filter: Record<string, Date> = {};
-
-    if (q_published_at_gte) {
-      const start = new Date(q_published_at_gte as string);
+    if (q_published_at) {
+      const start = new Date(q_published_at as string);
       start.setHours(0, 0, 0, 0);
-      filter.$gte = start;
-    }
 
-    if (q_published_at_lte) {
-      const end = new Date(q_published_at_lte as string);
+      const end = new Date(q_published_at as string);
       end.setHours(23, 59, 59, 999);
-      filter.$lte = end;
+
+      rest.published_at = { $gte: start, $lte: end };
+    } else if (q_published_at_gte || q_published_at_lte) {
+      const filter: Record<string, Date> = {};
+
+      if (q_published_at_gte) {
+        const start = new Date(q_published_at_gte as string);
+        start.setHours(0, 0, 0, 0);
+        filter.$gte = start;
+      }
+
+      if (q_published_at_lte) {
+        const end = new Date(q_published_at_lte as string);
+        end.setHours(23, 59, 59, 999);
+        filter.$lte = end;
+      }
+
+      rest.published_at = filter;
+    } else if (q_date) {
+      const end = new Date(q_date as string);
+      end.setHours(23, 59, 59, 999);
+
+      rest.published_at = { $lte: end };
     }
 
-    rest.published_at = filter;
-  } else if (q_date) {
-    const end = new Date(q_date as string);
-    end.setHours(23, 59, 59, 999);
+    const NewsQuery = new AppQueryFind(News, rest)
+      .populate([
+        { path: 'author', select: '_id name email image' },
+        { path: 'category', select: '_id name slug' },
+        { path: 'categories', select: '_id name slug' },
+        { path: 'event', select: '_id name slug' },
+        {
+          path: 'thumbnail',
+          select: '_id url name path file_name type caption',
+        },
+        { path: 'video', select: '_id url name path file_name type caption' },
+      ])
+      .search(['title', 'description'])
+      .filter()
+      .sort()
+      .paginate()
+      .fields([
+        'title',
+        'slug',
+        'description',
+        'content',
+        'thumbnail',
+        'video',
+        'youtube',
+        'author',
+        'writer',
+        'category',
+        'tags',
+        'status',
+        'layout',
+        'published_at',
+        'is_featured',
+        'views',
+      ])
+      .tap((q) => q.lean());
 
-    rest.published_at = { $lte: end };
-  }
-  // else {
-  //   const end = new Date();
-
-  //   rest.published_at = { $lte: end };
-  // }
-
-  const NewsQuery = new AppQueryFind(News, rest)
-    .populate([
-      { path: 'author', select: '_id name email image' },
-      { path: 'category', select: '_id name slug' },
-      { path: 'categories', select: '_id name slug' },
-      { path: 'event', select: '_id name slug' },
-      { path: 'thumbnail', select: '_id url name path file_name type caption' },
-      { path: 'video', select: '_id url name path file_name type caption' },
-    ])
-    .search(['title', 'description'])
-    .filter()
-    .sort()
-    .paginate()
-    .fields([
-      'title',
-      'slug',
-      'description',
-      'content',
-      'thumbnail',
-      'video',
-      'youtube',
-      'author',
-      'writer',
-      'category',
-      'tags',
-      'status',
-      'layout',
-      'published_at',
-      'is_featured',
-      'views',
-    ])
-    .tap((q) => q.lean());
-
-  const result = await NewsQuery.execute([
-    {
-      key: 'published',
-      filter: { status: 'published' },
-    },
-    {
-      key: 'draft',
-      filter: { status: 'draft' },
-    },
-    {
-      key: 'pending',
-      filter: { status: 'pending' },
-    },
-  ]);
-  return result;
+    const result = await NewsQuery.execute([
+      {
+        key: 'published',
+        filter: { status: 'published' },
+      },
+      {
+        key: 'draft',
+        filter: { status: 'draft' },
+      },
+      {
+        key: 'pending',
+        filter: { status: 'pending' },
+      },
+    ]);
+    return result;
+  });
 };
 
 export const updateSelfNews = async (
@@ -642,6 +700,10 @@ export const updateSelfNews = async (
       { path: 'video', select: '_id url name path file_name type caption' },
     ])
     .lean();
+
+  if (result) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
 
   return result!;
 };
@@ -704,6 +766,10 @@ export const updateNews = async (
     ])
     .lean();
 
+  if (result) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
+
   if (
     result &&
     result.author &&
@@ -743,6 +809,10 @@ export const updateSelfBulkNews = async (
     { ...payload },
   );
 
+  if (result.modifiedCount > 0) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
+
   return {
     count: result.modifiedCount,
     not_found_ids: notFoundIds,
@@ -765,6 +835,10 @@ export const updateBulkNews = async (
     { ...payload },
   );
 
+  if (result.modifiedCount > 0) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
+
   return {
     count: result.modifiedCount,
     not_found_ids: notFoundIds,
@@ -781,6 +855,7 @@ export const deleteSelfNews = async (
   }
 
   await news.softDelete();
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
 export const deleteNews = async (id: string): Promise<void> => {
@@ -790,6 +865,7 @@ export const deleteNews = async (id: string): Promise<void> => {
   }
 
   await news.softDelete();
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
 export const deleteNewsPermanent = async (id: string): Promise<void> => {

@@ -2,8 +2,16 @@ import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
 import AppQueryFind from '../../builder/app-query-find';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
+import {
+  generateCacheKey,
+  invalidateCacheByPattern,
+  withCache,
+} from '../../utils/cache.utils';
 import { NewsHeadline } from './news-headline.model';
 import { TNewsHeadline } from './news-headline.type';
+
+const CACHE_PREFIX = 'news-headline';
+const CACHE_TTL = 1800; // 30 minutes
 
 export const createNewsHeadline = async (
   user: TJwtPayload,
@@ -14,6 +22,7 @@ export const createNewsHeadline = async (
   }
 
   const result = await NewsHeadline.create(payload);
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
   return result.toObject();
 };
 
@@ -21,19 +30,31 @@ export const getSelfNewsHeadline = async (
   user: TJwtPayload,
   id: string,
 ): Promise<TNewsHeadline> => {
-  const result = await NewsHeadline.findById(id).lean();
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'News-Headline not found');
-  }
-  return result;
+  return await withCache(
+    generateCacheKey(CACHE_PREFIX, ['self', user._id, id]),
+    CACHE_TTL,
+    async () => {
+      const result = await NewsHeadline.findById(id).lean();
+      if (!result) {
+        throw new AppError(httpStatus.NOT_FOUND, 'News-Headline not found');
+      }
+      return result;
+    },
+  );
 };
 
 export const getNewsHeadline = async (id: string): Promise<TNewsHeadline> => {
-  const result = await NewsHeadline.findById(id).lean();
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'News-Headline not found');
-  }
-  return result;
+  return await withCache(
+    generateCacheKey(CACHE_PREFIX, ['id', id]),
+    CACHE_TTL,
+    async () => {
+      const result = await NewsHeadline.findById(id).lean();
+      if (!result) {
+        throw new AppError(httpStatus.NOT_FOUND, 'News-Headline not found');
+      }
+      return result;
+    },
+  );
 };
 
 export const getPublicNewsHeadlines = async (
@@ -42,29 +63,32 @@ export const getPublicNewsHeadlines = async (
   data: TNewsHeadline[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const { date: q_date, ...rest } = query || {};
+  const cacheKey = generateCacheKey(CACHE_PREFIX, ['public', 'list', query]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const { date: q_date, ...rest } = query || {};
 
-  const date = q_date ? new Date(q_date as string) : new Date();
+    const date = q_date ? new Date(q_date as string) : new Date();
 
-  const filter = {
-    published_at: { $lte: date },
-    $or: [{ expired_at: { $exists: false } }, { expired_at: { $gte: date } }],
-  };
+    const filter = {
+      published_at: { $lte: date },
+      $or: [{ expired_at: { $exists: false } }, { expired_at: { $gte: date } }],
+    };
 
-  const NewsQuery = new AppQueryFind(NewsHeadline, {
-    status: 'published',
-    ...filter,
-    ...rest,
-  })
-    .populate([{ path: 'news', select: '_id title slug' }])
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
+    const NewsQuery = new AppQueryFind(NewsHeadline, {
+      status: 'published',
+      ...filter,
+      ...rest,
+    })
+      .populate([{ path: 'news', select: '_id title slug' }])
+      .filter()
+      .sort()
+      .paginate()
+      .fields()
+      .tap((q) => q.lean());
 
-  const result = await NewsQuery.execute();
-  return result;
+    const result = await NewsQuery.execute();
+    return result;
+  });
 };
 
 export const getSelfNewsHeadlines = async (
@@ -74,16 +98,24 @@ export const getSelfNewsHeadlines = async (
   data: TNewsHeadline[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const NewsQuery = new AppQueryFind(NewsHeadline, query)
-    .populate([{ path: 'news', select: '_id title slug' }])
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
+  const cacheKey = generateCacheKey(CACHE_PREFIX, [
+    'self',
+    user._id,
+    'list',
+    query,
+  ]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const NewsQuery = new AppQueryFind(NewsHeadline, query)
+      .populate([{ path: 'news', select: '_id title slug' }])
+      .filter()
+      .sort()
+      .paginate()
+      .fields()
+      .tap((q) => q.lean());
 
-  const result = await NewsQuery.execute();
-  return result;
+    const result = await NewsQuery.execute();
+    return result;
+  });
 };
 
 export const getNewsHeadlines = async (
@@ -92,20 +124,23 @@ export const getNewsHeadlines = async (
   data: TNewsHeadline[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const NewsQuery = new AppQueryFind(NewsHeadline, query)
-    .populate([{ path: 'news', select: '_id title slug' }])
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
+  const cacheKey = generateCacheKey(CACHE_PREFIX, ['admin', 'list', query]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const NewsQuery = new AppQueryFind(NewsHeadline, query)
+      .populate([{ path: 'news', select: '_id title slug' }])
+      .filter()
+      .sort()
+      .paginate()
+      .fields()
+      .tap((q) => q.lean());
 
-  const result = await NewsQuery.execute();
-  return result;
+    const result = await NewsQuery.execute();
+    return result;
+  });
 };
 
 export const updateSelfNewsHeadline = async (
-  user: TJwtPayload,
+  _user: TJwtPayload,
   id: string,
   payload: Partial<TNewsHeadline>,
 ): Promise<TNewsHeadline> => {
@@ -120,6 +155,10 @@ export const updateSelfNewsHeadline = async (
     new: true,
     runValidators: true,
   }).lean();
+
+  if (result) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
 
   return result!;
 };
@@ -140,11 +179,15 @@ export const updateNewsHeadline = async (
     runValidators: true,
   }).lean();
 
+  if (result) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
+
   return result!;
 };
 
 export const updateSelfNewsHeadlines = async (
-  user: TJwtPayload,
+  _user: TJwtPayload,
   ids: string[],
   payload: Partial<Pick<TNewsHeadline, 'status'>>,
 ): Promise<{
@@ -163,6 +206,10 @@ export const updateSelfNewsHeadlines = async (
     { _id: { $in: foundIds } },
     { ...payload },
   );
+
+  if (result.modifiedCount > 0) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
 
   return {
     count: result.modifiedCount,
@@ -188,6 +235,10 @@ export const updateNewsHeadlines = async (
     { ...payload },
   );
 
+  if (result.modifiedCount > 0) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
+
   return {
     count: result.modifiedCount,
     not_found_ids: notFoundIds,
@@ -195,7 +246,7 @@ export const updateNewsHeadlines = async (
 };
 
 export const deleteSelfNewsHeadline = async (
-  user: TJwtPayload,
+  _user: TJwtPayload,
   id: string,
 ): Promise<void> => {
   const newsHeadline = await NewsHeadline.findById(id);
@@ -204,6 +255,7 @@ export const deleteSelfNewsHeadline = async (
   }
 
   await newsHeadline.softDelete();
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
 export const deleteNewsHeadline = async (id: string): Promise<void> => {
@@ -213,6 +265,7 @@ export const deleteNewsHeadline = async (id: string): Promise<void> => {
   }
 
   await newsHeadline.softDelete();
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
 export const deleteNewsHeadlinePermanent = async (
@@ -227,7 +280,7 @@ export const deleteNewsHeadlinePermanent = async (
 };
 
 export const deleteSelfNewsHeadlines = async (
-  user: TJwtPayload,
+  _user: TJwtPayload,
   ids: string[],
 ): Promise<{
   count: number;
@@ -296,7 +349,7 @@ export const deleteNewsHeadlinesPermanent = async (
 };
 
 export const restoreSelfNewsHeadline = async (
-  user: TJwtPayload,
+  _user: TJwtPayload,
   id: string,
 ): Promise<TNewsHeadline> => {
   const newsHeadline = await NewsHeadline.findOneAndUpdate(
@@ -335,7 +388,7 @@ export const restoreNewsHeadline = async (
 };
 
 export const restoreSelfNewsHeadlines = async (
-  user: TJwtPayload,
+  _user: TJwtPayload,
   ids: string[],
 ): Promise<{
   count: number;

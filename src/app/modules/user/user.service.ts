@@ -2,24 +2,44 @@ import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
 import AppQueryFind from '../../builder/app-query-find';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
+import {
+  generateCacheKey,
+  invalidateCacheByPattern,
+  withCache,
+} from '../../utils/cache.utils';
 import { deleteFiles } from '../../utils/delete-files';
 import { User } from './user.model';
 import { TUser } from './user.type';
 
+const CACHE_PREFIX = 'user';
+const CACHE_TTL = 3600; // 1 hour
+
 export const getSelf = async (user: TJwtPayload): Promise<TUser> => {
-  const result = await User.findById(user._id).lean();
-  if (!result) {
-    throw new AppError(404, 'User not found');
-  }
-  return result;
+  return await withCache(
+    generateCacheKey(CACHE_PREFIX, ['id', user._id]),
+    CACHE_TTL,
+    async () => {
+      const result = await User.findById(user._id).lean();
+      if (!result) {
+        throw new AppError(404, 'User not found');
+      }
+      return result;
+    },
+  );
 };
 
 export const getUser = async (id: string): Promise<TUser> => {
-  const result = await User.findById(id).lean();
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
-  }
-  return result;
+  return await withCache(
+    generateCacheKey(CACHE_PREFIX, ['id', id]),
+    CACHE_TTL,
+    async () => {
+      const result = await User.findById(id).lean();
+      if (!result) {
+        throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+      }
+      return result;
+    },
+  );
 };
 
 export const getWritersUsers = async (
@@ -28,20 +48,23 @@ export const getWritersUsers = async (
   data: TUser[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const userQuery = new AppQueryFind(User, {
-    role: { $in: ['admin', 'author'] },
-    ...query,
-  })
-    .search(['name', 'email'])
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
+  const cacheKey = generateCacheKey(CACHE_PREFIX, ['writers', query]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const userQuery = new AppQueryFind(User, {
+      role: { $in: ['admin', 'author'] },
+      ...query,
+    })
+      .search(['name', 'email'])
+      .filter()
+      .sort()
+      .paginate()
+      .fields()
+      .tap((q) => q.lean());
 
-  const result = await userQuery.execute();
+    const result = await userQuery.execute();
 
-  return result;
+    return result;
+  });
 };
 
 export const getUsers = async (
@@ -50,17 +73,20 @@ export const getUsers = async (
   data: TUser[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const userQuery = new AppQueryFind(User, query)
-    .search(['name', 'email', 'image'])
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
+  const cacheKey = generateCacheKey(CACHE_PREFIX, ['admin', 'list', query]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const userQuery = new AppQueryFind(User, query)
+      .search(['name', 'email', 'image'])
+      .filter()
+      .sort()
+      .paginate()
+      .fields()
+      .tap((q) => q.lean());
 
-  const result = await userQuery.execute();
+    const result = await userQuery.execute();
 
-  return result;
+    return result;
+  });
 };
 
 export const updateSelf = async (
@@ -89,6 +115,10 @@ export const updateSelf = async (
     runValidators: true,
   });
 
+  if (result) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
+
   return result!;
 };
 
@@ -107,6 +137,10 @@ export const updateUser = async (
     new: true,
     runValidators: true,
   });
+
+  if (updatedUser) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
 
   return updatedUser!;
 };
@@ -140,6 +174,7 @@ export const deleteUser = async (id: string): Promise<void> => {
   }
 
   await user.softDelete();
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
 export const deleteUserPermanent = async (id: string): Promise<void> => {

@@ -2,9 +2,17 @@ import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
 import AppQueryFind from '../../builder/app-query-find';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
+import {
+  generateCacheKey,
+  invalidateCacheByPattern,
+  withCache,
+} from '../../utils/cache.utils';
 import { TGuest } from '../guest/guest.type';
 import { View } from './view.model';
 import { TView } from './view.type';
+
+const CACHE_PREFIX = 'view';
+const CACHE_TTL = 300; // 5 minutes
 
 export const createView = async (
   user: TJwtPayload,
@@ -22,6 +30,9 @@ export const createView = async (
   };
 
   const result = await View.create(update);
+  if (result) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
   return result.toObject();
 };
 
@@ -34,24 +45,37 @@ export const getSelfView = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const result = await View.findOne({
-    _id: id,
-    ...(user?._id ? { user: user._id } : { guest: guest.token }),
-  }).lean();
+  const cacheKey = generateCacheKey(CACHE_PREFIX, [
+    'self',
+    user?._id || guest?.token,
+    id,
+  ]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const result = await View.findOne({
+      _id: id,
+      ...(user?._id ? { user: user._id } : { guest: guest.token }),
+    }).lean();
 
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'View not found');
-  }
+    if (!result) {
+      throw new AppError(httpStatus.NOT_FOUND, 'View not found');
+    }
 
-  return result;
+    return result;
+  });
 };
 
 export const getView = async (id: string): Promise<TView> => {
-  const result = await View.findById(id).lean();
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'View not found');
-  }
-  return result;
+  return await withCache(
+    generateCacheKey(CACHE_PREFIX, ['id', id]),
+    CACHE_TTL,
+    async () => {
+      const result = await View.findById(id).lean();
+      if (!result) {
+        throw new AppError(httpStatus.NOT_FOUND, 'View not found');
+      }
+      return result;
+    },
+  );
 };
 
 export const getSelfViews = async (
@@ -116,15 +140,24 @@ export const getSelfNewsView = async (
     const isSelfViewed = await View.findOne(query).lean();
 
     if (!isSelfViewed) {
-      await View.create({
+      const created = await View.create({
         news: news_id,
         ...(user?._id ? { user: user._id } : {}),
         ...(guest?.token ? { guest: guest.token } : {}),
       });
+      if (created) {
+        await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+      }
     }
   }
 
-  const result = await View.countDocuments({ news: news_id });
+  const result = await withCache(
+    generateCacheKey(CACHE_PREFIX, ['news', news_id, 'count']),
+    60,
+    async () => {
+      return await View.countDocuments({ news: news_id });
+    },
+  );
 
   return { data: null, meta: { views: result } };
 };

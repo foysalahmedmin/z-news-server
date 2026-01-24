@@ -2,9 +2,17 @@ import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
 import AppQueryFind from '../../builder/app-query-find';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
+import {
+  generateCacheKey,
+  invalidateCacheByPattern,
+  withCache,
+} from '../../utils/cache.utils';
 import { TGuest } from '../guest/guest.type';
 import { Comment } from './comment.model';
 import { TComment } from './comment.type';
+
+const CACHE_PREFIX = 'comment';
+const CACHE_TTL = 600; // 10 minutes
 
 export const createComment = async (
   user: TJwtPayload,
@@ -22,6 +30,7 @@ export const createComment = async (
   };
 
   const result = await Comment.create(update);
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
   return result.toObject();
 };
 
@@ -34,34 +43,49 @@ export const getSelfComment = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const result = await Comment.findOne({
-    _id: id,
-    ...(user?._id ? { user: user._id } : { guest: guest.token }),
-  })
-    .populate([
-      { path: 'user', select: '_id name email image' },
-      { path: 'news', select: '_id slug title thumbnail' },
-    ])
-    .lean();
+  const cacheKey = generateCacheKey(CACHE_PREFIX, [
+    'self',
+    user?._id || guest?.token,
+    id,
+  ]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const result = await Comment.findOne({
+      _id: id,
+      ...(user?._id ? { user: user._id } : { guest: guest.token }),
+    })
+      .populate([
+        { path: 'user', select: '_id name email image' },
+        { path: 'news', select: '_id slug title thumbnail' },
+      ])
+      .lean();
 
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
-  }
+    if (!result) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
+    }
 
-  return result;
+    return result;
+  });
 };
 
 export const getComment = async (id: string): Promise<TComment> => {
-  const result = await Comment.findById(id)
-    .populate([
-      { path: 'user', select: '_id name email image' },
-      { path: 'news', select: '_id slug title thumbnail' },
-    ])
-    .lean();
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
-  }
-  return result;
+  return await withCache(
+    generateCacheKey(CACHE_PREFIX, ['id', id]),
+    CACHE_TTL,
+    async () => {
+      const result = await Comment.findById(id)
+        .populate([
+          { path: 'user', select: '_id name email image' },
+          { path: 'news', select: '_id slug title thumbnail' },
+        ])
+        .lean();
+
+      if (!result) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
+      }
+
+      return result;
+    },
+  );
 };
 
 export const getPublicComments = async (
@@ -70,23 +94,26 @@ export const getPublicComments = async (
   data: TComment[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const commentQuery = new AppQueryFind(Comment, {
-    status: 'approved',
-    ...query,
-  })
-    .populate([
-      { path: 'user', select: '_id name email image' },
-      { path: 'news', select: '_id slug title thumbnail' },
-    ])
-    .search(['name', 'email', 'content'])
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
+  const cacheKey = generateCacheKey(CACHE_PREFIX, ['public', 'list', query]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const commentQuery = new AppQueryFind(Comment, {
+      status: 'approved',
+      ...query,
+    })
+      .populate([
+        { path: 'user', select: '_id name email image' },
+        { path: 'news', select: '_id slug title thumbnail' },
+      ])
+      .search(['name', 'email', 'content'])
+      .filter()
+      .sort()
+      .paginate()
+      .fields()
+      .tap((q) => q.lean());
 
-  const result = await commentQuery.execute();
-  return result;
+    const result = await commentQuery.execute();
+    return result;
+  });
 };
 
 export const getSelfComments = async (
@@ -101,24 +128,32 @@ export const getSelfComments = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const filter = {
-    ...(user?._id ? { user: user._id } : { guest: guest.token }),
-  };
+  const cacheKey = generateCacheKey(CACHE_PREFIX, [
+    'self',
+    user?._id || guest?.token,
+    'list',
+    query,
+  ]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const filter = {
+      ...(user?._id ? { user: user._id } : { guest: guest.token }),
+    };
 
-  const commentQuery = new AppQueryFind(Comment, { ...filter, ...query })
-    .populate([
-      { path: 'user', select: '_id name email image' },
-      { path: 'news', select: '_id slug title thumbnail' },
-    ])
-    .search(['name', 'email', 'content'])
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
+    const commentQuery = new AppQueryFind(Comment, { ...filter, ...query })
+      .populate([
+        { path: 'user', select: '_id name email image' },
+        { path: 'news', select: '_id slug title thumbnail' },
+      ])
+      .search(['name', 'email', 'content'])
+      .filter()
+      .sort()
+      .paginate()
+      .fields()
+      .tap((q) => q.lean());
 
-  const result = await commentQuery.execute();
-  return result;
+    const result = await commentQuery.execute();
+    return result;
+  });
 };
 
 export const getComments = async (
@@ -127,20 +162,23 @@ export const getComments = async (
   data: TComment[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const commentQuery = new AppQueryFind(Comment, query)
-    .populate([
-      { path: 'user', select: '_id name email image' },
-      { path: 'news', select: '_id slug title thumbnail' },
-    ])
-    .search(['name', 'email', 'content'])
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
+  const cacheKey = generateCacheKey(CACHE_PREFIX, ['admin', 'list', query]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const commentQuery = new AppQueryFind(Comment, query)
+      .populate([
+        { path: 'user', select: '_id name email image' },
+        { path: 'news', select: '_id slug title thumbnail' },
+      ])
+      .search(['name', 'email', 'content'])
+      .filter()
+      .sort()
+      .paginate()
+      .fields()
+      .tap((q) => q.lean());
 
-  const result = await commentQuery.execute();
-  return result;
+    const result = await commentQuery.execute();
+    return result;
+  });
 };
 
 export const updateSelfComment = async (
@@ -174,6 +212,10 @@ export const updateSelfComment = async (
     runValidators: true,
   }).lean();
 
+  if (result) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
+
   return result!;
 };
 
@@ -197,6 +239,10 @@ export const updateComment = async (
     new: true,
     runValidators: true,
   }).lean();
+
+  if (result) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
 
   return result!;
 };
@@ -275,6 +321,7 @@ export const deleteSelfComment = async (
   }
 
   await comment.softDelete();
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
 export const deleteComment = async (id: string): Promise<void> => {
@@ -284,6 +331,7 @@ export const deleteComment = async (id: string): Promise<void> => {
   }
 
   await comment.softDelete();
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
 export const deleteCommentPermanent = async (id: string): Promise<void> => {

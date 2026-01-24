@@ -2,8 +2,16 @@ import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
 import AppQueryFind from '../../builder/app-query-find';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
+import {
+  generateCacheKey,
+  invalidateCacheByPattern,
+  withCache,
+} from '../../utils/cache.utils';
 import { NewsBreak } from './news-break.model';
 import { TNewsBreak } from './news-break.type';
+
+const CACHE_PREFIX = 'news-break';
+const CACHE_TTL = 1800; // 30 minutes
 
 export const createNewsBreak = async (
   user: TJwtPayload,
@@ -14,6 +22,7 @@ export const createNewsBreak = async (
   }
 
   const result = await NewsBreak.create(payload);
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
   return result.toObject();
 };
 
@@ -21,19 +30,31 @@ export const getSelfNewsBreak = async (
   user: TJwtPayload,
   id: string,
 ): Promise<TNewsBreak> => {
-  const result = await NewsBreak.findById(id).lean();
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'News-Break not found');
-  }
-  return result;
+  return await withCache(
+    generateCacheKey(CACHE_PREFIX, ['self', user._id, id]),
+    CACHE_TTL,
+    async () => {
+      const result = await NewsBreak.findById(id).lean();
+      if (!result) {
+        throw new AppError(httpStatus.NOT_FOUND, 'News-Break not found');
+      }
+      return result;
+    },
+  );
 };
 
 export const getNewsBreak = async (id: string): Promise<TNewsBreak> => {
-  const result = await NewsBreak.findById(id).lean();
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'News-Break not found');
-  }
-  return result;
+  return await withCache(
+    generateCacheKey(CACHE_PREFIX, ['id', id]),
+    CACHE_TTL,
+    async () => {
+      const result = await NewsBreak.findById(id).lean();
+      if (!result) {
+        throw new AppError(httpStatus.NOT_FOUND, 'News-Break not found');
+      }
+      return result;
+    },
+  );
 };
 
 export const getPublicNewsBreaks = async (
@@ -42,29 +63,32 @@ export const getPublicNewsBreaks = async (
   data: TNewsBreak[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const { date: q_date, ...rest } = query || {};
+  const cacheKey = generateCacheKey(CACHE_PREFIX, ['public', 'list', query]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const { date: q_date, ...rest } = query || {};
 
-  const date = q_date ? new Date(q_date as string) : new Date();
+    const date = q_date ? new Date(q_date as string) : new Date();
 
-  const filter = {
-    published_at: { $lte: date },
-    $or: [{ expired_at: { $exists: false } }, { expired_at: { $gte: date } }],
-  };
+    const filter = {
+      published_at: { $lte: date },
+      $or: [{ expired_at: { $exists: false } }, { expired_at: { $gte: date } }],
+    };
 
-  const NewsQuery = new AppQueryFind(NewsBreak, {
-    status: 'published',
-    ...filter,
-    ...rest,
-  })
-    .populate([{ path: 'news', select: '_id title slug' }])
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
+    const NewsQuery = new AppQueryFind(NewsBreak, {
+      status: 'published',
+      ...filter,
+      ...rest,
+    })
+      .populate([{ path: 'news', select: '_id title slug' }])
+      .filter()
+      .sort()
+      .paginate()
+      .fields()
+      .tap((q) => q.lean());
 
-  const result = await NewsQuery.execute();
-  return result;
+    const result = await NewsQuery.execute();
+    return result;
+  });
 };
 
 export const getSelfNewsBreaks = async (
@@ -74,15 +98,23 @@ export const getSelfNewsBreaks = async (
   data: TNewsBreak[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const NewsQuery = new AppQueryFind(NewsBreak, query)
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
+  const cacheKey = generateCacheKey(CACHE_PREFIX, [
+    'self',
+    user._id,
+    'list',
+    query,
+  ]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const NewsQuery = new AppQueryFind(NewsBreak, query)
+      .filter()
+      .sort()
+      .paginate()
+      .fields()
+      .tap((q) => q.lean());
 
-  const result = await NewsQuery.execute();
-  return result;
+    const result = await NewsQuery.execute();
+    return result;
+  });
 };
 
 export const getNewsBreaks = async (
@@ -91,19 +123,22 @@ export const getNewsBreaks = async (
   data: TNewsBreak[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const NewsQuery = new AppQueryFind(NewsBreak, query)
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
+  const cacheKey = generateCacheKey(CACHE_PREFIX, ['admin', 'list', query]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const NewsQuery = new AppQueryFind(NewsBreak, query)
+      .filter()
+      .sort()
+      .paginate()
+      .fields()
+      .tap((q) => q.lean());
 
-  const result = await NewsQuery.execute();
-  return result;
+    const result = await NewsQuery.execute();
+    return result;
+  });
 };
 
 export const updateSelfNewsBreak = async (
-  user: TJwtPayload,
+  _user: TJwtPayload,
   id: string,
   payload: Partial<TNewsBreak>,
 ): Promise<TNewsBreak> => {
@@ -118,6 +153,10 @@ export const updateSelfNewsBreak = async (
     new: true,
     runValidators: true,
   }).lean();
+
+  if (result) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
 
   return result!;
 };
@@ -138,11 +177,15 @@ export const updateNewsBreak = async (
     runValidators: true,
   }).lean();
 
+  if (result) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
+
   return result!;
 };
 
 export const updateSelfNewsBreaks = async (
-  user: TJwtPayload,
+  _user: TJwtPayload,
   ids: string[],
   payload: Partial<Pick<TNewsBreak, 'status'>>,
 ): Promise<{
@@ -159,6 +202,10 @@ export const updateSelfNewsBreaks = async (
     { _id: { $in: foundIds } },
     { ...payload },
   );
+
+  if (result.modifiedCount > 0) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
 
   return {
     count: result.modifiedCount,
@@ -182,6 +229,10 @@ export const updateNewsBreaks = async (
     { ...payload },
   );
 
+  if (result.modifiedCount > 0) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
+
   return {
     count: result.modifiedCount,
     not_found_ids: notFoundIds,
@@ -189,7 +240,7 @@ export const updateNewsBreaks = async (
 };
 
 export const deleteSelfNewsBreak = async (
-  user: TJwtPayload,
+  _user: TJwtPayload,
   id: string,
 ): Promise<void> => {
   const newsBreak = await NewsBreak.findById(id);
@@ -198,6 +249,7 @@ export const deleteSelfNewsBreak = async (
   }
 
   await newsBreak.softDelete();
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
 export const deleteNewsBreak = async (id: string): Promise<void> => {
@@ -207,6 +259,7 @@ export const deleteNewsBreak = async (id: string): Promise<void> => {
   }
 
   await newsBreak.softDelete();
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
 export const deleteNewsBreakPermanent = async (id: string): Promise<void> => {
@@ -219,7 +272,7 @@ export const deleteNewsBreakPermanent = async (id: string): Promise<void> => {
 };
 
 export const deleteSelfNewsBreaks = async (
-  user: TJwtPayload,
+  _user: TJwtPayload,
   ids: string[],
 ): Promise<{
   count: number;
@@ -276,7 +329,7 @@ export const deleteNewsBreaksPermanent = async (
 };
 
 export const restoreSelfNewsBreak = async (
-  user: TJwtPayload,
+  _user: TJwtPayload,
   id: string,
 ): Promise<TNewsBreak> => {
   const newsBreak = await NewsBreak.findOneAndUpdate(
@@ -313,7 +366,7 @@ export const restoreNewsBreak = async (id: string): Promise<TNewsBreak> => {
 };
 
 export const restoreSelfNewsBreaks = async (
-  user: TJwtPayload,
+  _user: TJwtPayload,
   ids: string[],
 ): Promise<{
   count: number;

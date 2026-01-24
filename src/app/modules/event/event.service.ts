@@ -1,33 +1,54 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
 import AppQueryFind from '../../builder/app-query-find';
+import {
+  generateCacheKey,
+  invalidateCacheByPattern,
+  withCache,
+} from '../../utils/cache.utils';
 import { Event } from './event.model';
 import { TEvent } from './event.type';
 
+const CACHE_PREFIX = 'event';
+const CACHE_TTL = 3600; // 1 hour
+
 export const createEvent = async (data: TEvent): Promise<TEvent> => {
   const result = await Event.create(data);
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
   return result.toObject();
 };
 
 export const getPublicEvent = async (slug: string): Promise<TEvent> => {
-  const result = await Event.findOne({
-    slug: slug,
-    status: 'active',
-  }).populate([{ path: 'category', select: '_id name slug' }]);
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Event not found');
-  }
-  return result;
+  return await withCache(
+    generateCacheKey(CACHE_PREFIX, ['slug', slug]),
+    CACHE_TTL,
+    async () => {
+      const result = await Event.findOne({
+        slug: slug,
+        status: 'active',
+      }).populate([{ path: 'category', select: '_id name slug' }]);
+      if (!result) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Event not found');
+      }
+      return result;
+    },
+  );
 };
 
 export const getEvent = async (id: string): Promise<TEvent> => {
-  const result = await Event.findById(id).populate([
-    { path: 'category', select: '_id name slug' },
-  ]);
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Event not found');
-  }
-  return result;
+  return await withCache(
+    generateCacheKey(CACHE_PREFIX, ['id', id]),
+    CACHE_TTL,
+    async () => {
+      const result = await Event.findById(id).populate([
+        { path: 'category', select: '_id name slug' },
+      ]);
+      if (!result) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Event not found');
+      }
+      return result;
+    },
+  );
 };
 
 export const getPublicEvents = async (
@@ -36,30 +57,31 @@ export const getPublicEvents = async (
   data: TEvent[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const { date: q_date, ...rest } = query || {};
+  const cacheKey = generateCacheKey(CACHE_PREFIX, ['public', 'list', query]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const { date: q_date, ...rest } = query || {};
 
-  const date = q_date ? new Date(q_date as string) : new Date();
+    const date = q_date ? new Date(q_date as string) : new Date();
 
-  const filter = {
-    status: 'active',
-    published_at: { $lte: date },
-    $or: [{ expired_at: { $exists: false } }, { expired_at: { $gte: date } }],
-  };
+    const filter = {
+      status: 'active',
+      published_at: { $lte: date },
+      $or: [{ expired_at: { $exists: false } }, { expired_at: { $gte: date } }],
+    };
 
-  const eventQuery = new AppQueryFind(Event, { ...filter, ...rest })
-    .populate([
-      { path: 'category', select: '_id name slug' },
-    ])
-    .search(['name'])
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
+    const eventQuery = new AppQueryFind(Event, { ...filter, ...rest })
+      .populate([{ path: 'category', select: '_id name slug' }])
+      .search(['name'])
+      .filter()
+      .sort()
+      .paginate()
+      .fields()
+      .tap((q) => q.lean());
 
-  const result = await eventQuery.execute();
+    const result = await eventQuery.execute();
 
-  return result;
+    return result;
+  });
 };
 
 export const getEvents = async (
@@ -68,31 +90,34 @@ export const getEvents = async (
   data: TEvent[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const eventQuery = new AppQueryFind(Event, query)
-    .populate([{ path: 'category', select: '_id name slug' }])
-    .search(['name'])
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
+  const cacheKey = generateCacheKey(CACHE_PREFIX, ['admin', 'list', query]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const eventQuery = new AppQueryFind(Event, query)
+      .populate([{ path: 'category', select: '_id name slug' }])
+      .search(['name'])
+      .filter()
+      .sort()
+      .paginate()
+      .fields()
+      .tap((q) => q.lean());
 
-  const result = await eventQuery.execute([
-    {
-      key: 'active',
-      filter: { status: 'active' },
-    },
-    {
-      key: 'inactive',
-      filter: { status: 'inactive' },
-    },
-    {
-      key: 'featured',
-      filter: { is_featured: true },
-    },
-  ]);
+    const result = await eventQuery.execute([
+      {
+        key: 'active',
+        filter: { status: 'active' },
+      },
+      {
+        key: 'inactive',
+        filter: { status: 'inactive' },
+      },
+      {
+        key: 'featured',
+        filter: { is_featured: true },
+      },
+    ]);
 
-  return result;
+    return result;
+  });
 };
 
 export const updateEvent = async (
@@ -109,6 +134,10 @@ export const updateEvent = async (
     new: true,
     runValidators: true,
   });
+
+  if (result) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
 
   return result!;
 };
@@ -142,6 +171,7 @@ export const deleteEvent = async (id: string): Promise<void> => {
   }
 
   await event.softDelete();
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
 export const deleteEventPermanent = async (id: string): Promise<void> => {

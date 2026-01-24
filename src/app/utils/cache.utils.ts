@@ -7,6 +7,26 @@ import { cacheClient } from '../redis';
  * @param ttl Time-to-live in seconds.
  * @param fn The function to execute if cache misses.
  */
+export const generateCacheKey = (prefix: string, parts: any[]): string => {
+  const processPart = (part: any): string => {
+    if (part === null || part === undefined) return '';
+    if (typeof part === 'object') {
+      // Stable stringify for objects
+      return JSON.stringify(
+        Object.keys(part)
+          .sort()
+          .reduce((acc: any, key) => {
+            acc[key] = part[key];
+            return acc;
+          }, {}),
+      );
+    }
+    return String(part);
+  };
+
+  return `${prefix}:${parts.map(processPart).join(':')}`;
+};
+
 export const withCache = async <T>(
   key: string,
   ttl: number,

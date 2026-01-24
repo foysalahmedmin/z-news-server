@@ -1,17 +1,28 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
 import AppQueryFind from '../../builder/app-query-find';
-import { emitToRole, emitToUser } from '../../socket';
+import { emitToUser } from '../../socket';
+import {
+  generateCacheKey,
+  invalidateCacheByPattern,
+  withCache,
+} from '../../utils/cache.utils';
 import { News } from '../news/news.model';
 import { NotificationRecipient } from '../notification-recipient/notification-recipient.model';
 import { User } from '../user/user.model';
 import { Notification } from './notification.model';
 import { TNotification, TType } from './notification.type';
 
+const CACHE_PREFIX = 'notification';
+const CACHE_TTL = 300; // 5 minutes
+
 export const createNotification = async (
   data: TNotification,
 ): Promise<TNotification> => {
   const result = await Notification.create(data);
+  if (result) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
   return result.toObject();
 };
 
@@ -69,14 +80,22 @@ export const sendNewsNotification = async (payload: {
         notification: notification._id,
       })
         .populate([
-          { path: 'notification', select: '_id title message type sender priority channels created_at' },
+          {
+            path: 'notification',
+            select:
+              '_id title message type sender priority channels created_at',
+          },
           { path: 'recipient', select: '_id name email image role' },
         ])
         .lean();
 
       // Send to each admin individually for better targeting
       for (const recipient of populatedRecipients) {
-        if (recipient.recipient && typeof recipient.recipient === 'object' && '_id' in recipient.recipient) {
+        if (
+          recipient.recipient &&
+          typeof recipient.recipient === 'object' &&
+          '_id' in recipient.recipient
+        ) {
           emitToUser(
             recipient.recipient._id.toString(),
             'notification-recipient-created',
@@ -120,7 +139,11 @@ export const sendNewsNotification = async (payload: {
         _id: createdRecipient._id,
       })
         .populate([
-          { path: 'notification', select: '_id title message type sender priority channels created_at' },
+          {
+            path: 'notification',
+            select:
+              '_id title message type sender priority channels created_at',
+          },
           { path: 'recipient', select: '_id name email image role' },
         ])
         .lean();
@@ -128,17 +151,19 @@ export const sendNewsNotification = async (payload: {
       // Send to the news author
       if (result && news.author) {
         let authorId: string;
-        if (typeof news.author === 'object' && news.author !== null && '_id' in news.author) {
-          authorId = (news.author as { _id: { toString(): string } })._id.toString();
+        if (
+          typeof news.author === 'object' &&
+          news.author !== null &&
+          '_id' in news.author
+        ) {
+          authorId = (
+            news.author as { _id: { toString(): string } }
+          )._id.toString();
         } else {
           authorId = String(news.author);
         }
-        
-        emitToUser(
-          authorId,
-          'notification-recipient-created',
-          result,
-        );
+
+        emitToUser(authorId, 'notification-recipient-created', result);
       }
     }
   } catch (error) {
@@ -147,11 +172,17 @@ export const sendNewsNotification = async (payload: {
 };
 
 export const getNotification = async (id: string): Promise<TNotification> => {
-  const result = await Notification.findById(id);
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Notification not found');
-  }
-  return result;
+  return await withCache(
+    generateCacheKey(CACHE_PREFIX, ['id', id]),
+    CACHE_TTL,
+    async () => {
+      const result = await Notification.findById(id);
+      if (!result) {
+        throw new AppError(httpStatus.NOT_FOUND, 'Notification not found');
+      }
+      return result;
+    },
+  );
 };
 
 export const getNotifications = async (
@@ -160,17 +191,20 @@ export const getNotifications = async (
   data: TNotification[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const notificationQuery = new AppQueryFind(Notification, query)
-    .search(['title', 'message', 'type', 'priority'])
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
+  const cacheKey = generateCacheKey(CACHE_PREFIX, ['list', query]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const notificationQuery = new AppQueryFind(Notification, query)
+      .search(['title', 'message', 'type', 'priority'])
+      .filter()
+      .sort()
+      .paginate()
+      .fields()
+      .tap((q) => q.lean());
 
-  const result = await notificationQuery.execute();
+    const result = await notificationQuery.execute();
 
-  return result;
+    return result;
+  });
 };
 
 export const updateNotification = async (
@@ -188,6 +222,10 @@ export const updateNotification = async (
     new: true,
     runValidators: true,
   });
+
+  if (result) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
 
   return result!;
 };
@@ -223,6 +261,7 @@ export const deleteNotification = async (id: string): Promise<void> => {
   }
 
   await notification.softDelete();
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
 export const deleteNotificationPermanent = async (

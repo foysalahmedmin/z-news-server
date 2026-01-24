@@ -13,11 +13,14 @@ export default {
     `http://localhost:${process.env.PORT || 5000}`,
   cluster_enabled: process.env.CLUSTER_ENABLED === 'true' ? true : false,
   redis_enabled: !!(
-    process.env.REDIS_ENABLED === 'true' && !!process.env.REDIS_URL
+    process.env.REDIS_ENABLED === 'true' &&
+    !!process.env.REDIS_HOST &&
+    !!process.env.REDIS_PORT
   )
     ? true
     : false,
-  redis_url: process.env.REDIS_URL as string,
+  redis_host: process.env.REDIS_HOST as string,
+  redis_port: process.env.REDIS_PORT as string,
   redis_password: process.env.REDIS_PASSWORD as string,
   database_url: process.env.DATABASE_URL as string,
   front_end_url: process.env.FRONT_END_URL as string,
@@ -42,6 +45,11 @@ export default {
   auth_user_email: process.env.AUTH_USER_EMAIL as string,
   auth_user_email_password: process.env.AUTH_USER_EMAIL_PASSWORD as string,
   server_api_key: process.env.SERVER_API_KEY as string,
+  gcp: {
+    project_id: process.env.GOOGLE_CLOUD_PROJECT_ID as string,
+    credentials_path: process.env.GOOGLE_APPLICATION_CREDENTIALS as string,
+    bucket: process.env.GOOGLE_CLOUD_STORAGE_BUCKET || 'z-news-public-assets',
+  },
 };
 
 // node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"

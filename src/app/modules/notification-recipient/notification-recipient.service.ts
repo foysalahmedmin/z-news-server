@@ -2,13 +2,24 @@ import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
 import AppQueryFind from '../../builder/app-query-find';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
+import {
+  generateCacheKey,
+  invalidateCacheByPattern,
+  withCache,
+} from '../../utils/cache.utils';
 import { NotificationRecipient } from './notification-recipient.model';
 import { TNotificationRecipient } from './notification-recipient.type';
+
+const CACHE_PREFIX = 'notification-recipient';
+const CACHE_TTL = 300; // 5 minutes
 
 export const createNotificationRecipient = async (
   data: TNotificationRecipient,
 ): Promise<TNotificationRecipient> => {
   const result = await NotificationRecipient.create(data);
+  if (result) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
   return result.toObject();
 };
 
@@ -16,40 +27,52 @@ export const getSelfNotificationRecipient = async (
   user: TJwtPayload,
   id: string,
 ): Promise<TNotificationRecipient> => {
-  const result = await NotificationRecipient.findOne({
-    _id: id,
-    recipient: user._id,
-  })
-    .populate([
-      { path: 'recipient', select: '_id name email image' },
-      {
-        path: 'notification',
-        select: '_id title message type sender priority channels',
-      },
-    ])
-    .lean();
+  return await withCache(
+    generateCacheKey(CACHE_PREFIX, ['self', user._id, id]),
+    CACHE_TTL,
+    async () => {
+      const result = await NotificationRecipient.findOne({
+        _id: id,
+        recipient: user._id,
+      })
+        .populate([
+          { path: 'recipient', select: '_id name email image' },
+          {
+            path: 'notification',
+            select: '_id title message type sender priority channels',
+          },
+        ])
+        .lean();
 
-  if (!result) {
-    throw new AppError(
-      httpStatus.NOT_FOUND,
-      'Notification recipient not found',
-    );
-  }
-  return result;
+      if (!result) {
+        throw new AppError(
+          httpStatus.NOT_FOUND,
+          'Notification recipient not found',
+        );
+      }
+      return result;
+    },
+  );
 };
 
 export const getNotificationRecipient = async (
   id: string,
 ): Promise<TNotificationRecipient> => {
-  const result = await NotificationRecipient.findById(id).lean();
+  return await withCache(
+    generateCacheKey(CACHE_PREFIX, ['id', id]),
+    CACHE_TTL,
+    async () => {
+      const result = await NotificationRecipient.findById(id).lean();
 
-  if (!result) {
-    throw new AppError(
-      httpStatus.NOT_FOUND,
-      'Notification recipient not found',
-    );
-  }
-  return result;
+      if (!result) {
+        throw new AppError(
+          httpStatus.NOT_FOUND,
+          'Notification recipient not found',
+        );
+      }
+      return result;
+    },
+  );
 };
 
 export const getSelfNotificationRecipients = async (
@@ -59,30 +82,38 @@ export const getSelfNotificationRecipients = async (
   data: TNotificationRecipient[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const notificationQuery = new AppQueryFind(NotificationRecipient, {
-    recipient: user._id,
-    ...query,
-  })
-    .populate([
-      { path: 'recipient', select: '_id name email image' },
-      {
-        path: 'notification',
-        select: '_id title message type sender priority channels created_at',
-        populate: { path: 'sender', select: '_id name email image' },
-      },
-    ])
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
-
-  return await notificationQuery.execute([
-    {
-      key: 'unread',
-      filter: { is_read: false, recipient: user._id },
-    },
+  const cacheKey = generateCacheKey(CACHE_PREFIX, [
+    'self',
+    user._id,
+    'list',
+    query,
   ]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const notificationQuery = new AppQueryFind(NotificationRecipient, {
+      recipient: user._id,
+      ...query,
+    })
+      .populate([
+        { path: 'recipient', select: '_id name email image' },
+        {
+          path: 'notification',
+          select: '_id title message type sender priority channels created_at',
+          populate: { path: 'sender', select: '_id name email image' },
+        },
+      ])
+      .filter()
+      .sort()
+      .paginate()
+      .fields()
+      .tap((q) => q.lean());
+
+    return await notificationQuery.execute([
+      {
+        key: 'unread',
+        filter: { is_read: false, recipient: user._id },
+      },
+    ]);
+  });
 };
 
 export const getNotificationRecipients = async (
@@ -91,23 +122,26 @@ export const getNotificationRecipients = async (
   data: TNotificationRecipient[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const notificationQuery = new AppQueryFind(NotificationRecipient, query)
-    .populate([
-      { path: 'recipient', select: '_id name email image' },
-      { path: 'notification', select: '_id title type sender' },
-    ])
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
+  const cacheKey = generateCacheKey(CACHE_PREFIX, ['admin', 'list', query]);
+  return await withCache(cacheKey, CACHE_TTL, async () => {
+    const notificationQuery = new AppQueryFind(NotificationRecipient, query)
+      .populate([
+        { path: 'recipient', select: '_id name email image' },
+        { path: 'notification', select: '_id title type sender' },
+      ])
+      .filter()
+      .sort()
+      .paginate()
+      .fields()
+      .tap((q) => q.lean());
 
-  return await notificationQuery.execute([
-    {
-      key: 'unread',
-      filter: { is_read: false },
-    },
-  ]);
+    return await notificationQuery.execute([
+      {
+        key: 'unread',
+        filter: { is_read: false },
+      },
+    ]);
+  });
 };
 
 export const updateSelfNotificationRecipient = async (
@@ -154,6 +188,10 @@ export const updateSelfNotificationRecipient = async (
     ])
     .lean();
 
+  if (result) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
+
   return result!;
 };
 
@@ -175,6 +213,10 @@ export const updateNotificationRecipient = async (
     runValidators: true,
   }).lean();
 
+  if (result) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
+
   return result!;
 };
 
@@ -185,6 +227,10 @@ export const readAllNotificationRecipients = async (
     { recipient: user._id, is_read: false },
     { is_read: true, read_at: new Date() },
   );
+
+  if (result.modifiedCount > 0) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
 
   return { count: result.modifiedCount };
 };
@@ -253,6 +299,7 @@ export const deleteSelfNotificationRecipient = async (
     );
 
   await data.softDelete();
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
 export const deleteNotificationRecipient = async (
