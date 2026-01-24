@@ -83,6 +83,13 @@ const commentSchema = new Schema<TCommentDocument>(
   },
 );
 
+// Indexes
+commentSchema.index({ news: 1 });
+commentSchema.index({ user: 1 });
+commentSchema.index({ guest: 1 });
+commentSchema.index({ status: 1 });
+commentSchema.index({ created_at: -1 });
+
 // toJSON override to remove sensitive fields from output
 commentSchema.methods.toJSON = function () {
   const comment = this.toObject();

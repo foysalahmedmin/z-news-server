@@ -80,6 +80,10 @@ newsHeadlineSchema.index(
   },
 );
 
+newsHeadlineSchema.index({ status: 1 });
+newsHeadlineSchema.index({ created_at: -1 });
+newsHeadlineSchema.index({ published_at: -1 });
+
 // toJSON override to remove sensitive fields from output
 newsHeadlineSchema.methods.toJSON = function () {
   const News = this.toObject();

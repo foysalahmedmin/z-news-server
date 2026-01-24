@@ -170,6 +170,10 @@ const newsSchema = new Schema<TNewsDocument>(
 newsSchema.index({ slug: 1 }, { unique: true });
 newsSchema.index({ title: 1 });
 newsSchema.index({ status: 1 });
+newsSchema.index({ author: 1 });
+newsSchema.index({ category: 1 });
+newsSchema.index({ categories: 1 });
+newsSchema.index({ event: 1 });
 newsSchema.index({ is_featured: 1 });
 
 newsSchema.index({ created_at: -1 });

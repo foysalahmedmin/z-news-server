@@ -70,6 +70,11 @@ userSchema.index(
   },
 );
 
+userSchema.index({ role: 1 });
+userSchema.index({ status: 1 });
+userSchema.index({ name: 1 });
+userSchema.index({ created_at: -1 });
+
 // toJSON override to remove sensitive fields from output
 userSchema.methods.toJSON = function () {
   const user = this.toObject();

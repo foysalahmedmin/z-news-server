@@ -77,6 +77,10 @@ notificationRecipientSchema.index(
   { unique: true },
 );
 
+notificationRecipientSchema.index({ recipient: 1 });
+notificationRecipientSchema.index({ is_read: 1 });
+notificationRecipientSchema.index({ created_at: -1 });
+
 // toJSON override to remove sensitive fields from output
 notificationRecipientSchema.methods.toJSON = function () {
   const category = this.toObject();

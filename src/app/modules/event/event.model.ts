@@ -95,6 +95,15 @@ const eventSchema = new Schema<TEventDocument>(
   },
 );
 
+// Indexes
+eventSchema.index({ name: 1 }, { unique: true });
+eventSchema.index({ slug: 1 }, { unique: true });
+eventSchema.index({ category: 1 });
+eventSchema.index({ status: 1 });
+eventSchema.index({ is_featured: 1 });
+eventSchema.index({ created_at: -1 });
+eventSchema.index({ published_at: -1 });
+
 // toJSON override to remove sensitive fields from output
 eventSchema.methods.toJSON = function () {
   const event = this.toObject();

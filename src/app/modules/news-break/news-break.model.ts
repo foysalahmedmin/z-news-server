@@ -80,6 +80,10 @@ newsBreakSchema.index(
   },
 );
 
+newsBreakSchema.index({ status: 1 });
+newsBreakSchema.index({ created_at: -1 });
+newsBreakSchema.index({ published_at: -1 });
+
 // toJSON override to remove sensitive fields from output
 newsBreakSchema.methods.toJSON = function () {
   const News = this.toObject();

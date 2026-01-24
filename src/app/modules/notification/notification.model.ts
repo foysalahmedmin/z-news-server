@@ -79,6 +79,13 @@ const notificationSchema = new Schema<TNotificationDocument>(
   },
 );
 
+// Indexes
+notificationSchema.index({ type: 1 });
+notificationSchema.index({ priority: 1 });
+notificationSchema.index({ sender: 1 });
+notificationSchema.index({ status: 1 });
+notificationSchema.index({ created_at: -1 });
+
 // toJSON override to remove sensitive fields from output
 notificationSchema.methods.toJSON = function () {
   const category = this.toObject();
