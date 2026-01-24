@@ -43,3 +43,11 @@ export const resetPasswordValidationSchema = z.object({
     password: z.string().min(6).max(12),
   }),
 });
+
+export const googleLoginValidationSchema = z.object({
+  body: z.object({
+    id_token: z.string({
+      required_error: 'Google ID token is required',
+    }),
+  }),
+});

@@ -244,6 +244,7 @@ erDiagram
         string status "in-progress|blocked"
         boolean is_verified
         boolean is_deleted
+        string auth_source "email|google"
         timestamp created_at
     }
 
@@ -449,7 +450,7 @@ sequenceDiagram
    ```
 
 2. **Configuration**:
-   Populate the `.env` file using the configuration template. Ensure `REDIS_ENABLED` and `GOOGLE_CLOUD_PROJECT_ID` are set for full infrastructure support.
+   Populate the `.env` file using the configuration template. Ensure `REDIS_ENABLED`, `GOOGLE_CLOUD_PROJECT_ID`, and `GOOGLE_CLIENT_ID` are set for full infrastructure support.
 
 3. **Running in Dev Mode**:
    ```bash
@@ -483,7 +484,7 @@ sequenceDiagram
 - [x] **Clustering**: Multi-core worker orchestration enabled.
 - [x] **Caching**: Pattern-based Redis invalidation logic fully integrated.
 - [x] **Storage**: Enterprise Google Cloud Storage middleware configured.
-- [x] **Security**: Full Zod schema validation and RBAC enforcement.
+- [x] **Security**: Full Zod schema validation, RBAC enforcement, and Google OAuth integration.
 - [x] **Resilience**: Graceful shutdown and Redis fallback mechanisms.
 
 ---

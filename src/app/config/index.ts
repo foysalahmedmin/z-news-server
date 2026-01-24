@@ -50,6 +50,7 @@ export default {
     credentials_path: process.env.GOOGLE_APPLICATION_CREDENTIALS as string,
     bucket: process.env.GOOGLE_CLOUD_STORAGE_BUCKET || 'z-news-public-storage',
   },
+  google_client_id: process.env.GOOGLE_CLIENT_ID as string,
 };
 
 // node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"

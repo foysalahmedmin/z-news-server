@@ -24,10 +24,22 @@ const userSchema = new Schema<TUserDocument>(
     },
     password: {
       type: String,
-      required: true,
+      required: function (this: TUserDocument) {
+        return !this.google_id;
+      },
       minlength: [6, 'the password should minimum 6 character'],
-      maxlength: [12, 'the password should maximum 12 character'],
+      maxlength: [100, 'the password should maximum 100 character'],
       select: false,
+    },
+    google_id: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    auth_source: {
+      type: String,
+      enum: ['email', 'google'],
+      default: 'email',
     },
     password_changed_at: { type: Date, default: Date.now, select: false },
     role: {
@@ -93,7 +105,7 @@ userSchema.post('save', function (document, next) {
 // Pre save middleware/ hook
 userSchema.pre('save', async function (next) {
   // Hash password
-  if (this.isModified('password')) {
+  if (this.isModified('password') && this.password) {
     this.password = await bcrypt.hash(
       this.password,
       Number(config.bcrypt_salt_rounds),

@@ -17,6 +17,12 @@ router.post(
 );
 
 router.post(
+  '/google-login',
+  validation(AuthValidations.googleLoginValidationSchema),
+  AuthControllers.googleLogin,
+);
+
+router.post(
   '/signup',
   file({
     name: 'image',

@@ -29,6 +29,29 @@ export const signin = catchAsync(async (req, res) => {
   });
 });
 
+export const googleLogin = catchAsync(async (req, res) => {
+  const { id_token } = req.body;
+  const { refresh_token, access_token, info } =
+    await AuthServices.googleLogin(id_token);
+
+  res.cookie(COOKIE_NAME, refresh_token, {
+    maxAge: COOKIE_MAX_AGE,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  });
+
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'User logged in via Google successfully!',
+    data: {
+      token: access_token,
+      info: info,
+    },
+  });
+});
+
 export const signup = catchAsync(async (req, res) => {
   const files = req.files as Record<string, Express.Multer.File[]>;
   const image = files.image?.[0]?.filename || '';
