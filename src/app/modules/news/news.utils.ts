@@ -6,7 +6,6 @@ export const folderMap = {
   video: 'news/videos',
   audio: 'news/audios',
   file: 'news/files',
-  seo: 'news/seo/images',
 };
 
 export const folderMapWithYearMonth = {
@@ -15,7 +14,6 @@ export const folderMapWithYearMonth = {
   video: 'news/videos' + '/' + dirYearMonth().suffix,
   audio: 'news/audios' + '/' + dirYearMonth().suffix,
   file: 'news/files' + '/' + dirYearMonth().suffix,
-  seo: 'news/seo/images' + '/' + dirYearMonth().suffix,
 };
 
 export const fileType = (mimeType: string) => {

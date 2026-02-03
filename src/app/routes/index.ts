@@ -28,15 +28,15 @@ const moduleRoutes = [
     route: userRoutes,
   },
   {
-    path: 'guest',
+    path: '/guest',
     route: guestRoutes,
   },
   {
-    path: 'notification',
+    path: '/notification',
     route: notificationRoutes,
   },
   {
-    path: 'notification-recipient',
+    path: '/notification-recipient',
     route: NotificationRecipientRoutes,
   },
   {

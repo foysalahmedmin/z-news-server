@@ -15,6 +15,7 @@ export type TNotificationMetadata = {
 };
 
 export type TNotificationRecipient = {
+  _id?: Types.ObjectId;
   notification: Types.ObjectId;
   recipient: Types.ObjectId;
   metadata: TNotificationMetadata;

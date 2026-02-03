@@ -220,6 +220,10 @@ export const getPublicNews = async (slug: string): Promise<TNews> => {
             select: '_id url name path file_name type caption',
           },
           { path: 'video', select: '_id url name path file_name type caption' },
+          { path: 'views' },
+          { path: 'likes' },
+          { path: 'dislikes' },
+          { path: 'comments' },
         ])
         .lean();
 
@@ -241,10 +245,10 @@ export const getSelfNews = async (
     async () => {
       const result = await News.findOne({ _id: id, author: user._id })
         .populate([
-          { path: 'view_count' },
-          { path: 'like_count' },
-          { path: 'dislike_count' },
-          { path: 'comment_count' },
+          { path: 'views' },
+          { path: 'likes' },
+          { path: 'dislikes' },
+          { path: 'comments' },
           { path: 'author', select: '_id name email image' },
           { path: 'category', select: '_id name slug' },
           { path: 'categories', select: '_id name slug' },
@@ -276,10 +280,10 @@ export const getNews = async (id: string): Promise<TNews> => {
     async () => {
       const result = await News.findById(id)
         .populate([
-          { path: 'view_count' },
-          { path: 'like_count' },
-          { path: 'dislike_count' },
-          { path: 'comment_count' },
+          { path: 'views' },
+          { path: 'likes' },
+          { path: 'dislikes' },
+          { path: 'comments' },
           { path: 'author', select: '_id name email image' },
           { path: 'category', select: '_id name slug' },
           { path: 'categories', select: '_id name slug' },
@@ -382,6 +386,10 @@ export const getPublicBulkNews = async (
           select: '_id url name path file_name type caption',
         },
         { path: 'video', select: '_id url name path file_name type caption' },
+        { path: 'views' },
+        { path: 'likes' },
+        { path: 'dislikes' },
+        { path: 'comments' },
       ])
       .search(['title', 'description'])
       .filter()
@@ -405,6 +413,9 @@ export const getPublicBulkNews = async (
         'published_at',
         'is_featured',
         'views',
+        'likes',
+        'dislikes',
+        'comments',
       ])
       .tap((q) => q.lean());
 
@@ -488,6 +499,10 @@ export const getSelfBulkNews = async (
           select: '_id url name path file_name type caption',
         },
         { path: 'video', select: '_id url name path file_name type caption' },
+        { path: 'views' },
+        { path: 'likes' },
+        { path: 'dislikes' },
+        { path: 'comments' },
       ])
       .search(['title', 'description'])
       .filter()
@@ -510,6 +525,9 @@ export const getSelfBulkNews = async (
         'published_at',
         'is_featured',
         'views',
+        'likes',
+        'dislikes',
+        'comments',
       ])
       .tap((q) => q.lean());
 
@@ -600,6 +618,10 @@ export const getBulkNews = async (
           select: '_id url name path file_name type caption',
         },
         { path: 'video', select: '_id url name path file_name type caption' },
+        { path: 'views' },
+        { path: 'likes' },
+        { path: 'dislikes' },
+        { path: 'comments' },
       ])
       .search(['title', 'description'])
       .filter()
@@ -622,6 +644,9 @@ export const getBulkNews = async (
         'published_at',
         'is_featured',
         'views',
+        'likes',
+        'dislikes',
+        'comments',
       ])
       .tap((q) => q.lean());
 
@@ -665,6 +690,7 @@ export const updateSelfNews = async (
       | 'is_featured'
       | 'published_at'
       | 'expired_at'
+      | 'categories'
     >
   >,
 ): Promise<TNews> => {
@@ -730,6 +756,7 @@ export const updateNews = async (
       | 'is_featured'
       | 'published_at'
       | 'expired_at'
+      | 'categories'
     >
   >,
 ): Promise<TNews> => {

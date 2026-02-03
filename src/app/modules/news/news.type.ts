@@ -27,6 +27,9 @@ export type TNews = {
   editor?: Types.ObjectId;
   layout?: string;
   views?: number;
+  likes?: number;
+  dislikes?: number;
+  comments?: number;
   is_deleted: boolean;
 };
 

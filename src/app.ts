@@ -87,16 +87,16 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // API routes
 app.use('/api', router);
 
+// Health check endpoint for Vercel
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Static file serving for frontend (SPA)
 app.use(express.static(path.join(__dirname, '../public/dist')));
 
 app.get(/.*/, (_req, res) => {
   res.sendFile(path.join(__dirname, '../public/dist/index.html'));
-});
-
-// Health check endpoint for Vercel
-app.get('/health', (_req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Fallback for SPA routing - serves index.html for all unmatched routes

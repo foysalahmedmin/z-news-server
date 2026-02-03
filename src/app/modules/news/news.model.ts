@@ -195,7 +195,7 @@ newsSchema.virtual('news_break', {
   justOne: true,
 });
 
-newsSchema.virtual('view_count', {
+newsSchema.virtual('views', {
   ref: 'View',
   localField: '_id',
   foreignField: 'news',
@@ -203,7 +203,7 @@ newsSchema.virtual('view_count', {
   match: { is_deleted: { $ne: true } },
 });
 
-newsSchema.virtual('like_count', {
+newsSchema.virtual('likes', {
   ref: 'Reaction',
   localField: '_id',
   foreignField: 'news',
@@ -211,7 +211,7 @@ newsSchema.virtual('like_count', {
   match: { type: 'like', is_deleted: { $ne: true } },
 });
 
-newsSchema.virtual('dislike_count', {
+newsSchema.virtual('dislikes', {
   ref: 'Reaction',
   localField: '_id',
   foreignField: 'news',
@@ -219,7 +219,7 @@ newsSchema.virtual('dislike_count', {
   match: { type: 'dislike', is_deleted: { $ne: true } },
 });
 
-newsSchema.virtual('comment_count', {
+newsSchema.virtual('comments', {
   ref: 'Comment',
   localField: '_id',
   foreignField: 'news',

@@ -82,7 +82,7 @@ export const updateSelfNotificationRecipient = catchAsync(async (req, res) => {
   // Emit socket event for real-time update
   if (result && req.user?._id) {
     emitToUser(req.user._id.toString(), 'notification-recipient-updated', {
-      _id: result._id.toString(),
+      _id: result?._id?.toString(),
       is_read: result.is_read,
       read_at: result.read_at,
     });
