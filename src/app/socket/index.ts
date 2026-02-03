@@ -17,7 +17,10 @@ export const initializeSocket = async (
     io = new IOServer(server, {
       cors: {
         origin: [
-          'https://www.admin.z-news.com',
+          'https://z-news.vercel.app',
+          'https://www.z-news.vercel.app',
+          'https://z-news-server.vercel.app',
+          'https://www.z-news-server.vercel.app',
           'https://z-news.com',
           'https://www.z-news.com',
           'https://test.z-news.com',

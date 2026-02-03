@@ -33,6 +33,10 @@ app.use(cookieParser());
 app.use(
   cors({
     origin: [
+      'https://z-news.vercel.app',
+      'https://www.z-news.vercel.app',
+      'https://z-news-server.vercel.app',
+      'https://www.z-news-server.vercel.app',
       'https://admin.z-news.com',
       'https://www.admin.z-news.com',
       'https://z-news.com',
