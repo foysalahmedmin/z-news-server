@@ -76,17 +76,17 @@ export const uploadNewsFile = async (
 ) => {
   if (!file || !type) return null;
 
-  const path = file.path.replace(/\\/g, '/');
+  const path = file?.path.replace(/\\/g, '/');
   const short_path = path.split('/').slice(-3).join('/');
 
   return {
     type: type,
-    filename: file.filename,
+    filename: file?.filename,
     short_path: short_path,
     path: path,
     url: `${base}/${path}`,
-    size: file.size,
-    mimetype: file.mimetype,
+    size: file?.size,
+    mimetype: file?.mimetype,
   };
 };
 

@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "dist/index.js",
+      "src": "dist/serverless.js",
       "use": "@vercel/node"
     },
     {
@@ -13,15 +13,15 @@
   "routes": [
     {
       "src": "^/api/(.*)",
-      "dest": "dist/index.js"
+      "dest": "dist/serverless.js"
     },
     {
       "src": "^/health$",
-      "dest": "dist/index.js"
+      "dest": "dist/serverless.js"
     },
     {
       "src": "^/uploads/(.*)",
-      "dest": "dist/index.js"
+      "dest": "dist/serverless.js"
     },
     {
       "src": "^/static/(.*)",
