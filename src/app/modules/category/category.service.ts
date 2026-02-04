@@ -1,21 +1,21 @@
-import fs from 'fs';
+
 import httpStatus from 'http-status';
 import { ObjectId } from 'mongodb';
 import { Types } from 'mongoose';
 import AppError from '../../builder/app-error';
 import AppQueryFind from '../../builder/app-query-find';
 import {
-  generateCacheKey,
-  invalidateCacheByPattern,
-  withCache,
+    generateCacheKey,
+    invalidateCacheByPattern,
+    withCache,
 } from '../../utils/cache.utils';
 import { slugify } from '../../utils/slugify';
 import { Category } from './category.model';
 import {
-  TCategory,
-  TCategoryInput,
-  TCategoryTree,
-  TStatus,
+    TCategory,
+    TCategoryInput,
+    TCategoryTree,
+    TStatus,
 } from './category.type';
 
 const CACHE_PREFIX = 'category';
@@ -30,7 +30,7 @@ export const insertCategoriesFromFile = async (
     throw new AppError(httpStatus.BAD_REQUEST, 'No file uploaded');
   }
 
-  const rawData = fs.readFileSync(file.path, 'utf-8');
+  const rawData = file.buffer.toString('utf-8');
   const categories: TCategoryInput[] = JSON.parse(rawData);
 
   let sequenceCounter = 1;
@@ -58,7 +58,7 @@ export const insertCategoriesFromFile = async (
 
   await Category.insertMany(formatted, { ordered: false });
 
-  fs.unlinkSync(file.path);
+
 
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 

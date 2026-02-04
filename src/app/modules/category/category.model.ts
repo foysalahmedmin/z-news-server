@@ -65,8 +65,7 @@ const categorySchema = new Schema<TCategoryDocument>(
 );
 
 // Indexes
-categorySchema.index({ name: 1 }, { unique: true });
-categorySchema.index({ slug: 1 }, { unique: true });
+
 categorySchema.index({ status: 1 });
 categorySchema.index({ is_featured: 1 });
 categorySchema.index({ sequence: 1 });
