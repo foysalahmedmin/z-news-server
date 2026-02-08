@@ -11,16 +11,14 @@ This high-performance, enterprise-grade news portal backend architecture orchest
   - [Core Modules and Features](#core-modules-and-features)
     - [Authentication and Security](#authentication-and-security)
     - [News \& Editorial Management](#news--editorial-management)
-    - [Infrastructure \& Performance](#infrastructure--performance)
-    - [Communication Engine](#communication-engine)
+    - [User Engagement \& Gamification](#user-engagement--gamification)
+    - [Community \& Infrastructure](#community--infrastructure)
   - [Tech Stack](#tech-stack)
   - [Security and Data Protection](#security-and-data-protection)
-    - [Defensive Security Layers](#defensive-security-layers)
-    - [Authentication \& Authorization](#authentication--authorization)
-    - [Data Integrity \& Operations](#data-integrity--operations)
   - [Architecture](#architecture)
     - [System Architecture Diagram](#system-architecture-diagram)
     - [Internal Dependency Flow](#internal-dependency-flow)
+  - [Cross-Module Relational Logic](#cross-module-relational-logic)
   - [Project Directory Map](#project-directory-map)
   - [Database Schema](#database-schema)
     - [Detailed Entity-Relationship Diagram](#detailed-entity-relationship-diagram)
@@ -48,18 +46,21 @@ This high-performance, enterprise-grade news portal backend architecture orchest
 
 - **Segmented Article Flow**: Specialized handling for `Breaking News`, `Headlines`, and `Featured` articles with independent lifecycle controls.
 - **Hierarchical Category Engine**: Advanced recursive tree architecture supporting infinite category nesting and aggregation.
-- **Engagement Analytics**: Real-time tracking of `Views`, `Likes`, `Dislikes`, and `Comments` with atomic increment logic.
+- **Automatic Version Control**: Comprehensive `ArticleVersion` snapshots triggered automatically on content mutation, enabling audit trails and restoration.
 
-### Infrastructure & Performance
+### User Engagement & Gamification
 
-- **Intelligent Caching**: Redis-powered caching layer with pattern-based invalidation and query-stable key generation to reduce database load by up to 80%.
-- **Cloud Storage Orchestration**: Robust Google Cloud Storage integration with automated file lifecycle management and metadata preservation.
-- **Real-time Signaling**: Socket.io integration with Redis backplane for horizontally scalable event broadcasting and instant notifications.
+- **Reputation & Achievement Engine**: Advanced `Badge` system integrated with `UserProfile` stats, automatically awarding experience points and reputation points.
+- **Activity & Streak Tracking**: Calendar-based `Reading Streak` logic and granular interaction counters (`articles_read`, `total_comments`, `total_reactions`).
+- **Interactive Community**: Feature-rich `Poll` system with real-time results, anonymous voting options, and nesting comment threads.
+- **Personalized Collections**: Multi-list `Bookmark` management system for curating private reading lists.
 
-### Communication Engine
+### Community & Infrastructure
 
-- **Notification Priority Tiers**: Multi-channel delivery (Web, Socket) with priority levels (`low`, `medium`, `high`, `urgent`).
-- **Recipient Management**: Personalized notification tracking with read/unread status management and bulk cleanup capabilities.
+- **Enhanced Engagement**: Sophisticated `Comment` threading (up to 5 levels), user mentions, moderation flagging, and focused `Reaction` metrics.
+- **Intelligent Caching**: Redis-powered caching layer with pattern-based invalidation and query-stable key generation.
+- **Cloud Storage Orchestration**: Robust Google Cloud Storage integration with automated file lifecycle management.
+- **Communication Engine**: Multi-channel `Notification` delivery (Web, Socket) with priority tiers and recipient tracking.
 
 ---
 
@@ -174,6 +175,27 @@ graph LR
 
 ---
 
+## Cross-Module Relational Logic
+
+The platform operates on a reactive architecture where events in one module trigger logical ripples across others:
+
+### 1. The Interaction-to-Profile Loop
+
+- **View-to-Streak**: Every unique `View` on a news article verifies the user's `last_read_at`. Using a **Calendar-based difference**, the system increments the `reading_streak` and `articles_read` count in the `UserProfile`.
+- **Engagement-to-Stats**: Creating a `Comment`, `Reaction`, or `Poll Vote` automatically increments the corresponding activity counters (`total_comments`, `total_reactions`) in the user's profile.
+
+### 2. Gamification & Reputation
+
+- **Achievement Awards**: The `Badge` service monitors profile stats. When thresholds are met (e.g., 100 comments), a badge is awarded.
+- **Points Pipeline**: Awarding a `Badge` automatically transfers its associated `points` to the `UserProfile.reputation_score`.
+
+### 3. Editorial Data Integrity
+
+- **Auto-Versioning**: Any mutation of critical `News` content (Title, Slug, or Body) triggers an atomic snapshot in the `ArticleVersion` module before the update commits, preserving a perfect audit trail.
+- **Cascading Lifecycle**: When a `News` document is permanently deleted, the system executes a cascading cleanup of all associated `Comments`, `Reactions`, `Polls`, `Bookmarks`, and `Versions` to maintain referential integrity.
+
+---
+
 ## Project Directory Map
 
 ```text
@@ -183,11 +205,14 @@ src/
 │   ├── config/         # Centralized environment registries and GCP/Redis flags
 │   ├── interfaces/     # Global type definitions and index interfaces
 │   ├── middlewares/    # Auth, RBAC, Rate-Limit, Sanitize, and Log handlers
-│   ├── modules/        # Domain-driven features (15 specialized modules)
+│   ├── modules/        # Domain-driven features (21 specialized modules)
 │   │   ├── news/       # Core editorial logic and engagement counters
-│   │   ├── category/   # Hierarchical tree logic and recursive lookups
-│   │   ├── auth/       # Identity management and security flows
-│   │   └── ...         # Engagement, Notification, and User modules
+│   │   ├── user-profile/ # Gamification, reputations, and activity stats
+│   │   ├── badge/      # Achievement definitions and awarding logic
+│   │   ├── poll/       # Interactive voting and result aggregation
+│   │   ├── bookmark/   # Reading list management
+│   │   ├── article-version/ # Content snapshots and audit logs
+│   │   └── ...         # Engagement, Notification, and File modules
 │   ├── redis/          # Cache initialization and Pub/Sub configuration
 │   ├── routes/         # Centralized API versioning and route mounting
 │   ├── socket/         # Real-time relay orchestration
@@ -230,6 +255,17 @@ erDiagram
     Category ||--o{ Category : "parent_of"
     Category ||--o{ Event : "classifies"
     Notification ||--o{ NotificationRecipient : "delivered_to"
+
+    %% Gamification & Engagement Extension
+    User ||--|| UserProfile : "has_profile"
+    UserProfile ||--o{ Badge : "earns"
+    News ||--o{ ArticleVersion : "has_history"
+    User ||--o{ Bookmark : "bookmarks"
+    News ||--o{ Bookmark : "bookmarked_in"
+    User ||--o{ Poll : "votes_on"
+    News ||--o{ Poll : "contains_poll"
+    Comment ||--o{ Reaction : "comment_reactions"
+    Comment ||--o{ Comment : "replies_to"
 
     %% ============================================
     %% DETAILED MODEL ATTRIBUTES
@@ -299,6 +335,48 @@ erDiagram
         ObjectId news FK
         ObjectId user FK
         string guest "Optional"
+    }
+
+    UserProfile {
+        ObjectId _id PK
+        ObjectId user FK "Unique"
+        number reputation_score
+        number reading_streak "Calendar-based"
+        number articles_read
+        object[] badges "earned_at mapping"
+        object notification_preferences
+    }
+
+    Badge {
+        ObjectId _id PK
+        string name
+        string type "Interaction/Streak/Reputation"
+        number points "Awarded to profile"
+        object criteria "threshold logic"
+    }
+
+    ArticleVersion {
+        ObjectId _id PK
+        ObjectId news FK
+        ObjectId editor FK
+        string content_snapshot
+        string change_reason
+    }
+
+    Bookmark {
+        ObjectId _id PK
+        ObjectId user FK
+        ObjectId news FK
+        ObjectId reading_list FK
+    }
+
+    Poll {
+        ObjectId _id PK
+        ObjectId news FK
+        ObjectId created_by FK
+        string title
+        object[] options "vote counters & voters"
+        boolean allow_anonymous
     }
 
     NewsHeadline {
@@ -380,6 +458,9 @@ The system exposes the service layer via the `/api` namespace:
 - **Editorial**: `/api/news`, `/api/news-headline`, `/api/news-break`
 - **Taxonomy**: `/api/category` (Includes tree and public views)
 - **Engagement**: `/api/comment`, `/api/reaction`, `/api/view`
+- **Gamification**: `/api/user-profile`, `/api/badge`
+- **Curation**: `/api/bookmark`, `/api/poll`
+- **History**: `/api/article-version`
 - **Awareness**: `/api/notification`, `/api/notification-recipient`
 - **Personnel**: `/api/user`, `/api/guest`
 - **Cloud Assets**: `/api/storage` (Google Cloud Storage Management)
