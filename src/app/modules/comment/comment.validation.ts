@@ -17,7 +17,10 @@ export const createCommentValidationSchema = z.object({
       .min(2, 'Name must be at least 2 characters')
       .max(50, 'Name cannot exceed 50 characters'),
     email: z.string().email('Invalid email format'),
-    content: z.string().trim().max(300, 'Content cannot exceed 300 characters'),
+    content: z
+      .string()
+      .trim()
+      .max(1000, 'Content cannot exceed 1000 characters'),
   }),
 });
 

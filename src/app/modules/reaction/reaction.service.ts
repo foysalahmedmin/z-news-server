@@ -8,6 +8,7 @@ import {
   withCache,
 } from '../../utils/cache.utils';
 import { TGuest } from '../guest/guest.type';
+import { UserProfile } from '../user-profile/user-profile.model';
 import { Reaction } from './reaction.model';
 import { TReaction } from './reaction.type';
 
@@ -34,6 +35,11 @@ export const createReaction = async (
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
     // Also invalidate news cache because reaction counts might be cached there or used by news
     await invalidateCacheByPattern(`news:*`);
+
+    // Update user activity stats
+    if (user?._id) {
+      await UserProfile.incrementActivityStat(user._id, 'total_reactions');
+    }
   }
   return result.toObject();
 };

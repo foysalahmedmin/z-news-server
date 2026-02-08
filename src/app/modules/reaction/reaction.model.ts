@@ -6,7 +6,17 @@ const reactionSchema = new Schema<TReactionDocument>(
     news: {
       type: Schema.Types.ObjectId,
       ref: 'News',
-      required: true,
+      required: function () {
+        return !this.comment;
+      },
+    },
+
+    comment: {
+      type: Schema.Types.ObjectId,
+      ref: 'Comment',
+      required: function () {
+        return !this.news;
+      },
     },
 
     user: {
@@ -52,14 +62,52 @@ const reactionSchema = new Schema<TReactionDocument>(
   },
 );
 
+// Index for News Reactions (User)
 reactionSchema.index(
   { user: 1, news: 1 },
-  { unique: true, partialFilterExpression: { user: { $type: 'objectId' } } },
+  {
+    unique: true,
+    partialFilterExpression: {
+      user: { $exists: true },
+      comment: { $exists: false },
+    },
+  },
 );
 
+// Index for News Reactions (Guest)
 reactionSchema.index(
   { guest: 1, news: 1 },
-  { unique: true, partialFilterExpression: { guest: { $type: 'string' } } },
+  {
+    unique: true,
+    partialFilterExpression: {
+      guest: { $exists: true },
+      comment: { $exists: false },
+    },
+  },
+);
+
+// Index for Comment Reactions (User)
+reactionSchema.index(
+  { user: 1, comment: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      user: { $exists: true },
+      comment: { $exists: true },
+    },
+  },
+);
+
+// Index for Comment Reactions (Guest)
+reactionSchema.index(
+  { guest: 1, comment: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      guest: { $exists: true }, // Should check guest exists? Yes.
+      comment: { $exists: true },
+    },
+  },
 );
 
 // toJSON override to remove sensitive fields from output

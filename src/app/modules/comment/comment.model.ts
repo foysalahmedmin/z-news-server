@@ -7,12 +7,28 @@ const commentSchema = new Schema<TCommentDocument>(
       type: Schema.Types.ObjectId,
       ref: 'News',
       required: true,
+      index: true,
     },
 
-    comment: {
+    // Threading support
+    parent_comment: {
       type: Schema.Types.ObjectId,
       ref: 'Comment',
       default: null,
+      index: true,
+    },
+
+    reply_to_user: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+
+    thread_level: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5, // Max 5 levels of nesting
     },
 
     user: {
@@ -50,15 +66,28 @@ const commentSchema = new Schema<TCommentDocument>(
       type: String,
       required: true,
       trim: true,
-      maxlength: 300,
+      maxlength: 1000, // Increased from 300
     },
 
-    status: {
-      type: String,
-      enum: ['pending', 'approved', 'rejected'],
-      default: 'approved',
+    // Mentions
+    mentions: [
+      {
+        user: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        position: Number,
+      },
+    ],
+
+    // Pinning
+    is_pinned: {
+      type: Boolean,
+      default: false,
+      index: true,
     },
 
+    // Edit tracking
     is_edited: {
       type: Boolean,
       default: false,
@@ -68,9 +97,59 @@ const commentSchema = new Schema<TCommentDocument>(
       type: Date,
     },
 
+    edit_history: [
+      {
+        content: String,
+        edited_at: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+
+    // Moderation
+    status: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected', 'flagged'],
+      default: 'approved',
+      index: true,
+    },
+
+    flagged_count: {
+      type: Number,
+      default: 0,
+    },
+
+    flagged_by: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+
+    moderated_by: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+
+    moderated_at: {
+      type: Date,
+    },
+
+    moderation_reason: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+    },
+
     is_deleted: {
       type: Boolean,
       default: false,
+      select: false,
+    },
+
+    deleted_at: {
+      type: Date,
     },
   },
   {
@@ -84,11 +163,51 @@ const commentSchema = new Schema<TCommentDocument>(
 );
 
 // Indexes
-commentSchema.index({ news: 1 });
+commentSchema.index({ news: 1, parent_comment: 1 });
+commentSchema.index({ news: 1, created_at: -1 });
+commentSchema.index({ parent_comment: 1 });
 commentSchema.index({ user: 1 });
 commentSchema.index({ guest: 1 });
 commentSchema.index({ status: 1 });
+commentSchema.index({ is_pinned: 1, created_at: -1 });
 commentSchema.index({ created_at: -1 });
+
+// Virtual for reply count
+commentSchema.virtual('reply_count', {
+  ref: 'Comment',
+  localField: '_id',
+  foreignField: 'parent_comment',
+  count: true,
+  match: { is_deleted: { $ne: true } },
+});
+
+// Virtual for reactions
+commentSchema.virtual('reactions', {
+  ref: 'Reaction',
+  localField: '_id',
+  foreignField: 'comment',
+  match: { is_deleted: { $ne: true } },
+});
+
+// Virtual for reaction counts
+commentSchema.virtual('reaction_counts').get(function () {
+  const counts = {
+    like: 0,
+    dislike: 0,
+    total: 0,
+  };
+
+  if (this.reactions && Array.isArray(this.reactions)) {
+    this.reactions.forEach((reaction: any) => {
+      if (reaction.type === 'like' || reaction.type === 'dislike') {
+        counts[reaction.type as 'like' | 'dislike']++;
+        counts.total++;
+      }
+    });
+  }
+
+  return counts;
+});
 
 // toJSON override to remove sensitive fields from output
 commentSchema.methods.toJSON = function () {
@@ -129,6 +248,25 @@ commentSchema.pre('aggregate', function (next) {
 // Static methods
 commentSchema.statics.isCommentExist = async function (_id: string) {
   return await this.findById(_id);
+};
+
+commentSchema.statics.getThreadedComments = async function (newsId: string) {
+  return await this.find({ news: newsId, parent_comment: null })
+    .sort({ is_pinned: -1, created_at: -1 })
+    .populate('user', 'name email image')
+    .populate('mentions.user', 'name')
+    .populate('reactions', 'user type created_at')
+    .exec();
+};
+
+commentSchema.statics.getCommentReplies = async function (comment_id: string) {
+  return await this.find({ parent_comment: comment_id })
+    .sort({ created_at: 1 })
+    .populate('user', 'name email image')
+    .populate('reply_to_user', 'name')
+    .populate('mentions.user', 'name')
+    .populate('reactions', 'user type created_at')
+    .exec();
 };
 
 // Instance methods

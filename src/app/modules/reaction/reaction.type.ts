@@ -4,6 +4,7 @@ export type TStatus = 'pending' | 'approved' | 'rejected';
 
 export type TReaction = {
   news: Types.ObjectId;
+  comment?: Types.ObjectId;
   user?: Types.ObjectId;
   guest?: string;
   type: 'like' | 'dislike';

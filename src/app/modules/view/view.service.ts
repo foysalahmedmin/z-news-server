@@ -8,6 +8,8 @@ import {
   withCache,
 } from '../../utils/cache.utils';
 import { TGuest } from '../guest/guest.type';
+import { UserProfile } from '../user-profile/user-profile.model';
+import { UserProfileService } from '../user-profile/user-profile.service';
 import { View } from './view.model';
 import { TView } from './view.type';
 
@@ -147,6 +149,12 @@ export const getSelfNewsView = async (
       });
       if (created) {
         await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+
+        // Update user activity stats and streak
+        if (user?._id) {
+          await UserProfileService.updateReadingStreak(user._id);
+          await UserProfile.incrementActivityStat(user._id, 'articles_read');
+        }
       }
     }
   }

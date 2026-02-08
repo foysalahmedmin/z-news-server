@@ -10,8 +10,14 @@ import {
   invalidateCacheByPattern,
   withCache,
 } from '../../utils/cache.utils';
+import { ArticleVersion as ArticleVersionModel } from '../article-version/article-version.model';
+import { ArticleVersionService } from '../article-version/article-version.service';
+import { Bookmark as BookmarkModel } from '../bookmark/bookmark.model';
 import { Category } from '../category/category.model';
+import { Comment as CommentModel } from '../comment/comment.model';
 import { sendNewsNotification } from '../notification/notification.service';
+import { Poll as PollModel } from '../poll/poll.model';
+import { Reaction as ReactionModel } from '../reaction/reaction.model';
 import { News } from './news.model';
 import { TNews } from './news.type';
 
@@ -102,86 +108,6 @@ export const deleteNewsFile = async (path: string) => {
 
   return path;
 };
-
-// export const createNews = async (
-//   user: TJwtPayload,
-//   payload: TNews & {
-//     is_news_headline?: boolean;
-//     is_news_break?: boolean;
-//   },
-// ): Promise<TNews> => {
-//   if (!user?._id) {
-//     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
-//   }
-
-//   const session = await mongoose.startSession();
-
-//   try {
-//     session.startTransaction();
-
-//     const {
-//       is_news_headline,
-//       is_news_break,
-//       news_headline,
-//       news_break,
-//       ...rest
-//     } = payload;
-
-//     const newsData = {
-//       ...rest,
-//       author: user._id,
-//     };
-
-//     const [created_news] = await News.create([newsData], { session });
-
-//     // Create NewsHeadline
-//     if (is_news_headline) {
-//       await NewsHeadline.create(
-//         [
-//           {
-//             author: user._id,
-//             news: created_news._id,
-//             title: created_news.title,
-//             description: created_news.description || '',
-//             tags: created_news.tags || [],
-//             category: created_news.category || null,
-//             published_at: created_news.published_at || null,
-//             expired_at: created_news.expired_at || null,
-//           },
-//         ],
-//         { session },
-//       );
-//     }
-
-//     // Create NewsBreak
-//     if (is_news_break) {
-//       await NewsBreak.create(
-//         [
-//           {
-//             author: user._id,
-//             news: created_news._id,
-//             title: created_news.title,
-//             description: created_news.description || '',
-//             tags: created_news.tags || [],
-//             category: created_news.category || null,
-//             published_at: created_news.published_at || null,
-//             expired_at: created_news.expired_at || null,
-//           },
-//         ],
-//         { session },
-//       );
-//     }
-
-//     await session.commitTransaction();
-//     session.endSession();
-
-//     return created_news.toObject();
-//   } catch (error) {
-//     await session.abortTransaction();
-//     session.endSession();
-//     throw error;
-//   }
-// };
 
 export const createNews = async (
   user: TJwtPayload,
@@ -729,6 +655,15 @@ export const updateSelfNews = async (
 
   if (result) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+
+    // Create a new version snapshot
+    if (update.is_edited) {
+      await ArticleVersionService.createVersion(
+        id,
+        user._id,
+        'Automatic snapshot after update',
+      );
+    }
   }
 
   return result!;
@@ -795,6 +730,15 @@ export const updateNews = async (
 
   if (result) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+
+    // Create a new version snapshot
+    if (update.is_edited) {
+      await ArticleVersionService.createVersion(
+        id,
+        user._id,
+        'Automatic snapshot after admin update',
+      );
+    }
   }
 
   if (
@@ -903,7 +847,14 @@ export const deleteNewsPermanent = async (id: string): Promise<void> => {
     throw new AppError(httpStatus.NOT_FOUND, 'News not found');
   }
 
-  // === File cleanup using utility ===
+  // === Relational data cleanup ===
+  await Promise.all([
+    ArticleVersionModel.deleteMany({ news: id }),
+    BookmarkModel.deleteMany({ news: id }),
+    CommentModel.deleteMany({ news: id }),
+    ReactionModel.deleteMany({ news: id }),
+    PollModel.deleteMany({ news: id }),
+  ]);
 
   await News.findByIdAndDelete(id).setOptions({ bypassDeleted: true });
 };

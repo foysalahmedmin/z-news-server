@@ -13,8 +13,8 @@ export type TNews = {
   youtube?: string;
   tags?: string[];
   event?: Types.ObjectId;
-  category: Types.ObjectId;
-  categories: Types.ObjectId[];
+  category?: Types.ObjectId;
+  categories?: Types.ObjectId[];
   author: Types.ObjectId;
   writer?: string;
   collaborators?: Types.ObjectId[];

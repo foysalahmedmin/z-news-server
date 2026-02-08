@@ -1,5 +1,8 @@
 import express from 'express';
+import ArticleVersionRoutes from '../modules/article-version/article-version.route';
 import authRoutes from '../modules/auth/auth.route';
+import BadgeRoutes from '../modules/badge/badge.route';
+import BookmarkRoutes from '../modules/bookmark/bookmark.route';
 import categoryRoutes from '../modules/category/category.route';
 import CommentRoutes from '../modules/comment/comment.route';
 import eventRoutes from '../modules/event/event.route';
@@ -11,8 +14,10 @@ import NewsHeadlineRoutes from '../modules/news-headline/news-headline.route';
 import NewsRoutes from '../modules/news/news.route';
 import NotificationRecipientRoutes from '../modules/notification-recipient/notification-recipient.route';
 import notificationRoutes from '../modules/notification/notification.route';
+import PollRoutes from '../modules/poll/poll.route';
 import ReactionRoutes from '../modules/reaction/reaction.route';
 import storageRoutes from '../modules/storage/storage.route';
+import UserProfileRoutes from '../modules/user-profile/user-profile.route';
 import userRoutes from '../modules/user/user.route';
 import ViewRoutes from '../modules/view/view.route';
 
@@ -82,6 +87,26 @@ const moduleRoutes = [
   {
     path: '/storage',
     route: storageRoutes,
+  },
+  {
+    path: '/user-profile',
+    route: UserProfileRoutes,
+  },
+  {
+    path: '/badge',
+    route: BadgeRoutes,
+  },
+  {
+    path: '/bookmark',
+    route: BookmarkRoutes,
+  },
+  {
+    path: '/poll',
+    route: PollRoutes,
+  },
+  {
+    path: '/article-version',
+    route: ArticleVersionRoutes,
   },
 ];
 
