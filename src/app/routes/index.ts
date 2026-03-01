@@ -4,6 +4,7 @@ import authRoutes from '../modules/auth/auth.route';
 import BadgeRoutes from '../modules/badge/badge.route';
 import BookmarkRoutes from '../modules/bookmark/bookmark.route';
 import categoryRoutes from '../modules/category/category.route';
+import { EnhancedCommentRoutes } from '../modules/comment/comment-enhanced.route';
 import CommentRoutes from '../modules/comment/comment.route';
 import eventRoutes from '../modules/event/event.route';
 import fileRoutes from '../modules/file/file.route';
@@ -107,6 +108,10 @@ const moduleRoutes = [
   {
     path: '/article-version',
     route: ArticleVersionRoutes,
+  },
+  {
+    path: '/comment-enhanced',
+    route: EnhancedCommentRoutes,
   },
 ];
 
