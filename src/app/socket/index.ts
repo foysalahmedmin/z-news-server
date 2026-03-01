@@ -13,38 +13,24 @@ export const initializeSocket = async (
   server: http.Server,
 ): Promise<IOServer> => {
   try {
+    // Extract socket path from URL pathname
+    const url = new URL(config.url || 'http://localhost:5000');
+    const path =
+      url.pathname === '/' || !url.pathname ? '/socket.io' : url.pathname;
+
     // Create Socket.io server
     io = new IOServer(server, {
       cors: {
         origin: [
-          'https://z-news.vercel.app',
-          'https://www.z-news.vercel.app',
-          'https://z-news-website.vercel.app',
-          'https://www.z-news-website.vercel.app',
-          'https://z-news-server.vercel.app',
-          'https://www.z-news-server.vercel.app',
-          'https://z-news.com',
-          'https://www.z-news.com',
-          'https://test.z-news.com',
-          'https://www.test.z-news.com',
-          'http://admin.z-news.com',
-          'http://www.admin.z-news.com',
-          'http://z-news.com',
-          'http://www.z-news.com',
-          'http://test.z-news.com',
-          'http://www.test.z-news.com',
-          'http://localhost:3000',
-          'http://localhost:3001',
-          'http://localhost:5000',
-          'http://localhost:5001',
-          'http://localhost:8080',
-          process.env.URL as string,
-          process.env.ADMINPANEL_URL as string,
-          process.env.WEBSITE_URL as string,
+          config.url,
+          config.adminpanel_url,
+          config.website_url,
+          ...config.cors_origins,
         ]?.filter(Boolean),
         methods: ['GET', 'POST'],
         credentials: true,
       },
+      path,
       pingTimeout: 60000,
       pingInterval: 25000,
     });
