@@ -7,7 +7,7 @@ export type TReaction = {
   comment?: Types.ObjectId;
   user?: Types.ObjectId;
   guest?: string;
-  type: 'like' | 'dislike';
+  type: 'like' | 'dislike' | 'insightful' | 'funny' | 'disagree';
   status?: TStatus;
   is_deleted?: boolean;
 };

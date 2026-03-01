@@ -1,6 +1,20 @@
 import { Document, Model, Types } from 'mongoose';
 
-export type TStatus = 'draft' | 'pending' | 'published' | 'archived';
+export type TStatus =
+  | 'draft'
+  | 'pending'
+  | 'scheduled'
+  | 'published'
+  | 'archived';
+
+export type TContentType =
+  | 'article'
+  | 'video'
+  | 'podcast'
+  | 'live-blog'
+  | 'photo-essay';
+
+export type TSensitivityLevel = 'public' | 'sensitive' | 'restricted';
 
 export type TNews = {
   title: string;
@@ -26,6 +40,52 @@ export type TNews = {
   edited_at?: Date;
   editor?: Types.ObjectId;
   layout?: string;
+
+  // SEO Enhancement
+  meta_title?: string;
+  meta_description?: string;
+  canonical_url?: string;
+  structured_data?: Record<string, any>;
+
+  // Content Classification
+  content_type: TContentType;
+  reading_time?: number;
+  word_count?: number;
+
+  // Editorial Metadata
+  sensitivity_level: TSensitivityLevel;
+  fact_checked?: boolean;
+  fact_checker?: Types.ObjectId;
+  sources?: { name: string; url?: string; credibility?: number }[];
+
+  // Engagement Optimization
+  push_notification_sent?: boolean;
+  newsletter_included?: boolean;
+  social_media_posts?: { platform: string; post_id: string; posted_at: Date }[];
+
+  // Geographic Targeting
+  geo_targeting?: {
+    countries?: string[];
+    regions?: string[];
+    cities?: string[];
+  };
+
+  // Multimedia
+  gallery?: Types.ObjectId[];
+  audio?: Types.ObjectId;
+  podcast_episode?: Types.ObjectId;
+  infographics?: Types.ObjectId[];
+
+  // Related Content
+  related_articles?: Types.ObjectId[];
+  series?: Types.ObjectId;
+
+  // Performance Metrics
+  avg_time_on_page?: number;
+  bounce_rate?: number;
+  scroll_depth?: number;
+  share_count?: number;
+
   views?: number;
   likes?: number;
   dislikes?: number;

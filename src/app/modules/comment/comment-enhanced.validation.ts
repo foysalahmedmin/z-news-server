@@ -46,7 +46,7 @@ export const addReactionSchema = z.object({
     comment_id: idSchema,
   }),
   body: z.object({
-    type: z.enum(['like', 'insightful', 'funny', 'disagree'], {
+    type: z.enum(['like', 'dislike', 'insightful', 'funny', 'disagree'], {
       required_error: 'Reaction type is required',
     }),
   }),

@@ -43,7 +43,7 @@ const storage = (...files: TStorageFile[]) => {
   });
 
   // Get default bucket from environment with fallback
-  const defaultBucket = config.gcp.bucket;
+  const defaultBucket = config.gcp.bucket_name;
 
   // Use memory storage since we'll upload to cloud
   const memoryStorage = multer.memoryStorage();

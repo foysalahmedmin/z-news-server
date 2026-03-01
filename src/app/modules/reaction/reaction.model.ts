@@ -38,7 +38,7 @@ const reactionSchema = new Schema<TReactionDocument>(
     type: {
       type: String,
       required: true,
-      enum: ['like', 'dislike'],
+      enum: ['like', 'dislike', 'insightful', 'funny', 'disagree'],
     },
 
     status: {

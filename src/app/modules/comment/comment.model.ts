@@ -194,13 +194,16 @@ commentSchema.virtual('reaction_counts').get(function () {
   const counts = {
     like: 0,
     dislike: 0,
+    insightful: 0,
+    funny: 0,
+    disagree: 0,
     total: 0,
   };
 
   if (this.reactions && Array.isArray(this.reactions)) {
     this.reactions.forEach((reaction: any) => {
-      if (reaction.type === 'like' || reaction.type === 'dislike') {
-        counts[reaction.type as 'like' | 'dislike']++;
+      if (counts.hasOwnProperty(reaction.type)) {
+        counts[reaction.type as keyof typeof counts]++;
         counts.total++;
       }
     });

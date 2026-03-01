@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import os from 'os';
 import app from './app';
 import config from './app/config';
+import { initScheduler } from './app/modules/scheduler/scheduler.job';
 import {
   cacheClient,
   initializeRedis,
@@ -19,6 +20,16 @@ const main = async (): Promise<void> => {
   try {
     await mongoose.connect(config.database_url);
     console.log(`✅ MongoDB connected - PID: ${process.pid}`);
+
+    // Initialize background jobs (only once in clustered mode or always in single mode)
+    // In cluster mode, we might want to run this only in the primary or a specific worker.
+    // For simplicity, we run it here. In production with multiple instances, use a job queue like Agenda or Bull.
+    if (
+      !config.cluster_enabled ||
+      (cluster.isWorker && cluster.worker?.id === 1)
+    ) {
+      initScheduler();
+    }
 
     try {
       await initializeRedis();

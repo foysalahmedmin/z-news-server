@@ -18,9 +18,11 @@ import notificationRoutes from '../modules/notification/notification.route';
 import PollRoutes from '../modules/poll/poll.route';
 import ReactionRoutes from '../modules/reaction/reaction.route';
 import storageRoutes from '../modules/storage/storage.route';
+import TemplateRoutes from '../modules/template/template.route';
 import UserProfileRoutes from '../modules/user-profile/user-profile.route';
 import userRoutes from '../modules/user/user.route';
 import ViewRoutes from '../modules/view/view.route';
+import WorkflowRoutes from '../modules/workflow/workflow.route';
 
 const router = express.Router();
 
@@ -112,6 +114,14 @@ const moduleRoutes = [
   {
     path: '/comment-enhanced',
     route: EnhancedCommentRoutes,
+  },
+  {
+    path: '/workflow',
+    route: WorkflowRoutes,
+  },
+  {
+    path: '/template',
+    route: TemplateRoutes,
   },
 ];
 

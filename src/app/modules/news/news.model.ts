@@ -85,7 +85,7 @@ const newsSchema = new Schema<TNewsDocument>(
 
     status: {
       type: String,
-      enum: ['draft', 'pending', 'published', 'archived'],
+      enum: ['draft', 'pending', 'scheduled', 'published', 'archived'],
       default: 'draft',
     },
 
@@ -151,6 +151,71 @@ const newsSchema = new Schema<TNewsDocument>(
       type: String,
       default: 'default',
     },
+
+    // SEO Enhancement
+    meta_title: { type: String },
+    meta_description: { type: String },
+    canonical_url: { type: String },
+    structured_data: { type: Schema.Types.Mixed },
+
+    // Content Classification
+    content_type: {
+      type: String,
+      enum: ['article', 'video', 'podcast', 'live-blog', 'photo-essay'],
+      default: 'article',
+    },
+    reading_time: { type: Number, default: 0 },
+    word_count: { type: Number, default: 0 },
+
+    // Editorial Metadata
+    sensitivity_level: {
+      type: String,
+      enum: ['public', 'sensitive', 'restricted'],
+      default: 'public',
+    },
+    fact_checked: { type: Boolean, default: false },
+    fact_checker: { type: Schema.Types.ObjectId, ref: 'User' },
+    sources: [
+      {
+        name: { type: String },
+        url: { type: String },
+        credibility: { type: Number, min: 0, max: 100 },
+      },
+    ],
+
+    // Engagement Optimization
+    push_notification_sent: { type: Boolean, default: false },
+    newsletter_included: { type: Boolean, default: false },
+    social_media_posts: [
+      {
+        platform: { type: String },
+        post_id: { type: String },
+        posted_at: { type: Date },
+      },
+    ],
+
+    // Geographic Targeting
+    geo_targeting: {
+      countries: [String],
+      regions: [String],
+      cities: [String],
+    },
+
+    // Multimedia
+    gallery: [{ type: Schema.Types.ObjectId, ref: 'File' }],
+    audio: { type: Schema.Types.ObjectId, ref: 'File' },
+    podcast_episode: { type: Schema.Types.ObjectId },
+    infographics: [{ type: Schema.Types.ObjectId, ref: 'File' }],
+
+    // Related Content
+    related_articles: [{ type: Schema.Types.ObjectId, ref: 'News' }],
+    series: { type: Schema.Types.ObjectId },
+
+    // Performance Metrics
+    avg_time_on_page: { type: Number, default: 0 },
+    bounce_rate: { type: Number, default: 0 },
+    scroll_depth: { type: Number, default: 0 },
+    share_count: { type: Number, default: 0 },
 
     is_deleted: {
       type: Boolean,
@@ -233,6 +298,17 @@ newsSchema.methods.toJSON = function () {
   delete News.is_deleted;
   return News;
 };
+
+// Pre-save middleware to calculate word count and reading time
+newsSchema.pre('save', function (next) {
+  if (this.isModified('content')) {
+    const words = this.content.trim().split(/\s+/).length;
+    this.word_count = words;
+    // Average reading speed: 200 words per minute
+    this.reading_time = Math.ceil(words / 200);
+  }
+  next();
+});
 
 // Query middleware to exclude deleted categories
 newsSchema.pre(/^find/, function (next) {

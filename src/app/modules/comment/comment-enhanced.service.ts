@@ -75,8 +75,25 @@ export const createReply = async (
     content: payload.content,
   });
 
-  // Update user activity
+  // Update user activity and reputation
   await UserProfile.incrementActivityStat(userId, 'total_comments');
+  await UserProfile.updateReputationScore(userId, 5); // 5 points for a reply
+
+  // Process mentions
+  const mentionedUsernames = extractMentions(payload.content);
+  if (mentionedUsernames.length > 0) {
+    const { User } = await import('../user/user.model');
+    const mentionedUsers = await User.find({
+      name: { $in: mentionedUsernames },
+    });
+    if (mentionedUsers.length > 0) {
+      await processMentions(
+        reply._id.toString(),
+        payload.content,
+        mentionedUsers.map((u) => u._id.toString()),
+      );
+    }
+  }
 
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
@@ -92,7 +109,7 @@ export const createReply = async (
 export const addReaction = async (
   comment_id: string,
   userId: string,
-  reactionType: 'like' | 'dislike',
+  reactionType: 'like' | 'dislike' | 'insightful' | 'funny' | 'disagree',
 ) => {
   const comment = await Comment.findById(comment_id);
 
@@ -120,6 +137,12 @@ export const addReaction = async (
       type: reactionType,
       status: 'approved',
     });
+
+    // Update user activity and reputation
+    await Promise.all([
+      UserProfile.incrementActivityStat(userId, 'total_reactions'),
+      UserProfile.updateReputationScore(userId, 1), // 1 point for a reaction
+    ]).catch((err) => console.error('Error updating profile stats:', err));
   }
 
   // Make sure to invalidate cache

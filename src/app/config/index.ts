@@ -82,6 +82,9 @@ export default {
   email: process.env.EMAIL as string,
   email_provider: process.env.EMAIL_PROVIDER as string,
 
+  auth_user_email: process.env.AUTH_USER_EMAIL as string,
+  auth_user_email_password: process.env.AUTH_USER_EMAIL_PASSWORD as string,
+
   smtp_host: process.env.SMTP_HOST as string,
   smtp_port: process.env.SMTP_PORT as string,
   smtp_email: process.env.SMTP_EMAIL as string,
@@ -98,6 +101,12 @@ export default {
   google_client_secret: process.env.GOOGLE_CLIENT_SECRET as string,
 
   // ☁️ Google Cloud Configuration
+  gcp: {
+    project_id: process.env.GOOGLE_CLOUD_PROJECT_ID as string,
+    bucket_name: process.env.GOOGLE_CLOUD_STORAGE_BUCKET as string,
+    credentials_path: process.env.GOOGLE_APPLICATION_CREDENTIALS as string,
+  },
+  
   google_application_credentials: process.env
     .GOOGLE_APPLICATION_CREDENTIALS as string,
 
