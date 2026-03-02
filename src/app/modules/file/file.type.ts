@@ -1,28 +1,43 @@
 import { Document, Model, Types } from 'mongoose';
 
-export type TFileType = 'image' | 'video' | 'audio' | 'file' | 'pdf' | 'doc' | 'txt';
+export type TFileType =
+  | 'image'
+  | 'video'
+  | 'audio'
+  | 'file'
+  | 'pdf'
+  | 'doc'
+  | 'txt';
 
 export type TFileStatus = 'active' | 'inactive' | 'archived';
 
+export type TFileProvider = 'local' | 'gcs';
+
 export type TFile = {
-  file_name: string;
+  _id?: Types.ObjectId | string;
+  filename: string;
+  originalname: string;
   name: string;
   url: string;
-  path: string;
-  type: TFileType;
-  mime_type: string;
+  mimetype: string;
   size: number;
-  extension: string;
   author: Types.ObjectId;
+  provider: TFileProvider;
   category?: string;
   description?: string;
   caption?: string;
   status: TFileStatus;
   is_deleted: boolean;
+  metadata?: {
+    path?: string; // For local
+    bucket?: string; // For GCS
+    extension?: string;
+    file_type?: TFileType;
+  };
 };
 
 export type TFileInput = {
-  name: string;
+  name?: string;
   category?: string;
   description?: string;
   caption?: string;
@@ -37,4 +52,3 @@ export interface TFileDocument extends TFile, Document {
 export type TFileModel = Model<TFileDocument> & {
   isFileExist(_id: string): Promise<TFileDocument | null>;
 };
-

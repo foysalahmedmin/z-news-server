@@ -17,7 +17,7 @@ import NotificationRecipientRoutes from '../modules/notification-recipient/notif
 import notificationRoutes from '../modules/notification/notification.route';
 import PollRoutes from '../modules/poll/poll.route';
 import ReactionRoutes from '../modules/reaction/reaction.route';
-import storageRoutes from '../modules/storage/storage.route';
+
 import TemplateRoutes from '../modules/template/template.route';
 import UserProfileRoutes from '../modules/user-profile/user-profile.route';
 import userRoutes from '../modules/user/user.route';
@@ -87,10 +87,7 @@ const moduleRoutes = [
     path: '/media',
     route: mediaRoutes,
   },
-  {
-    path: '/storage',
-    route: storageRoutes,
-  },
+
   {
     path: '/user-profile',
     route: UserProfileRoutes,

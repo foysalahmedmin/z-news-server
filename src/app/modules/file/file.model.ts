@@ -3,14 +3,19 @@ import { TFile, TFileDocument, TFileModel } from './file.type';
 
 const fileSchema = new Schema<TFileDocument>(
   {
-    file_name: {
+    filename: {
       type: String,
       required: [true, 'File name is required'],
       trim: true,
     },
+    originalname: {
+      type: String,
+      required: [true, 'Original name is required'],
+      trim: true,
+    },
     name: {
       type: String,
-      required: [true, 'Name is required'],
+      required: [true, 'Display name is required'],
       trim: true,
     },
     url: {
@@ -18,17 +23,7 @@ const fileSchema = new Schema<TFileDocument>(
       required: [true, 'URL is required'],
       trim: true,
     },
-    path: {
-      type: String,
-      required: [true, 'Path is required'],
-      trim: true,
-    },
-    type: {
-      type: String,
-      enum: ['image', 'video', 'audio', 'file', 'pdf', 'doc', 'txt'],
-      required: [true, 'Type is required'],
-    },
-    mime_type: {
+    mimetype: {
       type: String,
       required: [true, 'MIME type is required'],
       trim: true,
@@ -38,16 +33,15 @@ const fileSchema = new Schema<TFileDocument>(
       required: [true, 'Size is required'],
       min: [0, 'Size must be non-negative'],
     },
-    extension: {
-      type: String,
-      required: [true, 'Extension is required'],
-      trim: true,
-      lowercase: true,
-    },
     author: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'Author is required'],
+    },
+    provider: {
+      type: String,
+      enum: ['local', 'gcs'],
+      required: [true, 'Provider is required'],
     },
     category: {
       type: String,
@@ -73,6 +67,12 @@ const fileSchema = new Schema<TFileDocument>(
       default: false,
       select: false,
     },
+    metadata: {
+      path: String,
+      bucket: String,
+      extension: String,
+      file_type: String,
+    },
   },
   {
     timestamps: {
@@ -81,13 +81,14 @@ const fileSchema = new Schema<TFileDocument>(
     },
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
+    id: false,
   },
 );
 
 // Indexes
 fileSchema.index({ author: 1 });
 fileSchema.index({ category: 1 });
-fileSchema.index({ type: 1 });
+fileSchema.index({ provider: 1 });
 fileSchema.index({ status: 1 });
 fileSchema.index({ created_at: -1 });
 
@@ -134,4 +135,3 @@ export const File = mongoose.model<TFileDocument, TFileModel>(
   'File',
   fileSchema,
 );
-

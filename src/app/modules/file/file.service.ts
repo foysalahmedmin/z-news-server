@@ -1,13 +1,35 @@
+/**
+ * File Service
+ *
+ * Business logic for the unified File/Media module.
+ * Handles both local and cloud (GCS) storage providers.
+ */
+
+import { Storage } from '@google-cloud/storage';
 import httpStatus from 'http-status';
+import path from 'node:path';
 import AppError from '../../builder/app-error';
-import AppQueryFind from '../../builder/app-query-find';
+import config from '../../config';
+import { TStorageResult } from '../../middlewares/storage.middleware';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
 import { deleteFiles as deleteFilesFromDisk } from '../../utils/delete-files';
-import { File } from './file.model';
+import * as FileRepository from './file.repository';
 import { TFile, TFileInput } from './file.type';
 import { getExtensionFromFilename, getFileTypeFromMime } from './file.utils';
 
-export const createFile = async (
+// Initialize GCS client
+const storageClient = new Storage({
+  ...(config.gcp.credentials_path && {
+    keyFilename: path.resolve(process.cwd(), config.gcp.credentials_path),
+  }),
+  ...(config.gcp.project_id && {
+    projectId: config.gcp.project_id,
+  }),
+});
+
+// ─── Create (Local) ─────────────────────────────────────────────────────────
+
+export const createLocalFile = async (
   user: TJwtPayload,
   file: Express.Multer.File,
   payload: TFileInput,
@@ -22,37 +44,80 @@ export const createFile = async (
   const fileType = getFileTypeFromMime(file.mimetype, extension);
 
   const fileData: Partial<TFile> = {
-    file_name: file.filename,
     name: payload.name || file.originalname,
+    originalname: file.originalname,
+    filename: file.filename,
     url: `${baseUrl}/${filePath}`,
-    path: filePath,
-    type: fileType,
-    mime_type: file.mimetype,
+    mimetype: file.mimetype,
     size: file.size,
-    extension: extension,
     author: user._id as any,
+    provider: 'local',
     category: payload.category,
     description: payload.description,
     caption: payload.caption,
     status: payload.status || 'active',
     is_deleted: false,
+    metadata: {
+      path: filePath,
+      extension,
+      file_type: fileType,
+    },
   };
 
-  const result = await File.create(fileData);
-  return result.toObject();
+  return await FileRepository.create(fileData);
 };
 
-export const getFile = async (id: string): Promise<TFile> => {
-  const result = await File.findById(id)
-    .populate([{ path: 'author', select: '_id name email image' }])
-    .lean();
+// ─── Create (Cloud/GCS) ──────────────────────────────────────────────────────
 
+export const createCloudFiles = async (
+  user: TJwtPayload,
+  results: TStorageResult[],
+  payload: TFileInput,
+): Promise<TFile[]> => {
+  if (!results || results.length === 0) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'No storage results found');
+  }
+
+  const storagesData: Partial<TFile>[] = results.map((result) => {
+    const extension = getExtensionFromFilename(result.filename);
+    const fileType = getFileTypeFromMime(result.mimetype, extension);
+
+    return {
+      name: payload.name || result.originalName,
+      originalname: result.originalName,
+      filename: result.filename,
+      url: result.publicUrl || '',
+      mimetype: result.mimetype,
+      size: result.size,
+      author: user._id as any,
+      provider: 'gcs',
+      category: payload.category,
+      description: payload.description,
+      caption: payload.caption,
+      status: payload.status || 'active',
+      is_deleted: false,
+      metadata: {
+        bucket: result.bucket,
+        extension,
+        file_type: fileType,
+      },
+    };
+  });
+
+  return await FileRepository.createMany(storagesData);
+};
+
+// ─── Get Single ───────────────────────────────────────────────────────────────
+
+export const getFile = async (id: string): Promise<TFile> => {
+  const result = await FileRepository.findById(id);
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'File not found');
   }
-
   return result;
 };
+
+// ─── Get Many ────────────────────────────────────────────────────────────────
 
 export const getFiles = async (
   query: Record<string, unknown>,
@@ -60,59 +125,14 @@ export const getFiles = async (
   data: TFile[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const fileQuery = new AppQueryFind(File, query)
-    .populate([{ path: 'author', select: '_id name email image' }])
-    .search(['name', 'file_name', 'description'])
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
-
-  const result = await fileQuery.execute([
-    {
-      key: 'active',
-      filter: { status: 'active' },
-    },
-    {
-      key: 'inactive',
-      filter: { status: 'inactive' },
-    },
-    {
-      key: 'archived',
-      filter: { status: 'archived' },
-    },
-    {
-      key: 'image',
-      filter: { type: 'image' },
-    },
-    {
-      key: 'video',
-      filter: { type: 'video' },
-    },
-    {
-      key: 'audio',
-      filter: { type: 'audio' },
-    },
-    {
-      key: 'pdf',
-      filter: { type: 'pdf' },
-    },
-    {
-      key: 'doc',
-      filter: { type: 'doc' },
-    },
-    {
-      key: 'txt',
-      filter: { type: 'txt' },
-    },
-    {
-      key: 'file',
-      filter: { type: 'file' },
-    },
-  ]);
-
-  return result;
+  // Map 'type' or 'file_type' to 'metadata.file_type' for compatibility with frontend
+  const typeValue = query.file_type || query.type;
+  if (typeValue) {
+    query['metadata.file_type'] = typeValue;
+    delete query.file_type;
+    delete query.type;
+  }
+  return await FileRepository.findPaginated(query);
 };
 
 export const getSelfFiles = async (
@@ -122,19 +142,17 @@ export const getSelfFiles = async (
   data: TFile[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const fileQuery = new AppQueryFind(File, { author: user._id, ...query })
-    .populate([{ path: 'author', select: '_id name email image' }])
-    .search(['name', 'file_name', 'description'])
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
-
-  const result = await fileQuery.execute();
-
-  return result;
+  // Map 'type' or 'file_type' to 'metadata.file_type' for compatibility with frontend
+  const typeValue = (query.file_type as string) || (query.type as string);
+  if (typeValue) {
+    query['metadata.file_type'] = typeValue;
+    delete query.file_type;
+    delete query.type;
+  }
+  return await FileRepository.findPaginated(query, { author: user._id });
 };
+
+// ─── Update ───────────────────────────────────────────────────────────────────
 
 export const updateFile = async (
   id: string,
@@ -142,19 +160,12 @@ export const updateFile = async (
     Pick<TFile, 'name' | 'description' | 'category' | 'caption' | 'status'>
   >,
 ): Promise<TFile> => {
-  const data = await File.findById(id).lean();
-
-  if (!data) {
+  const exists = await FileRepository.findByIdLean(id);
+  if (!exists) {
     throw new AppError(httpStatus.NOT_FOUND, 'File not found');
   }
 
-  const result = await File.findByIdAndUpdate(id, payload, {
-    new: true,
-    runValidators: true,
-  })
-    .populate([{ path: 'author', select: '_id name email image' }])
-    .lean();
-
+  const result = await FileRepository.updateById(id, payload);
   return result!;
 };
 
@@ -165,14 +176,11 @@ export const updateFiles = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const files = await File.find({ _id: { $in: ids } }).lean();
-  const foundIds = files.map((file) => file._id.toString());
+  const files = await FileRepository.findManyByIds(ids);
+  const foundIds = files.map((file) => file._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  const result = await File.updateMany(
-    { _id: { $in: foundIds } },
-    { ...payload },
-  );
+  const result = await FileRepository.updateManyByIds(foundIds, payload);
 
   return {
     count: result.modifiedCount,
@@ -180,8 +188,10 @@ export const updateFiles = async (
   };
 };
 
+// ─── Soft Delete ──────────────────────────────────────────────────────────────
+
 export const deleteFile = async (id: string): Promise<void> => {
-  const file = await File.findById(id);
+  const file = await FileRepository.findById(id);
   if (!file) {
     throw new AppError(httpStatus.NOT_FOUND, 'File not found');
   }
@@ -195,11 +205,11 @@ export const deleteFiles = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const files = await File.find({ _id: { $in: ids } }).lean();
-  const foundIds = files.map((file) => file._id.toString());
+  const files = await FileRepository.findManyByIds(ids);
+  const foundIds = files.map((file) => file._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await File.updateMany({ _id: { $in: foundIds } }, { is_deleted: true });
+  await FileRepository.softDeleteManyByIds(foundIds);
 
   return {
     count: foundIds.length,
@@ -207,21 +217,30 @@ export const deleteFiles = async (
   };
 };
 
-export const deleteFilePermanent = async (id: string): Promise<void> => {
-  const file = await File.findById(id)
-    .setOptions({ bypassDeleted: true })
-    .lean();
+// ─── Hard Delete ──────────────────────────────────────────────────────────────
 
+export const deleteFilePermanent = async (id: string): Promise<void> => {
+  const file = await FileRepository.findByIdWithDeleted(id);
   if (!file) {
     throw new AppError(httpStatus.NOT_FOUND, 'File not found');
   }
 
-  // Delete physical file
-  if (file.path) {
-    await deleteFilesFromDisk(file.path);
+  // Delete physical file based on provider
+  if (file.provider === 'local' && file.metadata?.path) {
+    await deleteFilesFromDisk(file.metadata.path);
+  } else if (file.provider === 'gcs' && file.metadata?.bucket) {
+    try {
+      const bucket = storageClient.bucket(file.metadata.bucket);
+      const cloudFile = bucket.file(file.filename);
+      await cloudFile.delete();
+    } catch (error: any) {
+      if (error.code !== 404) {
+        console.error(`GCS Delete Error (${file.filename}):`, error.message);
+      }
+    }
   }
 
-  await File.findByIdAndDelete(id).setOptions({ bypassDeleted: true });
+  await FileRepository.hardDeleteById(id);
 };
 
 export const deleteFilesPermanent = async (
@@ -230,29 +249,31 @@ export const deleteFilesPermanent = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const files = await File.find({
-    _id: { $in: ids },
-    is_deleted: true,
-  })
-    .setOptions({ bypassDeleted: true })
-    .lean();
-
-  const foundIds = files.map((file) => file._id.toString());
+  const files = await FileRepository.findManyDeletedByIds(ids);
+  const foundIds = files.map((file) => file._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  // Delete physical files
-  const filePaths = files
-    .map((file) => file.path)
-    .filter((path): path is string => Boolean(path));
-
-  if (filePaths.length > 0) {
-    await deleteFilesFromDisk(filePaths);
+  // Batch delete physical files
+  for (const file of files) {
+    if (file.provider === 'local' && file.metadata?.path) {
+      await deleteFilesFromDisk(file.metadata.path);
+    } else if (file.provider === 'gcs' && file.metadata?.bucket) {
+      try {
+        const bucket = storageClient.bucket(file.metadata.bucket);
+        const cloudFile = bucket.file(file.filename);
+        await cloudFile.delete();
+      } catch (error: any) {
+        if (error.code !== 404) {
+          console.warn(
+            `GCS Batch Delete Fail (${file.filename}):`,
+            error.message,
+          );
+        }
+      }
+    }
   }
 
-  await File.deleteMany({
-    _id: { $in: foundIds },
-    is_deleted: true,
-  }).setOptions({ bypassDeleted: true });
+  await FileRepository.hardDeleteManyByIds(foundIds);
 
   return {
     count: foundIds.length,
@@ -260,19 +281,13 @@ export const deleteFilesPermanent = async (
   };
 };
 
-export const restoreFile = async (id: string): Promise<TFile> => {
-  const file = await File.findOneAndUpdate(
-    { _id: id, is_deleted: true },
-    { is_deleted: false },
-    { new: true },
-  )
-    .populate([{ path: 'author', select: '_id name email image' }])
-    .lean();
+// ─── Restore ──────────────────────────────────────────────────────────────────
 
+export const restoreFile = async (id: string): Promise<TFile> => {
+  const file = await FileRepository.restoreById(id);
   if (!file) {
     throw new AppError(httpStatus.NOT_FOUND, 'File not found or not deleted');
   }
-
   return file;
 };
 
@@ -282,13 +297,10 @@ export const restoreFiles = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const result = await File.updateMany(
-    { _id: { $in: ids }, is_deleted: true },
-    { is_deleted: false },
-  );
+  const result = await FileRepository.restoreManyByIds(ids);
 
-  const restoredFiles = await File.find({ _id: { $in: ids } }).lean();
-  const restoredIds = restoredFiles.map((file) => file._id.toString());
+  const restoredFiles = await FileRepository.findManyByIds(ids);
+  const restoredIds = restoredFiles.map((file) => file._id!.toString());
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 
   return {

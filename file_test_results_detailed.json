@@ -1,0 +1,54 @@
+{
+  "numFailedTestSuites": 2,
+  "numFailedTests": 0,
+  "numPassedTestSuites": 0,
+  "numPassedTests": 0,
+  "numPendingTestSuites": 0,
+  "numPendingTests": 0,
+  "numRuntimeErrorTestSuites": 2,
+  "numTodoTests": 0,
+  "numTotalTestSuites": 2,
+  "numTotalTests": 0,
+  "openHandles": [],
+  "snapshot": {
+    "added": 0,
+    "didUpdate": false,
+    "failure": false,
+    "filesAdded": 0,
+    "filesRemoved": 0,
+    "filesRemovedList": [],
+    "filesUnmatched": 0,
+    "filesUpdated": 0,
+    "matched": 0,
+    "total": 0,
+    "unchecked": 0,
+    "uncheckedKeysByFile": [],
+    "unmatched": 0,
+    "updated": 0
+  },
+  "startTime": 1772434791293,
+  "success": false,
+  "testResults": [
+    {
+      "assertionResults": [],
+      "coverage": {},
+      "endTime": 1772434801679,
+      "message": "  \u001b[1m● \u001b[22mTest suite failed to run\n\n    \u001b[96msrc/app/modules/file/file.service.ts\u001b[0m:\u001b[93m48\u001b[0m:\u001b[93m28\u001b[0m - \u001b[91merror\u001b[0m\u001b[90m TS2339: \u001b[0mProperty 'name' does not exist on type 'TFileInput'.\n\n    \u001b[7m48\u001b[0m     originalname: payload.name || file.originalname,\n    \u001b[7m  \u001b[0m \u001b[91m                           ~~~~\u001b[0m\n    \u001b[96msrc/app/modules/file/file.service.ts\u001b[0m:\u001b[93m86\u001b[0m:\u001b[93m30\u001b[0m - \u001b[91merror\u001b[0m\u001b[90m TS2339: \u001b[0mProperty 'name' does not exist on type 'TFileInput'.\n\n    \u001b[7m86\u001b[0m       originalname: payload.name || result.originalName,\n    \u001b[7m  \u001b[0m \u001b[91m                             ~~~~\u001b[0m\n",
+      "name": "C:\\Projects\\Other-Projects\\z-news\\z-news-server\\src\\app\\modules\\file\\__tests__\\file.route.test.ts",
+      "startTime": 1772434801679,
+      "status": "failed",
+      "summary": ""
+    },
+    {
+      "assertionResults": [],
+      "coverage": {},
+      "endTime": 1772434801679,
+      "message": "  \u001b[1m● \u001b[22mTest suite failed to run\n\n    \u001b[96msrc/app/modules/file/file.service.ts\u001b[0m:\u001b[93m48\u001b[0m:\u001b[93m28\u001b[0m - \u001b[91merror\u001b[0m\u001b[90m TS2339: \u001b[0mProperty 'name' does not exist on type 'TFileInput'.\n\n    \u001b[7m48\u001b[0m     originalname: payload.name || file.originalname,\n    \u001b[7m  \u001b[0m \u001b[91m                           ~~~~\u001b[0m\n    \u001b[96msrc/app/modules/file/file.service.ts\u001b[0m:\u001b[93m86\u001b[0m:\u001b[93m30\u001b[0m - \u001b[91merror\u001b[0m\u001b[90m TS2339: \u001b[0mProperty 'name' does not exist on type 'TFileInput'.\n\n    \u001b[7m86\u001b[0m       originalname: payload.name || result.originalName,\n    \u001b[7m  \u001b[0m \u001b[91m                             ~~~~\u001b[0m\n",
+      "name": "C:\\Projects\\Other-Projects\\z-news\\z-news-server\\src\\app\\modules\\file\\__tests__\\file.service.test.ts",
+      "startTime": 1772434801679,
+      "status": "failed",
+      "summary": ""
+    }
+  ],
+  "wasInterrupted": false
+}

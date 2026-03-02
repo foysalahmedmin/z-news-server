@@ -1,19 +1,17 @@
 import httpStatus from 'http-status';
-import AppError from '../../builder/app-error';
+import { TStorageResult } from '../../middlewares/storage.middleware';
 import catchAsync from '../../utils/catch-async';
 import sendResponse from '../../utils/send-response';
 import * as FileServices from './file.service';
 
-export const createFile = catchAsync(async (req, res) => {
+// ─── Create ───────────────────────────────────────────────────────────────────
+
+export const createLocalFile = catchAsync(async (req, res) => {
   const files = req.files as Record<string, Express.Multer.File[]>;
   const file = files?.file?.[0];
 
-  if (!file) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'No file uploaded');
-  }
-
   const baseUrl = req.protocol + '://' + req.get('host');
-  const result = await FileServices.createFile(
+  const result = await FileServices.createLocalFile(
     req.user!,
     file,
     req.body,
@@ -23,10 +21,29 @@ export const createFile = catchAsync(async (req, res) => {
   sendResponse(res, {
     status: httpStatus.CREATED,
     success: true,
-    message: 'File uploaded successfully',
+    message: 'File uploaded to local storage successfully',
     data: result,
   });
 });
+
+export const createCloudFiles = catchAsync(async (req, res) => {
+  const storages = (req as any).storages as TStorageResult[];
+
+  const result = await FileServices.createCloudFiles(
+    req.user!,
+    storages,
+    req.body,
+  );
+
+  sendResponse(res, {
+    status: httpStatus.CREATED,
+    success: true,
+    message: 'Assets uploaded to cloud storage successfully',
+    data: result,
+  });
+});
+
+// ─── Get ──────────────────────────────────────────────────────────────────────
 
 export const getFile = catchAsync(async (req, res) => {
   const { id } = req.params;
@@ -58,11 +75,13 @@ export const getSelfFiles = catchAsync(async (req, res) => {
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Files retrieved successfully',
+    message: 'Your files retrieved successfully',
     meta: result.meta,
     data: result.data,
   });
 });
+
+// ─── Update ───────────────────────────────────────────────────────────────────
 
 export const updateFile = catchAsync(async (req, res) => {
   const { id } = req.params;
@@ -71,7 +90,7 @@ export const updateFile = catchAsync(async (req, res) => {
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'File updated successfully',
+    message: 'File metadata updated successfully',
     data: result,
   });
 });
@@ -83,10 +102,12 @@ export const updateFiles = catchAsync(async (req, res) => {
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: 'Files updated successfully',
+    message: 'Files status updated successfully',
     data: result,
   });
 });
+
+// ─── Delete ───────────────────────────────────────────────────────────────────
 
 export const deleteFile = catchAsync(async (req, res) => {
   const { id } = req.params;
@@ -96,18 +117,6 @@ export const deleteFile = catchAsync(async (req, res) => {
     status: httpStatus.OK,
     success: true,
     message: 'File soft deleted successfully',
-    data: null,
-  });
-});
-
-export const deleteFilePermanent = catchAsync(async (req, res) => {
-  const { id } = req.params;
-  await FileServices.deleteFilePermanent(id);
-
-  sendResponse(res, {
-    status: httpStatus.OK,
-    success: true,
-    message: 'File permanently deleted successfully',
     data: null,
   });
 });
@@ -126,6 +135,18 @@ export const deleteFiles = catchAsync(async (req, res) => {
   });
 });
 
+export const deleteFilePermanent = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  await FileServices.deleteFilePermanent(id);
+
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'File and physical storage permanently deleted',
+    data: null,
+  });
+});
+
 export const deleteFilesPermanent = catchAsync(async (req, res) => {
   const { ids } = req.body;
   const result = await FileServices.deleteFilesPermanent(ids);
@@ -133,12 +154,14 @@ export const deleteFilesPermanent = catchAsync(async (req, res) => {
   sendResponse(res, {
     status: httpStatus.OK,
     success: true,
-    message: `${result.count} files permanently deleted successfully`,
+    message: `${result.count} files and assets permanently deleted`,
     data: {
       not_found_ids: result.not_found_ids,
     },
   });
 });
+
+// ─── Restore ──────────────────────────────────────────────────────────────────
 
 export const restoreFile = catchAsync(async (req, res) => {
   const { id } = req.params;
@@ -165,4 +188,3 @@ export const restoreFiles = catchAsync(async (req, res) => {
     },
   });
 });
-

@@ -30,7 +30,11 @@ export const updateFileValidationSchema = z.object({
     id: idSchema,
   }),
   body: z.object({
-    name: z.string().trim().min(1, 'Name must be at least 1 character').optional(),
+    name: z
+      .string()
+      .trim()
+      .min(1, 'Name must be at least 1 character')
+      .optional(),
     category: z.string().trim().optional(),
     description: z
       .string()
@@ -66,9 +70,6 @@ export const fileOperationValidationSchema = z.object({
 
 export const filesOperationValidationSchema = z.object({
   body: z.object({
-    ids: z
-      .array(idSchema)
-      .nonempty('At least one file ID is required'),
+    ids: z.array(idSchema).nonempty('At least one file ID is required'),
   }),
 });
-

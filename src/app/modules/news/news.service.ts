@@ -143,9 +143,12 @@ export const getPublicNews = async (slug: string): Promise<TNews> => {
           { path: 'event', select: '_id name slug' },
           {
             path: 'thumbnail',
-            select: '_id url name path file_name type caption',
+            select: '_id url name filename mimetype caption metadata',
           },
-          { path: 'video', select: '_id url name path file_name type caption' },
+          {
+            path: 'video',
+            select: '_id url name filename mimetype caption metadata',
+          },
           { path: 'views' },
           { path: 'likes' },
           { path: 'dislikes' },
@@ -181,9 +184,12 @@ export const getSelfNews = async (
           { path: 'event', select: '_id name slug' },
           {
             path: 'thumbnail',
-            select: '_id url name path file_name type caption',
+            select: '_id url name filename mimetype caption metadata',
           },
-          { path: 'video', select: '_id url name path file_name type caption' },
+          {
+            path: 'video',
+            select: '_id url name filename mimetype caption metadata',
+          },
           {
             path: 'news_headline',
             select: '_id status published_at expired_at',
@@ -216,9 +222,12 @@ export const getNews = async (id: string): Promise<TNews> => {
           { path: 'event', select: '_id name slug' },
           {
             path: 'thumbnail',
-            select: '_id url name path file_name type caption',
+            select: '_id url name filename mimetype caption metadata',
           },
-          { path: 'video', select: '_id url name path file_name type caption' },
+          {
+            path: 'video',
+            select: '_id url name filename mimetype caption metadata',
+          },
           {
             path: 'news_headline',
             select: '_id status published_at expired_at',
@@ -309,9 +318,12 @@ export const getPublicBulkNews = async (
         { path: 'event', select: '_id name slug' },
         {
           path: 'thumbnail',
-          select: '_id url name path file_name type caption',
+          select: '_id url name filename mimetype caption metadata',
         },
-        { path: 'video', select: '_id url name path file_name type caption' },
+        {
+          path: 'video',
+          select: '_id url name filename mimetype caption metadata',
+        },
         { path: 'views' },
         { path: 'likes' },
         { path: 'dislikes' },
@@ -422,9 +434,12 @@ export const getSelfBulkNews = async (
         { path: 'event', select: '_id name slug' },
         {
           path: 'thumbnail',
-          select: '_id url name path file_name type caption',
+          select: '_id url name filename mimetype caption metadata',
         },
-        { path: 'video', select: '_id url name path file_name type caption' },
+        {
+          path: 'video',
+          select: '_id url name filename mimetype caption metadata',
+        },
         { path: 'views' },
         { path: 'likes' },
         { path: 'dislikes' },
@@ -541,9 +556,12 @@ export const getBulkNews = async (
         { path: 'event', select: '_id name slug' },
         {
           path: 'thumbnail',
-          select: '_id url name path file_name type caption',
+          select: '_id url name filename mimetype caption metadata',
         },
-        { path: 'video', select: '_id url name path file_name type caption' },
+        {
+          path: 'video',
+          select: '_id url name filename mimetype caption metadata',
+        },
         { path: 'views' },
         { path: 'likes' },
         { path: 'dislikes' },
@@ -648,8 +666,14 @@ export const updateSelfNews = async (
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
-      { path: 'thumbnail', select: '_id url name path file_name type caption' },
-      { path: 'video', select: '_id url name path file_name type caption' },
+      {
+        path: 'thumbnail',
+        select: '_id url name filename mimetype caption metadata',
+      },
+      {
+        path: 'video',
+        select: '_id url name filename mimetype caption metadata',
+      },
     ])
     .lean();
 
@@ -723,8 +747,14 @@ export const updateNews = async (
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
       { path: 'event', select: '_id name slug' },
-      { path: 'thumbnail', select: '_id url name path file_name type caption' },
-      { path: 'video', select: '_id url name path file_name type caption' },
+      {
+        path: 'thumbnail',
+        select: '_id url name filename mimetype caption metadata',
+      },
+      {
+        path: 'video',
+        select: '_id url name filename mimetype caption metadata',
+      },
     ])
     .lean();
 

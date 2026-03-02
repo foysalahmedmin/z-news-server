@@ -1,13 +1,16 @@
 import express from 'express';
 import auth from '../../middlewares/auth.middleware';
 import file from '../../middlewares/file.middleware';
+import storage from '../../middlewares/storage.middleware';
 import validation from '../../middlewares/validation.middleware';
 import * as FileControllers from './file.controller';
 import * as FileValidations from './file.validation';
 
 const router = express.Router();
 
-// POST - Upload file
+// ─── POST (Upload) ───────────────────────────────────────────────────────────
+
+// Local Upload
 router.post(
   '/',
   auth('super-admin', 'admin', 'editor', 'author', 'contributor'),
@@ -17,10 +20,24 @@ router.post(
     size: 50 * 1024 * 1024, // 50MB
   }),
   validation(FileValidations.createFileValidationSchema),
-  FileControllers.createFile,
+  FileControllers.createLocalFile,
 );
 
-// GET
+// Cloud Upload (GCS)
+router.post(
+  '/cloud',
+  auth('super-admin', 'admin', 'editor', 'author', 'contributor'),
+  storage({
+    name: 'file',
+    size: 50 * 1024 * 1024, // 50MB
+    makePublic: true,
+  }),
+  validation(FileValidations.createFileValidationSchema),
+  FileControllers.createCloudFiles,
+);
+
+// ─── GET (List & Single) ─────────────────────────────────────────────────────
+
 router.get(
   '/',
   auth('super-admin', 'admin', 'editor'),
@@ -40,7 +57,8 @@ router.get(
   FileControllers.getFile,
 );
 
-// PATCH
+// ─── PATCH (Update) ──────────────────────────────────────────────────────────
+
 router.patch(
   '/bulk',
   auth('super-admin', 'admin', 'editor'),
@@ -55,7 +73,8 @@ router.patch(
   FileControllers.updateFile,
 );
 
-// DELETE
+// ─── DELETE ──────────────────────────────────────────────────────────────────
+
 router.delete(
   '/bulk/permanent',
   auth('super-admin', 'admin'),
@@ -84,7 +103,8 @@ router.delete(
   FileControllers.deleteFile,
 );
 
-// POST - Restore
+// ─── POST (Restore) ──────────────────────────────────────────────────────────
+
 router.post(
   '/bulk/restore',
   auth('super-admin', 'admin'),
@@ -100,6 +120,4 @@ router.post(
 );
 
 const fileRoutes = router;
-
 export default fileRoutes;
-
