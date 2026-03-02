@@ -1,87 +1,59 @@
+/**
+ * Category Service
+ *
+ * Contains ONLY business logic. All database access is delegated to
+ * `category.repository.ts`. This makes the service independently
+ * unit-testable by mocking the repository.
+ */
 
 import httpStatus from 'http-status';
-import { ObjectId } from 'mongodb';
-import { Types } from 'mongoose';
 import AppError from '../../builder/app-error';
-import AppQueryFind from '../../builder/app-query-find';
 import {
-    generateCacheKey,
-    invalidateCacheByPattern,
-    withCache,
+  generateCacheKey,
+  invalidateCacheByPattern,
+  withCache,
 } from '../../utils/cache.utils';
-import { slugify } from '../../utils/slugify';
-import { Category } from './category.model';
-import {
-    TCategory,
-    TCategoryInput,
-    TCategoryTree,
-    TStatus,
-} from './category.type';
+import * as CategoryRepository from './category.repository';
+import { TCategory, TCategoryTree, TStatus } from './category.type';
 
 const CACHE_PREFIX = 'category';
 const CACHE_TTL = 3600; // 1 hour
 
+// ─── Bulk Insert from File ────────────────────────────────────────────────────
+
 export const insertCategoriesFromFile = async (
   file?: Express.Multer.File,
-): Promise<{
-  count: number;
-}> => {
+): Promise<{ count: number }> => {
   if (!file) {
     throw new AppError(httpStatus.BAD_REQUEST, 'No file uploaded');
   }
 
   const rawData = file.buffer.toString('utf-8');
-  const categories: TCategoryInput[] = JSON.parse(rawData);
+  const categories = JSON.parse(rawData);
 
-  let sequenceCounter = 1;
-
-  const formatted: TCategory[] = categories.map((cat) => ({
-    _id: new ObjectId(Number(cat.category_id).toString(16).padStart(24, '0')),
-    name: cat.category_name,
-    slug: slugify(cat.category_name),
-    sequence: sequenceCounter++,
-    status: 'active',
-    is_featured: false,
-    is_deleted: false,
-    icon: 'blocks',
-    layout: 'default',
-    tags: [],
-    description: '',
-    ...(cat?.parent_id
-      ? {
-          category: new ObjectId(
-            Number(cat.parent_id).toString(16).padStart(24, '0'),
-          ),
-        }
-      : {}),
-  }));
-
-  await Category.insertMany(formatted, { ordered: false });
-
-
+  const count = await CategoryRepository.insertManyFromRaw(categories);
 
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
-  return {
-    count: formatted.length,
-  };
+  return { count };
 };
+
+// ─── Create ───────────────────────────────────────────────────────────────────
 
 export const createCategory = async (data: TCategory): Promise<TCategory> => {
-  const result = await Category.create(data);
+  const result = await CategoryRepository.create(data);
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
-  return result.toObject();
+  return result;
 };
+
+// ─── Get Single ───────────────────────────────────────────────────────────────
 
 export const getPublicCategory = async (slug: string): Promise<TCategory> => {
   return await withCache(
     `${CACHE_PREFIX}:slug:${slug}`,
     CACHE_TTL,
     async () => {
-      const result = await Category.findOne({
-        slug: slug,
-        status: 'active',
-      }).populate('children');
+      const result = await CategoryRepository.findBySlug(slug);
       if (!result) {
         throw new AppError(httpStatus.NOT_FOUND, 'Category not found');
       }
@@ -92,13 +64,15 @@ export const getPublicCategory = async (slug: string): Promise<TCategory> => {
 
 export const getCategory = async (id: string): Promise<TCategory> => {
   return await withCache(`${CACHE_PREFIX}:id:${id}`, CACHE_TTL, async () => {
-    const result = await Category.findById(id).populate('children');
+    const result = await CategoryRepository.findById(id);
     if (!result) {
       throw new AppError(httpStatus.NOT_FOUND, 'Category not found');
     }
     return result;
   });
 };
+
+// ─── Get Many ────────────────────────────────────────────────────────────────
 
 export const getPublicCategories = async (
   query: Record<string, unknown>,
@@ -108,29 +82,7 @@ export const getPublicCategories = async (
 }> => {
   const cacheKey = generateCacheKey(CACHE_PREFIX, ['public', 'list', query]);
   return await withCache(cacheKey, CACHE_TTL, async () => {
-    const { all = false, category, ...rest } = query;
-
-    const filter: Record<string, unknown> = {};
-    if (category) {
-      filter.status = 'active';
-      filter.category = category;
-    } else if (!all) {
-      filter.status = 'active';
-      filter.category = { $not: { $type: 'objectId' } };
-    }
-
-    const categoryQuery = new AppQueryFind(Category, { ...filter, ...rest })
-      .populate([{ path: 'children' }])
-      .search(['name'])
-      .filter()
-      .sort()
-      .paginate()
-      .fields()
-      .tap((q) => q.lean());
-
-    const result = await categoryQuery.execute();
-
-    return result;
+    return await CategoryRepository.findPublicPaginated(query);
   });
 };
 
@@ -142,41 +94,11 @@ export const getCategories = async (
 }> => {
   const cacheKey = generateCacheKey(CACHE_PREFIX, ['list', query]);
   return await withCache(cacheKey, CACHE_TTL, async () => {
-    const { all = false, category, ...rest } = query;
-
-    if (category) {
-      rest.category = category;
-    } else if (!all) {
-      rest.category = { $not: { $type: 'objectId' } };
-    }
-
-    const categoryQuery = new AppQueryFind(Category, rest)
-      .populate([{ path: 'children' }])
-      .search(['name'])
-      .filter()
-      .sort()
-      .paginate()
-      .fields()
-      .tap((q) => q.lean());
-
-    const result = await categoryQuery.execute([
-      {
-        key: 'active',
-        filter: { status: 'active' },
-      },
-      {
-        key: 'inactive',
-        filter: { status: 'inactive' },
-      },
-      {
-        key: 'featured',
-        filter: { is_featured: true },
-      },
-    ]);
-
-    return result;
+    return await CategoryRepository.findAdminPaginated(query);
   });
 };
+
+// ─── Get Tree ────────────────────────────────────────────────────────────────
 
 export const getPublicCategoriesTree = async (
   category?: string,
@@ -192,59 +114,7 @@ export const getPublicCategoriesTree = async (
     query,
   ]);
   return await withCache(cacheKey, CACHE_TTL, async () => {
-    const page = Number(query.page) || 1;
-    const limit = Number(query.limit) || 30;
-
-    const baseMatch = {
-      status: 'active',
-      is_deleted: { $ne: true },
-    };
-
-    const matchStage =
-      category && Types.ObjectId.isValid(category)
-        ? { ...baseMatch, category: new Types.ObjectId(category) }
-        : {
-            ...baseMatch,
-            $or: [{ category: { $exists: false } }, { category: null }],
-          };
-
-    const total = await Category.countDocuments(matchStage);
-
-    const categories = await Category.aggregate([
-      { $match: matchStage },
-      { $sort: { sequence: 1 } },
-      { $skip: (page - 1) * limit },
-      { $limit: limit },
-      {
-        $graphLookup: {
-          from: 'categories',
-          startWith: '$_id',
-          connectFromField: '_id',
-          connectToField: 'category',
-          as: 'descendants',
-          restrictSearchWithMatch: baseMatch,
-          depthField: 'level',
-          maxDepth: 10,
-        },
-      },
-      {
-        $addFields: {
-          children: {
-            $filter: {
-              input: '$descendants',
-              as: 'child',
-              cond: { $eq: ['$$child.level', 0] },
-            },
-          },
-        },
-      },
-      { $project: { descendants: 0 } },
-    ]);
-
-    return {
-      data: categories as TCategoryTree[],
-      meta: { total, page, limit },
-    };
+    return await CategoryRepository.findPublicTree(category, query);
   });
 };
 
@@ -261,75 +131,23 @@ export const getCategoriesTree = async (
     query,
   ]);
   return await withCache(cacheKey, CACHE_TTL, async () => {
-    const page = Number(query.page) || 1;
-    const limit = Number(query.limit) || 30;
-
-    const baseMatch = {
-      is_deleted: { $ne: true },
-      ...(query?.status && { status: query?.status }),
-    };
-
-    const matchStage =
-      category && Types.ObjectId.isValid(category)
-        ? { ...baseMatch, category: new Types.ObjectId(category) }
-        : {
-            ...baseMatch,
-            $or: [{ category: { $exists: false } }, { category: null }],
-          };
-
-    const total = await Category.countDocuments(matchStage);
-
-    const categories = await Category.aggregate([
-      { $match: matchStage },
-      { $sort: { sequence: 1 } },
-      { $skip: (page - 1) * limit },
-      { $limit: limit },
-      {
-        $graphLookup: {
-          from: 'categories',
-          startWith: '$_id',
-          connectFromField: '_id',
-          connectToField: 'category',
-          as: 'descendants',
-          restrictSearchWithMatch: baseMatch,
-          depthField: 'level',
-          maxDepth: 10,
-        },
-      },
-      {
-        $addFields: {
-          children: {
-            $filter: {
-              input: '$descendants',
-              as: 'child',
-              cond: { $eq: ['$$child.level', 0] },
-            },
-          },
-        },
-      },
-      { $project: { descendants: 0 } },
-    ]);
-
-    return {
-      data: categories as TCategoryTree[],
-      meta: { total, page, limit },
-    };
+    return await CategoryRepository.findAdminTree(category, query);
   });
 };
+
+// ─── Update ───────────────────────────────────────────────────────────────────
 
 export const updateCategory = async (
   id: string,
   payload: Partial<Pick<TCategory, 'name' | 'slug' | 'sequence' | 'status'>>,
 ): Promise<TCategory> => {
-  const data = await Category.findById(id).lean();
-  if (!data) {
+  // Guard: ensure the document exists before attempting update
+  const exists = await CategoryRepository.findByIdLean(id);
+  if (!exists) {
     throw new AppError(httpStatus.NOT_FOUND, 'Category not found');
   }
 
-  const result = await Category.findByIdAndUpdate(id, payload, {
-    new: true,
-    runValidators: true,
-  });
+  const result = await CategoryRepository.updateById(id, payload);
 
   if (result) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
@@ -341,31 +159,24 @@ export const updateCategory = async (
 export const updateCategories = async (
   ids: string[],
   payload: Partial<Pick<TCategory, 'status'>>,
-): Promise<{
-  count: number;
-  not_found_ids: string[];
-}> => {
-  const categories = await Category.find({ _id: { $in: ids } }).lean();
-  const foundIds = categories.map((category) => category._id.toString());
+): Promise<{ count: number; not_found_ids: string[] }> => {
+  const categories = await CategoryRepository.findManyByIds(ids);
+  const foundIds = categories.map((c) => c._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  const result = await Category.updateMany(
-    { _id: { $in: foundIds } },
-    { ...payload },
-  );
+  const result = await CategoryRepository.updateManyByIds(foundIds, payload);
 
   if (result.modifiedCount > 0) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
   }
 
-  return {
-    count: result.modifiedCount,
-    not_found_ids: notFoundIds,
-  };
+  return { count: result.modifiedCount, not_found_ids: notFoundIds };
 };
 
+// ─── Soft Delete ──────────────────────────────────────────────────────────────
+
 export const deleteCategory = async (id: string): Promise<void> => {
-  const category = await Category.findById(id);
+  const category = await CategoryRepository.findById(id);
   if (!category) {
     throw new AppError(httpStatus.NOT_FOUND, 'Category not found');
   }
@@ -374,72 +185,46 @@ export const deleteCategory = async (id: string): Promise<void> => {
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
-export const deleteCategoryPermanent = async (id: string): Promise<void> => {
-  const category = await Category.findById(id)
-    .setOptions({ bypassDeleted: true })
-    .lean();
+export const deleteCategories = async (
+  ids: string[],
+): Promise<{ count: number; not_found_ids: string[] }> => {
+  const categories = await CategoryRepository.findManyByIds(ids);
+  const foundIds = categories.map((c) => c._id!.toString());
+  const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
+  await CategoryRepository.softDeleteManyByIds(foundIds);
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+
+  return { count: foundIds.length, not_found_ids: notFoundIds };
+};
+
+// ─── Hard Delete ──────────────────────────────────────────────────────────────
+
+export const deleteCategoryPermanent = async (id: string): Promise<void> => {
+  const category = await CategoryRepository.findByIdWithDeleted(id);
   if (!category) {
     throw new AppError(httpStatus.NOT_FOUND, 'Category not found');
   }
 
-  await Category.findByIdAndDelete(id).setOptions({ bypassDeleted: true });
-};
-
-export const deleteCategories = async (
-  ids: string[],
-): Promise<{
-  count: number;
-  not_found_ids: string[];
-}> => {
-  const categories = await Category.find({ _id: { $in: ids } }).lean();
-  const foundIds = categories.map((category) => category._id.toString());
-  const notFoundIds = ids.filter((id) => !foundIds.includes(id));
-
-  await Category.updateMany({ _id: { $in: foundIds } }, { is_deleted: true });
-
-  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
-
-  return {
-    count: foundIds.length,
-    not_found_ids: notFoundIds,
-  };
+  await CategoryRepository.hardDeleteById(id);
 };
 
 export const deleteCategoriesPermanent = async (
   ids: string[],
-): Promise<{
-  count: number;
-  not_found_ids: string[];
-}> => {
-  const categories = await Category.find({
-    _id: { $in: ids },
-    is_deleted: true,
-  })
-    .setOptions({ bypassDeleted: true })
-    .lean();
-
-  const foundIds = categories.map((category) => category._id.toString());
+): Promise<{ count: number; not_found_ids: string[] }> => {
+  const categories = await CategoryRepository.findManyDeletedByIds(ids);
+  const foundIds = categories.map((c) => c._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Category.deleteMany({
-    _id: { $in: foundIds },
-    is_deleted: true,
-  }).setOptions({ bypassDeleted: true });
+  await CategoryRepository.hardDeleteManyByIds(foundIds);
 
-  return {
-    count: foundIds.length,
-    not_found_ids: notFoundIds,
-  };
+  return { count: foundIds.length, not_found_ids: notFoundIds };
 };
 
-export const restoreCategory = async (id: string): Promise<TCategory> => {
-  const category = await Category.findOneAndUpdate(
-    { _id: id, is_deleted: true },
-    { is_deleted: false },
-    { new: true },
-  );
+// ─── Restore ──────────────────────────────────────────────────────────────────
 
+export const restoreCategory = async (id: string): Promise<TCategory> => {
+  const category = await CategoryRepository.restoreById(id);
   if (!category) {
     throw new AppError(
       httpStatus.NOT_FOUND,
@@ -447,32 +232,18 @@ export const restoreCategory = async (id: string): Promise<TCategory> => {
     );
   }
 
-  if (category) {
-    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
-  }
-
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
   return category;
 };
 
 export const restoreCategories = async (
   ids: string[],
-): Promise<{
-  count: number;
-  not_found_ids: string[];
-}> => {
-  const result = await Category.updateMany(
-    { _id: { $in: ids }, is_deleted: true },
-    { is_deleted: false },
-  );
+): Promise<{ count: number; not_found_ids: string[] }> => {
+  const result = await CategoryRepository.restoreManyByIds(ids);
 
-  const restoredCategories = await Category.find({ _id: { $in: ids } }).lean();
-  const restoredIds = restoredCategories.map((category) =>
-    category._id.toString(),
-  );
+  const restoredCategories = await CategoryRepository.findRestoredByIds(ids);
+  const restoredIds = restoredCategories.map((c) => c._id!.toString());
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 
-  return {
-    count: result.modifiedCount,
-    not_found_ids: notFoundIds,
-  };
+  return { count: result.modifiedCount, not_found_ids: notFoundIds };
 };

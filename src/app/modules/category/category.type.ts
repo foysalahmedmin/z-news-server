@@ -1,8 +1,9 @@
-import mongoose, { Document, Model, Types } from 'mongoose';
+import { Document, Model, Types } from 'mongoose';
 
 export type TStatus = 'active' | 'inactive';
 
 export type TCategory = {
+  _id?: Types.ObjectId | string;
   icon?: string;
   name: string;
   slug: string;
@@ -10,7 +11,7 @@ export type TCategory = {
   sequence: number;
   status: TStatus;
   tags: string[];
-  category?: mongoose.Types.ObjectId | null;
+  category?: Types.ObjectId | null;
   layout?: string;
   is_featured: boolean;
   is_deleted?: boolean;
