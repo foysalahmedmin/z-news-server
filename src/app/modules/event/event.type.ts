@@ -1,15 +1,16 @@
-import mongoose, { Document, Model, Types } from 'mongoose';
+import { Document, Model, Types } from 'mongoose';
 
 export type TStatus = 'active' | 'inactive';
 
 export type TEvent = {
+  _id?: Types.ObjectId | string;
   icon?: string;
   name: string;
   slug: string;
   description?: string;
   status: TStatus;
   tags: string[];
-  category?: mongoose.Types.ObjectId | null;
+  category?: Types.ObjectId | null;
   layout?: string;
   published_at?: Date;
   expired_at?: Date;

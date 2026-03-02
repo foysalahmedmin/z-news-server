@@ -1,32 +1,38 @@
+/**
+ * Event Service
+ *
+ * Business logic for the Event module. delegating DB access to the repository.
+ */
+
 import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
-import AppQueryFind from '../../builder/app-query-find';
 import {
   generateCacheKey,
   invalidateCacheByPattern,
   withCache,
 } from '../../utils/cache.utils';
-import { Event } from './event.model';
+import * as EventRepository from './event.repository';
 import { TEvent } from './event.type';
 
 const CACHE_PREFIX = 'event';
 const CACHE_TTL = 3600; // 1 hour
 
+// ─── Create ───────────────────────────────────────────────────────────────────
+
 export const createEvent = async (data: TEvent): Promise<TEvent> => {
-  const result = await Event.create(data);
+  const result = await EventRepository.create(data);
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
-  return result.toObject();
+  return result;
 };
+
+// ─── Get Single ───────────────────────────────────────────────────────────────
 
 export const getPublicEvent = async (slug: string): Promise<TEvent> => {
   return await withCache(
     generateCacheKey(CACHE_PREFIX, ['slug', slug]),
     CACHE_TTL,
     async () => {
-      const result = await Event.findOne({
-        slug: slug,
-        status: 'active',
-      }).populate([{ path: 'category', select: '_id name slug' }]);
+      const result = await EventRepository.findBySlug(slug);
       if (!result) {
         throw new AppError(httpStatus.NOT_FOUND, 'Event not found');
       }
@@ -40,9 +46,7 @@ export const getEvent = async (id: string): Promise<TEvent> => {
     generateCacheKey(CACHE_PREFIX, ['id', id]),
     CACHE_TTL,
     async () => {
-      const result = await Event.findById(id).populate([
-        { path: 'category', select: '_id name slug' },
-      ]);
+      const result = await EventRepository.findById(id);
       if (!result) {
         throw new AppError(httpStatus.NOT_FOUND, 'Event not found');
       }
@@ -50,6 +54,8 @@ export const getEvent = async (id: string): Promise<TEvent> => {
     },
   );
 };
+
+// ─── Get Many ────────────────────────────────────────────────────────────────
 
 export const getPublicEvents = async (
   query: Record<string, unknown>,
@@ -59,28 +65,7 @@ export const getPublicEvents = async (
 }> => {
   const cacheKey = generateCacheKey(CACHE_PREFIX, ['public', 'list', query]);
   return await withCache(cacheKey, CACHE_TTL, async () => {
-    const { date: q_date, ...rest } = query || {};
-
-    const date = q_date ? new Date(q_date as string) : new Date();
-
-    const filter = {
-      status: 'active',
-      published_at: { $lte: date },
-      $or: [{ expired_at: { $exists: false } }, { expired_at: { $gte: date } }],
-    };
-
-    const eventQuery = new AppQueryFind(Event, { ...filter, ...rest })
-      .populate([{ path: 'category', select: '_id name slug' }])
-      .search(['name'])
-      .filter()
-      .sort()
-      .paginate()
-      .fields()
-      .tap((q) => q.lean());
-
-    const result = await eventQuery.execute();
-
-    return result;
+    return await EventRepository.findPublicPaginated(query);
   });
 };
 
@@ -92,48 +77,22 @@ export const getEvents = async (
 }> => {
   const cacheKey = generateCacheKey(CACHE_PREFIX, ['admin', 'list', query]);
   return await withCache(cacheKey, CACHE_TTL, async () => {
-    const eventQuery = new AppQueryFind(Event, query)
-      .populate([{ path: 'category', select: '_id name slug' }])
-      .search(['name'])
-      .filter()
-      .sort()
-      .paginate()
-      .fields()
-      .tap((q) => q.lean());
-
-    const result = await eventQuery.execute([
-      {
-        key: 'active',
-        filter: { status: 'active' },
-      },
-      {
-        key: 'inactive',
-        filter: { status: 'inactive' },
-      },
-      {
-        key: 'featured',
-        filter: { is_featured: true },
-      },
-    ]);
-
-    return result;
+    return await EventRepository.findAdminPaginated(query);
   });
 };
+
+// ─── Update ───────────────────────────────────────────────────────────────────
 
 export const updateEvent = async (
   id: string,
   payload: Partial<Pick<TEvent, 'name' | 'slug' | 'status'>>,
 ): Promise<TEvent> => {
-  const data = await Event.findById(id).lean();
-
-  if (!data) {
+  const exists = await EventRepository.findByIdLean(id);
+  if (!exists) {
     throw new AppError(httpStatus.NOT_FOUND, 'Event not found');
   }
 
-  const result = await Event.findByIdAndUpdate(id, payload, {
-    new: true,
-    runValidators: true,
-  });
+  const result = await EventRepository.updateById(id, payload);
 
   if (result) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
@@ -149,14 +108,15 @@ export const updateEvents = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const events = await Event.find({ _id: { $in: ids } }).lean();
-  const foundIds = events.map((event) => event._id.toString());
+  const events = await EventRepository.findManyByIds(ids);
+  const foundIds = events.map((event) => event._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  const result = await Event.updateMany(
-    { _id: { $in: foundIds } },
-    { ...payload },
-  );
+  const result = await EventRepository.updateManyByIds(foundIds, payload);
+
+  if (result.modifiedCount > 0) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
 
   return {
     count: result.modifiedCount,
@@ -164,8 +124,10 @@ export const updateEvents = async (
   };
 };
 
+// ─── Soft Delete ──────────────────────────────────────────────────────────────
+
 export const deleteEvent = async (id: string): Promise<void> => {
-  const event = await Event.findById(id);
+  const event = await EventRepository.findById(id);
   if (!event) {
     throw new AppError(httpStatus.NOT_FOUND, 'Event not found');
   }
@@ -174,34 +136,34 @@ export const deleteEvent = async (id: string): Promise<void> => {
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
-export const deleteEventPermanent = async (id: string): Promise<void> => {
-  const event = await Event.findById(id)
-    .setOptions({ bypassDeleted: true })
-    .lean();
-
-  if (!event) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Event not found');
-  }
-
-  await Event.findByIdAndDelete(id).setOptions({ bypassDeleted: true });
-};
-
 export const deleteEvents = async (
   ids: string[],
 ): Promise<{
   count: number;
   not_found_ids: string[];
 }> => {
-  const events = await Event.find({ _id: { $in: ids } }).lean();
-  const foundIds = events.map((event) => event._id.toString());
+  const events = await EventRepository.findManyByIds(ids);
+  const foundIds = events.map((event) => event._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Event.updateMany({ _id: { $in: foundIds } }, { is_deleted: true });
+  await EventRepository.softDeleteManyByIds(foundIds);
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
   return {
     count: foundIds.length,
     not_found_ids: notFoundIds,
   };
+};
+
+// ─── Hard Delete ──────────────────────────────────────────────────────────────
+
+export const deleteEventPermanent = async (id: string): Promise<void> => {
+  const event = await EventRepository.findByIdWithDeleted(id);
+  if (!event) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Event not found');
+  }
+
+  await EventRepository.hardDeleteById(id);
 };
 
 export const deleteEventsPermanent = async (
@@ -210,20 +172,11 @@ export const deleteEventsPermanent = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const events = await Event.find({
-    _id: { $in: ids },
-    is_deleted: true,
-  })
-    .setOptions({ bypassDeleted: true })
-    .lean();
-
-  const foundIds = events.map((event) => event._id.toString());
+  const events = await EventRepository.findManyDeletedByIds(ids);
+  const foundIds = events.map((event) => event._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Event.deleteMany({
-    _id: { $in: foundIds },
-    is_deleted: true,
-  }).setOptions({ bypassDeleted: true });
+  await EventRepository.hardDeleteManyByIds(foundIds);
 
   return {
     count: foundIds.length,
@@ -231,17 +184,15 @@ export const deleteEventsPermanent = async (
   };
 };
 
-export const restoreEvent = async (id: string): Promise<TEvent> => {
-  const event = await Event.findOneAndUpdate(
-    { _id: id, is_deleted: true },
-    { is_deleted: false },
-    { new: true },
-  );
+// ─── Restore ──────────────────────────────────────────────────────────────────
 
+export const restoreEvent = async (id: string): Promise<TEvent> => {
+  const event = await EventRepository.restoreById(id);
   if (!event) {
     throw new AppError(httpStatus.NOT_FOUND, 'Event not found or not deleted');
   }
 
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
   return event;
 };
 
@@ -251,13 +202,10 @@ export const restoreEvents = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const result = await Event.updateMany(
-    { _id: { $in: ids }, is_deleted: true },
-    { is_deleted: false },
-  );
+  const result = await EventRepository.restoreManyByIds(ids);
 
-  const restoredEvents = await Event.find({ _id: { $in: ids } }).lean();
-  const restoredIds = restoredEvents.map((event) => event._id.toString());
+  const restoredEvents = await EventRepository.findRestoredByIds(ids);
+  const restoredIds = restoredEvents.map((event) => event._id!.toString());
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 
   return {
