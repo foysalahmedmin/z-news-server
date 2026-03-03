@@ -1,13 +1,12 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
-import AppQueryFind from '../../builder/app-query-find';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
 import {
   generateCacheKey,
   invalidateCacheByPattern,
   withCache,
 } from '../../utils/cache.utils';
-import { NewsHeadline } from './news-headline.model';
+import * as NewsHeadlineRepository from './news-headline.repository';
 import { TNewsHeadline } from './news-headline.type';
 
 const CACHE_PREFIX = 'news-headline';
@@ -21,9 +20,9 @@ export const createNewsHeadline = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const result = await NewsHeadline.create(payload);
+  const result = await NewsHeadlineRepository.create(payload);
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
-  return result.toObject();
+  return result;
 };
 
 export const getSelfNewsHeadline = async (
@@ -34,7 +33,7 @@ export const getSelfNewsHeadline = async (
     generateCacheKey(CACHE_PREFIX, ['self', user._id, id]),
     CACHE_TTL,
     async () => {
-      const result = await NewsHeadline.findById(id).lean();
+      const result = await NewsHeadlineRepository.findByIdLean(id);
       if (!result) {
         throw new AppError(httpStatus.NOT_FOUND, 'News-Headline not found');
       }
@@ -48,7 +47,7 @@ export const getNewsHeadline = async (id: string): Promise<TNewsHeadline> => {
     generateCacheKey(CACHE_PREFIX, ['id', id]),
     CACHE_TTL,
     async () => {
-      const result = await NewsHeadline.findById(id).lean();
+      const result = await NewsHeadlineRepository.findByIdLean(id);
       if (!result) {
         throw new AppError(httpStatus.NOT_FOUND, 'News-Headline not found');
       }
@@ -72,21 +71,10 @@ export const getPublicNewsHeadlines = async (
     const filter = {
       published_at: { $lte: date },
       $or: [{ expired_at: { $exists: false } }, { expired_at: { $gte: date } }],
+      status: 'published',
     };
 
-    const NewsQuery = new AppQueryFind(NewsHeadline, {
-      status: 'published',
-      ...filter,
-      ...rest,
-    })
-      .populate([{ path: 'news', select: '_id title slug' }])
-      .filter()
-      .sort()
-      .paginate()
-      .fields()
-      .tap((q) => q.lean());
-
-    const result = await NewsQuery.execute();
+    const result = await NewsHeadlineRepository.findPaginated(rest, filter);
     return result;
   });
 };
@@ -105,15 +93,7 @@ export const getSelfNewsHeadlines = async (
     query,
   ]);
   return await withCache(cacheKey, CACHE_TTL, async () => {
-    const NewsQuery = new AppQueryFind(NewsHeadline, query)
-      .populate([{ path: 'news', select: '_id title slug' }])
-      .filter()
-      .sort()
-      .paginate()
-      .fields()
-      .tap((q) => q.lean());
-
-    const result = await NewsQuery.execute();
+    const result = await NewsHeadlineRepository.findPaginated(query);
     return result;
   });
 };
@@ -126,15 +106,7 @@ export const getNewsHeadlines = async (
 }> => {
   const cacheKey = generateCacheKey(CACHE_PREFIX, ['admin', 'list', query]);
   return await withCache(cacheKey, CACHE_TTL, async () => {
-    const NewsQuery = new AppQueryFind(NewsHeadline, query)
-      .populate([{ path: 'news', select: '_id title slug' }])
-      .filter()
-      .sort()
-      .paginate()
-      .fields()
-      .tap((q) => q.lean());
-
-    const result = await NewsQuery.execute();
+    const result = await NewsHeadlineRepository.findPaginated(query);
     return result;
   });
 };
@@ -144,46 +116,26 @@ export const updateSelfNewsHeadline = async (
   id: string,
   payload: Partial<TNewsHeadline>,
 ): Promise<TNewsHeadline> => {
-  const data = await NewsHeadline.findById(id).lean();
-  if (!data) {
+  const result = await NewsHeadlineRepository.updateById(id, payload);
+  if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'News-Headline not found');
   }
 
-  const update: Partial<TNewsHeadline> = { ...payload };
-
-  const result = await NewsHeadline.findByIdAndUpdate(id, update, {
-    new: true,
-    runValidators: true,
-  }).lean();
-
-  if (result) {
-    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
-  }
-
-  return result!;
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  return result.toObject();
 };
 
 export const updateNewsHeadline = async (
   id: string,
   payload: Partial<TNewsHeadline>,
 ): Promise<TNewsHeadline> => {
-  const data = await NewsHeadline.findById(id).lean();
-  if (!data) {
+  const result = await NewsHeadlineRepository.updateById(id, payload);
+  if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'News-Headline not found');
   }
 
-  const update: Partial<TNewsHeadline> = { ...payload };
-
-  const result = await NewsHeadline.findByIdAndUpdate(id, update, {
-    new: true,
-    runValidators: true,
-  }).lean();
-
-  if (result) {
-    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
-  }
-
-  return result!;
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  return result.toObject();
 };
 
 export const updateSelfNewsHeadlines = async (
@@ -194,17 +146,15 @@ export const updateSelfNewsHeadlines = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const newsHeadlines = await NewsHeadline.find({
-    _id: { $in: ids },
-  }).lean();
+  const newsHeadlines = await NewsHeadlineRepository.findManyByIds(ids);
   const foundIds = newsHeadlines.map((newsHeadline) =>
     newsHeadline._id.toString(),
   );
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  const result = await NewsHeadline.updateMany(
-    { _id: { $in: foundIds } },
-    { ...payload },
+  const result = await NewsHeadlineRepository.updateManyByIds(
+    foundIds,
+    payload,
   );
 
   if (result.modifiedCount > 0) {
@@ -224,15 +174,15 @@ export const updateNewsHeadlines = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const newsHeadlines = await NewsHeadline.find({ _id: { $in: ids } }).lean();
+  const newsHeadlines = await NewsHeadlineRepository.findManyByIds(ids);
   const foundIds = newsHeadlines.map((newsHeadline) =>
     newsHeadline._id.toString(),
   );
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  const result = await NewsHeadline.updateMany(
-    { _id: { $in: foundIds } },
-    { ...payload },
+  const result = await NewsHeadlineRepository.updateManyByIds(
+    foundIds,
+    payload,
   );
 
   if (result.modifiedCount > 0) {
@@ -249,7 +199,7 @@ export const deleteSelfNewsHeadline = async (
   _user: TJwtPayload,
   id: string,
 ): Promise<void> => {
-  const newsHeadline = await NewsHeadline.findById(id);
+  const newsHeadline = await NewsHeadlineRepository.findById(id);
   if (!newsHeadline) {
     throw new AppError(httpStatus.NOT_FOUND, 'News-Headline not found');
   }
@@ -259,7 +209,7 @@ export const deleteSelfNewsHeadline = async (
 };
 
 export const deleteNewsHeadline = async (id: string): Promise<void> => {
-  const newsHeadline = await NewsHeadline.findById(id);
+  const newsHeadline = await NewsHeadlineRepository.findById(id);
   if (!newsHeadline) {
     throw new AppError(httpStatus.NOT_FOUND, 'News-Headline not found');
   }
@@ -271,12 +221,12 @@ export const deleteNewsHeadline = async (id: string): Promise<void> => {
 export const deleteNewsHeadlinePermanent = async (
   id: string,
 ): Promise<void> => {
-  const newsHeadline = await NewsHeadline.findById(id).lean();
+  const newsHeadline = await NewsHeadlineRepository.findByIdLean(id);
   if (!newsHeadline) {
     throw new AppError(httpStatus.NOT_FOUND, 'News-Headline not found');
   }
 
-  await NewsHeadline.findByIdAndDelete(id);
+  await NewsHeadlineRepository.hardDeleteById(id);
 };
 
 export const deleteSelfNewsHeadlines = async (
@@ -286,18 +236,13 @@ export const deleteSelfNewsHeadlines = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const newsHeadlines = await NewsHeadline.find({
-    _id: { $in: ids },
-  }).lean();
+  const newsHeadlines = await NewsHeadlineRepository.findManyByIds(ids);
   const foundIds = newsHeadlines.map((newsHeadline) =>
     newsHeadline._id.toString(),
   );
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await NewsHeadline.updateMany(
-    { _id: { $in: foundIds } },
-    { is_deleted: true },
-  );
+  await NewsHeadlineRepository.softDeleteManyByIds(foundIds);
 
   return {
     count: foundIds.length,
@@ -311,16 +256,13 @@ export const deleteNewsHeadlines = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const newsHeadlines = await NewsHeadline.find({ _id: { $in: ids } }).lean();
+  const newsHeadlines = await NewsHeadlineRepository.findManyByIds(ids);
   const foundIds = newsHeadlines.map((newsHeadline) =>
     newsHeadline._id.toString(),
   );
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await NewsHeadline.updateMany(
-    { _id: { $in: foundIds } },
-    { is_deleted: true },
-  );
+  await NewsHeadlineRepository.softDeleteManyByIds(foundIds);
 
   return {
     count: foundIds.length,
@@ -334,13 +276,13 @@ export const deleteNewsHeadlinesPermanent = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const newsHeadlines = await NewsHeadline.find({ _id: { $in: ids } }).lean();
+  const newsHeadlines = await NewsHeadlineRepository.findManyByIds(ids);
   const foundIds = newsHeadlines.map((newsHeadline) =>
     newsHeadline._id.toString(),
   );
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await NewsHeadline.deleteMany({ _id: { $in: foundIds } });
+  await NewsHeadlineRepository.hardDeleteManyByIds(foundIds);
 
   return {
     count: foundIds.length,
@@ -352,12 +294,7 @@ export const restoreSelfNewsHeadline = async (
   _user: TJwtPayload,
   id: string,
 ): Promise<TNewsHeadline> => {
-  const newsHeadline = await NewsHeadline.findOneAndUpdate(
-    { _id: id, is_deleted: true },
-    { is_deleted: false },
-    { new: true },
-  ).lean();
-
+  const newsHeadline = await NewsHeadlineRepository.restoreById(id);
   if (!newsHeadline) {
     throw new AppError(
       httpStatus.NOT_FOUND,
@@ -365,18 +302,13 @@ export const restoreSelfNewsHeadline = async (
     );
   }
 
-  return newsHeadline;
+  return newsHeadline.toObject();
 };
 
 export const restoreNewsHeadline = async (
   id: string,
 ): Promise<TNewsHeadline> => {
-  const newsHeadline = await NewsHeadline.findOneAndUpdate(
-    { _id: id, is_deleted: true },
-    { is_deleted: false },
-    { new: true },
-  ).lean();
-
+  const newsHeadline = await NewsHeadlineRepository.restoreById(id);
   if (!newsHeadline) {
     throw new AppError(
       httpStatus.NOT_FOUND,
@@ -384,7 +316,7 @@ export const restoreNewsHeadline = async (
     );
   }
 
-  return newsHeadline;
+  return newsHeadline.toObject();
 };
 
 export const restoreSelfNewsHeadlines = async (
@@ -394,14 +326,9 @@ export const restoreSelfNewsHeadlines = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const result = await NewsHeadline.updateMany(
-    { _id: { $in: ids }, is_deleted: true },
-    { is_deleted: false },
-  );
+  const result = await NewsHeadlineRepository.restoreManyByIds(ids);
 
-  const restoredNewsHeadlines = await NewsHeadline.find({
-    _id: { $in: ids },
-  }).lean();
+  const restoredNewsHeadlines = await NewsHeadlineRepository.findManyByIds(ids);
   const restoredIds = restoredNewsHeadlines.map((newsHeadline) =>
     newsHeadline._id.toString(),
   );
@@ -419,14 +346,9 @@ export const restoreNewsHeadlines = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const result = await NewsHeadline.updateMany(
-    { _id: { $in: ids }, is_deleted: true },
-    { is_deleted: false },
-  );
+  const result = await NewsHeadlineRepository.restoreManyByIds(ids);
 
-  const restoredNewsHeadlines = await NewsHeadline.find({
-    _id: { $in: ids },
-  }).lean();
+  const restoredNewsHeadlines = await NewsHeadlineRepository.findManyByIds(ids);
   const restoredIds = restoredNewsHeadlines.map((newsHeadline) =>
     newsHeadline._id.toString(),
   );

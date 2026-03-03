@@ -16,5 +16,5 @@ export interface TNewsHeadlineDocument extends TNewsHeadline, Document {
 }
 
 export type TNewsHeadlineModel = Model<TNewsHeadlineDocument> & {
-  isNewsExist(_id: string): Promise<TNewsHeadlineDocument | null>;
+  isNewsHeadlineExist(_id: string): Promise<TNewsHeadlineDocument | null>;
 };
