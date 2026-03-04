@@ -98,7 +98,6 @@ const badgeSchema = new Schema<TBadgeDocument>(
 );
 
 // Indexes
-badgeSchema.index({ name: 1 }, { unique: true });
 badgeSchema.index({ category: 1 });
 badgeSchema.index({ rarity: 1 });
 badgeSchema.index({ is_active: 1 });

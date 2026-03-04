@@ -1,20 +1,20 @@
 import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import AppError from '../../builder/app-error';
-import { Badge } from '../badge/badge.model';
-import { Category } from '../category/category.model';
-import { User } from '../user/user.model';
-import { UserProfile } from './user-profile.model';
+import * as BadgeRepository from '../badge/badge.repository';
+import * as CategoryRepository from '../category/category.repository';
+import * as UserRepository from '../user/user.repository';
+import * as UserProfileRepository from './user-profile.repository';
 import { TUserProfile } from './user-profile.type';
 
 // Create or get user profile
 const createOrGetProfile = async (userId: string) => {
-  let profile = await UserProfile.getProfileByUserId(userId);
+  let profile = await UserProfileRepository.findByUserId(userId);
 
   if (!profile) {
     // Create default profile
-    await UserProfile.create({
-      user: userId,
+    await UserProfileRepository.create({
+      user: userId as unknown as mongoose.Types.ObjectId,
       notification_preferences: {
         email_notifications: true,
         push_notifications: true,
@@ -26,7 +26,7 @@ const createOrGetProfile = async (userId: string) => {
     });
 
     // Populate the profile
-    profile = await UserProfile.getProfileByUserId(userId);
+    profile = await UserProfileRepository.findByUserId(userId);
   }
 
   return profile;
@@ -34,7 +34,7 @@ const createOrGetProfile = async (userId: string) => {
 
 // Get profile by user ID
 const getProfileByUserId = async (userId: string) => {
-  const profile = await UserProfile.getProfileByUserId(userId);
+  const profile = await UserProfileRepository.findByUserId(userId);
 
   if (!profile) {
     throw new AppError(httpStatus.NOT_FOUND, 'Profile not found');
@@ -48,7 +48,7 @@ const updateProfile = async (
   userId: string,
   payload: Partial<TUserProfile>,
 ) => {
-  const profile = await UserProfile.findOne({ user: userId });
+  const profile = await UserProfileRepository.findOne({ user: userId });
 
   if (!profile) {
     throw new AppError(httpStatus.NOT_FOUND, 'Profile not found');
@@ -63,7 +63,7 @@ const updateProfile = async (
 
   await profile.save();
 
-  return await UserProfile.getProfileByUserId(userId);
+  return await UserProfileRepository.findByUserId(userId);
 };
 
 // Update notification preferences
@@ -74,7 +74,7 @@ const updateNotificationPreferences = async (
     email_frequency?: TUserProfile['email_frequency'];
   },
 ) => {
-  const profile = await UserProfile.findOne({ user: userId });
+  const profile = await UserProfileRepository.findOne({ user: userId });
 
   if (!profile) {
     throw new AppError(httpStatus.NOT_FOUND, 'Profile not found');
@@ -99,12 +99,12 @@ const updateNotificationPreferences = async (
 // Follow an author
 const followAuthor = async (userId: string, authorId: string) => {
   // Check if author exists
-  const author = await User.findById(authorId);
+  const author = await UserRepository.findById(authorId);
   if (!author) {
     throw new AppError(httpStatus.NOT_FOUND, 'Author not found');
   }
 
-  const profile = await UserProfile.findOne({ user: userId });
+  const profile = await UserProfileRepository.findOne({ user: userId });
 
   if (!profile) {
     throw new AppError(httpStatus.NOT_FOUND, 'Profile not found');
@@ -129,7 +129,7 @@ const followAuthor = async (userId: string, authorId: string) => {
 
 // Unfollow an author
 const unfollowAuthor = async (userId: string, authorId: string) => {
-  const profile = await UserProfile.findOne({ user: userId });
+  const profile = await UserProfileRepository.findOne({ user: userId });
 
   if (!profile) {
     throw new AppError(httpStatus.NOT_FOUND, 'Profile not found');
@@ -147,12 +147,12 @@ const unfollowAuthor = async (userId: string, authorId: string) => {
 // Follow a category
 const followCategory = async (userId: string, categoryId: string) => {
   // Check if category exists
-  const category = await Category.findById(categoryId);
+  const category = await CategoryRepository.findById(categoryId);
   if (!category) {
     throw new AppError(httpStatus.NOT_FOUND, 'Category not found');
   }
 
-  const profile = await UserProfile.findOne({ user: userId });
+  const profile = await UserProfileRepository.findOne({ user: userId });
 
   if (!profile) {
     throw new AppError(httpStatus.NOT_FOUND, 'Profile not found');
@@ -180,7 +180,7 @@ const followCategory = async (userId: string, categoryId: string) => {
 
 // Unfollow a category
 const unfollowCategory = async (userId: string, categoryId: string) => {
-  const profile = await UserProfile.findOne({ user: userId });
+  const profile = await UserProfileRepository.findOne({ user: userId });
 
   if (!profile) {
     throw new AppError(httpStatus.NOT_FOUND, 'Profile not found');
@@ -197,7 +197,7 @@ const unfollowCategory = async (userId: string, categoryId: string) => {
 
 // Follow a topic
 const followTopic = async (userId: string, topic: string) => {
-  const profile = await UserProfile.findOne({ user: userId });
+  const profile = await UserProfileRepository.findOne({ user: userId });
 
   if (!profile) {
     throw new AppError(httpStatus.NOT_FOUND, 'Profile not found');
@@ -216,7 +216,7 @@ const followTopic = async (userId: string, topic: string) => {
 
 // Unfollow a topic
 const unfollowTopic = async (userId: string, topic: string) => {
-  const profile = await UserProfile.findOne({ user: userId });
+  const profile = await UserProfileRepository.findOne({ user: userId });
 
   if (!profile) {
     throw new AppError(httpStatus.NOT_FOUND, 'Profile not found');
@@ -233,14 +233,14 @@ const unfollowTopic = async (userId: string, topic: string) => {
 
 // Add badge to user (Admin only)
 const addBadge = async (userId: string, badgeId: string) => {
-  const profile = await UserProfile.findOne({ user: userId });
+  const profile = await UserProfileRepository.findOne({ user: userId });
 
   if (!profile) {
     throw new AppError(httpStatus.NOT_FOUND, 'Profile not found');
   }
 
   // Check if badge exists
-  const badge = await Badge.findById(badgeId);
+  const badge = await BadgeRepository.findById(badgeId);
 
   if (!badge) {
     throw new AppError(httpStatus.NOT_FOUND, 'Badge not found');
@@ -265,12 +265,12 @@ const addBadge = async (userId: string, badgeId: string) => {
 
   await profile.save();
 
-  return await UserProfile.getProfileByUserId(userId);
+  return await UserProfileRepository.findByUserId(userId);
 };
 
 // Update reading streak
 const updateReadingStreak = async (userId: string) => {
-  const profile = await UserProfile.findOne({ user: userId });
+  const profile = await UserProfileRepository.findOne({ user: userId });
 
   if (!profile) {
     return;
@@ -312,10 +312,12 @@ const updateReadingStreak = async (userId: string) => {
 
 // Get top users by reputation
 const getTopUsersByReputation = async (limit: number = 10) => {
-  const profiles = await UserProfile.find()
-    .sort({ reputation_score: -1 })
-    .limit(limit)
-    .populate('user', 'name email image');
+  const profiles = await UserProfileRepository.findMany(
+    {},
+    [{ path: 'user', select: 'name email image' }],
+    { reputation_score: -1 },
+    limit,
+  );
 
   return profiles;
 };

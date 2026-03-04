@@ -1,6 +1,7 @@
 import { Document, Model, Types } from 'mongoose';
 
 export type TBadge = {
+  _id?: Types.ObjectId | string;
   name: string;
   description: string;
   icon: string;

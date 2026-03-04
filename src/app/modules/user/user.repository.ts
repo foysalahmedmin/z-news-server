@@ -102,6 +102,12 @@ export const saveDocument = async (
 
 // ─── Find Many ────────────────────────────────────────────────────────────────
 
+export const findMany = async (
+  filter: Record<string, unknown>,
+): Promise<TUser[]> => {
+  return await User.find(filter).lean();
+};
+
 export const findManyByIds = async (ids: string[]): Promise<TUser[]> => {
   return await User.find({ _id: { $in: ids } }).lean();
 };

@@ -1,8 +1,8 @@
 import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import AppError from '../../builder/app-error';
-import { News } from '../news/news.model';
-import { UserProfile } from '../user-profile/user-profile.model';
+import * as NewsRepository from '../news/news.repository';
+import * as UserProfileRepository from '../user-profile/user-profile.repository';
 import { Poll } from './poll.model';
 import { TPoll } from './poll.type';
 
@@ -10,7 +10,7 @@ import { TPoll } from './poll.type';
 const createPoll = async (userId: string, payload: Partial<TPoll>) => {
   // If attached to news, verify news exists
   if (payload.news) {
-    const news = await News.findById(payload.news);
+    const news = await NewsRepository.findById(payload.news as string);
     if (!news) {
       throw new AppError(httpStatus.NOT_FOUND, 'News article not found');
     }
@@ -264,7 +264,10 @@ const vote = async (
 
   // Update user activity stats
   if (userId) {
-    await UserProfile.incrementActivityStat(userId, 'total_reactions');
+    await UserProfileRepository.incrementActivityStat(
+      userId,
+      'total_reactions',
+    );
   }
 
   return await Poll.findById(poll._id)

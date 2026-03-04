@@ -7,7 +7,7 @@ import {
   withCache,
 } from '../../utils/cache.utils';
 import { TGuest } from '../guest/guest.type';
-import { UserProfile } from '../user-profile/user-profile.model';
+import * as UserProfileRepository from '../user-profile/user-profile.repository';
 import * as CommentRepository from './comment.repository';
 import { TComment } from './comment.type';
 
@@ -33,7 +33,10 @@ export const createComment = async (
 
   // Update user activity stats
   if (user?._id) {
-    await UserProfile.incrementActivityStat(user._id, 'total_comments');
+    await UserProfileRepository.incrementActivityStat(
+      user._id,
+      'total_comments',
+    );
   }
 
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);

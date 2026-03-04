@@ -3,7 +3,8 @@ import { Types } from 'mongoose';
 import AppError from '../../builder/app-error';
 import { invalidateCacheByPattern } from '../../utils/cache.utils';
 import * as ReactionRepository from '../reaction/reaction.repository';
-import { UserProfile } from '../user-profile/user-profile.model';
+import * as UserProfileRepository from '../user-profile/user-profile.repository';
+import * as UserRepository from '../user/user.repository';
 import * as CommentRepository from './comment.repository';
 import { TCommentDocument } from './comment.type';
 
@@ -82,21 +83,26 @@ export const createReply = async (
   });
 
   // Update user activity and reputation
-  await UserProfile.incrementActivityStat(userId, 'total_comments');
-  await UserProfile.updateReputationScore(userId, 5); // 5 points for a reply
+  await UserProfileRepository.incrementActivityStat(userId, 'total_comments');
+  await UserProfileRepository.incrementActivityStat(
+    userId,
+    'reputation_score',
+    5,
+  ); // 5 points for a reply
 
   // Process mentions
   const mentionedUsernames = extractMentions(payload.content);
   if (mentionedUsernames.length > 0) {
-    const { User } = await import('../user/user.model');
-    const mentionedUsers = await User.find({
+    const mentionedUsers = await UserRepository.findMany({
       name: { $in: mentionedUsernames },
     });
     if (mentionedUsers.length > 0) {
       await processMentions(
         reply._id.toString(),
         payload.content,
-        mentionedUsers.map((u) => u._id.toString()),
+        mentionedUsers.map((u: { _id?: { toString: () => string } }) =>
+          u._id!.toString(),
+        ),
       );
     }
   }
@@ -148,8 +154,12 @@ export const addReaction = async (
 
     // Update user activity and reputation
     await Promise.all([
-      UserProfile.incrementActivityStat(userId, 'total_reactions'),
-      UserProfile.updateReputationScore(userId, 1), // 1 point for a reaction
+      UserProfileRepository.incrementActivityStat(userId, 'total_reactions'),
+      UserProfileRepository.incrementActivityStat(
+        userId,
+        'reputation_score',
+        1,
+      ), // 1 point for a reaction
     ]).catch((err) =>
       // eslint-disable-next-line no-console
       console.error('Error updating profile stats:', err),

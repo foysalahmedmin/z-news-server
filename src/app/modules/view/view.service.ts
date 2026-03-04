@@ -8,7 +8,7 @@ import {
   withCache,
 } from '../../utils/cache.utils';
 import { TGuest } from '../guest/guest.type';
-import { UserProfile } from '../user-profile/user-profile.model';
+import * as UserProfileRepository from '../user-profile/user-profile.repository';
 import { UserProfileService } from '../user-profile/user-profile.service';
 import * as ViewRepository from './view.repository';
 import { TView } from './view.type';
@@ -142,7 +142,10 @@ export const getSelfNewsView = async (
         // Update user activity stats and streak
         if (user?._id) {
           await UserProfileService.updateReadingStreak(user._id);
-          await UserProfile.incrementActivityStat(user._id, 'articles_read');
+          await UserProfileRepository.incrementActivityStat(
+            user._id,
+            'articles_read',
+          );
         }
       }
     }

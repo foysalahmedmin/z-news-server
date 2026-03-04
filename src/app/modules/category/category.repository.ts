@@ -227,6 +227,46 @@ export const findPublicTree = async (
   };
 };
 
+export const findDescendantIds = async (
+  category?: string,
+  slug?: string,
+): Promise<Types.ObjectId[]> => {
+  if (!category && !slug) return [];
+
+  const categories = await Category.aggregate([
+    {
+      $match: {
+        $or: [
+          ...(category ? [{ _id: new Types.ObjectId(category) }] : []),
+          ...(slug ? [{ slug: slug }] : []),
+        ],
+      },
+    },
+    {
+      $graphLookup: {
+        from: 'categories',
+        startWith: '$_id',
+        connectFromField: '_id',
+        connectToField: 'category',
+        as: 'descendants',
+      },
+    },
+    {
+      $project: {
+        ids: {
+          $concatArrays: [
+            ['$_id'],
+            { $map: { input: '$descendants', as: 'd', in: '$$d._id' } },
+          ],
+        },
+      },
+    },
+  ]);
+
+  if (!categories.length) return [];
+  return (categories[0]?.ids as Types.ObjectId[]) || [];
+};
+
 export const findAdminTree = async (
   category?: string,
   query: { page?: number; limit?: number; status?: TStatus } = {},

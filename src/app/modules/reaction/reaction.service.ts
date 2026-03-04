@@ -7,6 +7,7 @@
  */
 
 import httpStatus from 'http-status';
+import { Types } from 'mongoose';
 import AppError from '../../builder/app-error';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
 import {
@@ -15,10 +16,9 @@ import {
   withCache,
 } from '../../utils/cache.utils';
 import { TGuest } from '../guest/guest.type';
-import { UserProfile } from '../user-profile/user-profile.model';
+import * as UserProfileRepository from '../user-profile/user-profile.repository';
 import * as ReactionRepository from './reaction.repository';
 import { TReaction } from './reaction.type';
-import { Types } from 'mongoose';
 
 const CACHE_PREFIX = 'reaction';
 const CACHE_TTL = 300; // 5 minutes
@@ -51,7 +51,10 @@ export const createReaction = async (
 
     // Update user activity stats
     if (user?._id) {
-      await UserProfile.incrementActivityStat(user._id, 'total_reactions');
+      await UserProfileRepository.incrementActivityStat(
+        user._id,
+        'total_reactions',
+      );
     }
   }
   return result.toObject();

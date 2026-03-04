@@ -4,7 +4,6 @@ import fs from 'fs';
 import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import AppError from '../../builder/app-error';
-import AppQueryFind from '../../builder/app-query-find';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
 import {
   generateCacheKey,
@@ -19,7 +18,7 @@ import { Comment as CommentModel } from '../comment/comment.model';
 import { sendNewsNotification } from '../notification/notification.service';
 import { Poll as PollModel } from '../poll/poll.model';
 import { Reaction as ReactionModel } from '../reaction/reaction.model';
-import { News } from './news.model';
+import * as NewsRepository from './news.repository';
 import { TNews } from './news.type';
 
 const CACHE_PREFIX = 'news';
@@ -115,8 +114,9 @@ export const getPublicNews = async (slug: string): Promise<TNews> => {
     generateCacheKey(CACHE_PREFIX, ['slug', slug]),
     CACHE_TTL,
     async () => {
-      const result = await News.findOne({ slug: slug, status: 'published' })
-        .populate([
+      const result = await NewsRepository.findOneLean(
+        { slug: slug, status: 'published' },
+        [
           { path: 'author', select: '_id name email image' },
           { path: 'category', select: '_id name slug' },
           { path: 'categories', select: '_id name slug' },
@@ -133,8 +133,8 @@ export const getPublicNews = async (slug: string): Promise<TNews> => {
           { path: 'likes' },
           { path: 'dislikes' },
           { path: 'comments' },
-        ])
-        .lean();
+        ],
+      );
 
       if (!result) {
         throw new AppError(httpStatus.NOT_FOUND, 'News not found');
@@ -152,8 +152,9 @@ export const getSelfNews = async (
     generateCacheKey(CACHE_PREFIX, ['id', id]),
     CACHE_TTL,
     async () => {
-      const result = await News.findOne({ _id: id, author: user._id })
-        .populate([
+      const result = await NewsRepository.findOneLean(
+        { _id: id, author: user._id },
+        [
           { path: 'views' },
           { path: 'likes' },
           { path: 'dislikes' },
@@ -175,8 +176,8 @@ export const getSelfNews = async (
             select: '_id status published_at expired_at',
           },
           { path: 'news_break', select: '_id status published_at expired_at' },
-        ])
-        .lean();
+        ],
+      );
       if (!result) {
         throw new AppError(httpStatus.NOT_FOUND, 'News not found');
       }
@@ -190,31 +191,29 @@ export const getNews = async (id: string): Promise<TNews> => {
     generateCacheKey(CACHE_PREFIX, ['id', id]),
     CACHE_TTL,
     async () => {
-      const result = await News.findById(id)
-        .populate([
-          { path: 'views' },
-          { path: 'likes' },
-          { path: 'dislikes' },
-          { path: 'comments' },
-          { path: 'author', select: '_id name email image' },
-          { path: 'category', select: '_id name slug' },
-          { path: 'categories', select: '_id name slug' },
-          { path: 'event', select: '_id name slug' },
-          {
-            path: 'thumbnail',
-            select: '_id url name filename mimetype caption metadata',
-          },
-          {
-            path: 'video',
-            select: '_id url name filename mimetype caption metadata',
-          },
-          {
-            path: 'news_headline',
-            select: '_id status published_at expired_at',
-          },
-          { path: 'news_break', select: '_id status published_at expired_at' },
-        ])
-        .lean();
+      const result = await NewsRepository.findOneLean({ _id: id }, [
+        { path: 'views' },
+        { path: 'likes' },
+        { path: 'dislikes' },
+        { path: 'comments' },
+        { path: 'author', select: '_id name email image' },
+        { path: 'category', select: '_id name slug' },
+        { path: 'categories', select: '_id name slug' },
+        { path: 'event', select: '_id name slug' },
+        {
+          path: 'thumbnail',
+          select: '_id url name filename mimetype caption metadata',
+        },
+        {
+          path: 'video',
+          select: '_id url name filename mimetype caption metadata',
+        },
+        {
+          path: 'news_headline',
+          select: '_id status published_at expired_at',
+        },
+        { path: 'news_break', select: '_id status published_at expired_at' },
+      ]);
       if (!result) {
         throw new AppError(httpStatus.NOT_FOUND, 'News not found');
       }
@@ -290,54 +289,24 @@ export const getPublicBulkNews = async (
       rest._id = { $ne: news_ne };
     }
 
-    const NewsQuery = new AppQueryFind(News, { status: 'published', ...rest })
-      .populate([
-        { path: 'author', select: '_id name email image' },
-        { path: 'category', select: '_id name slug' },
-        { path: 'categories', select: '_id name slug' },
-        { path: 'event', select: '_id name slug' },
-        {
-          path: 'thumbnail',
-          select: '_id url name filename mimetype caption metadata',
-        },
-        {
-          path: 'video',
-          select: '_id url name filename mimetype caption metadata',
-        },
-        { path: 'views' },
-        { path: 'likes' },
-        { path: 'dislikes' },
-        { path: 'comments' },
-      ])
-      .search(['title', 'description'])
-      .filter()
-      .sort()
-      .paginate()
-      .fields([
-        'title',
-        'sub_title',
-        'slug',
-        'description',
-        'content',
-        'thumbnail',
-        'video',
-        'youtube',
-        'author',
-        'writer',
-        'category',
-        'tags',
-        'status',
-        'layout',
-        'published_at',
-        'is_featured',
-        'views',
-        'likes',
-        'dislikes',
-        'comments',
-      ])
-      .tap((q) => q.lean());
-
-    const result = await NewsQuery.execute();
+    const result = await NewsRepository.findPublicPaginated(rest, [
+      { path: 'author', select: '_id name email image' },
+      { path: 'category', select: '_id name slug' },
+      { path: 'categories', select: '_id name slug' },
+      { path: 'event', select: '_id name slug' },
+      {
+        path: 'thumbnail',
+        select: '_id url name filename mimetype caption metadata',
+      },
+      {
+        path: 'video',
+        select: '_id url name filename mimetype caption metadata',
+      },
+      { path: 'views' },
+      { path: 'likes' },
+      { path: 'dislikes' },
+      { path: 'comments' },
+    ]);
     return result;
   });
 };
@@ -406,8 +375,10 @@ export const getSelfBulkNews = async (
       rest.published_at = { $lte: end };
     }
 
-    const NewsQuery = new AppQueryFind(News, { author: user._id, ...rest })
-      .populate([
+    const result = await NewsRepository.findSelfPaginated(
+      user._id,
+      rest,
+      [
         { path: 'author', select: '_id name email image' },
         { path: 'category', select: '_id name slug' },
         { path: 'categories', select: '_id name slug' },
@@ -416,56 +387,26 @@ export const getSelfBulkNews = async (
           path: 'thumbnail',
           select: '_id url name filename mimetype caption metadata',
         },
-        {
-          path: 'video',
-          select: '_id url name filename mimetype caption metadata',
-        },
-        { path: 'views' },
+
         { path: 'likes' },
         { path: 'dislikes' },
         { path: 'comments' },
-      ])
-      .search(['title', 'description'])
-      .filter()
-      .sort()
-      .paginate()
-      .fields([
-        'title',
-        'slug',
-        'description',
-        'content',
-        'thumbnail',
-        'video',
-        'youtube',
-        'author',
-        'writer',
-        'category',
-        'tags',
-        'status',
-        'layout',
-        'published_at',
-        'is_featured',
-        'views',
-        'likes',
-        'dislikes',
-        'comments',
-      ])
-      .tap((q) => q.lean());
-
-    const result = await NewsQuery.execute([
-      {
-        key: 'published',
-        filter: { status: 'published' },
-      },
-      {
-        key: 'draft',
-        filter: { status: 'draft' },
-      },
-      {
-        key: 'pending',
-        filter: { status: 'pending' },
-      },
-    ]);
+      ],
+      [
+        {
+          key: 'published',
+          filter: { status: 'published' },
+        },
+        {
+          key: 'draft',
+          filter: { status: 'draft' },
+        },
+        {
+          key: 'pending',
+          filter: { status: 'pending' },
+        },
+      ],
+    );
     return result;
   });
 };
@@ -528,8 +469,9 @@ export const getBulkNews = async (
       rest.published_at = { $lte: end };
     }
 
-    const NewsQuery = new AppQueryFind(News, rest)
-      .populate([
+    const result = await NewsRepository.findAdminPaginated(
+      rest,
+      [
         { path: 'author', select: '_id name email image' },
         { path: 'category', select: '_id name slug' },
         { path: 'categories', select: '_id name slug' },
@@ -546,48 +488,22 @@ export const getBulkNews = async (
         { path: 'likes' },
         { path: 'dislikes' },
         { path: 'comments' },
-      ])
-      .search(['title', 'description'])
-      .filter()
-      .sort()
-      .paginate()
-      .fields([
-        'title',
-        'slug',
-        'description',
-        'content',
-        'thumbnail',
-        'video',
-        'youtube',
-        'author',
-        'writer',
-        'category',
-        'tags',
-        'status',
-        'layout',
-        'published_at',
-        'is_featured',
-        'views',
-        'likes',
-        'dislikes',
-        'comments',
-      ])
-      .tap((q) => q.lean());
-
-    const result = await NewsQuery.execute([
-      {
-        key: 'published',
-        filter: { status: 'published' },
-      },
-      {
-        key: 'draft',
-        filter: { status: 'draft' },
-      },
-      {
-        key: 'pending',
-        filter: { status: 'pending' },
-      },
-    ]);
+      ],
+      [
+        {
+          key: 'published',
+          filter: { status: 'published' },
+        },
+        {
+          key: 'draft',
+          filter: { status: 'draft' },
+        },
+        {
+          key: 'pending',
+          filter: { status: 'pending' },
+        },
+      ],
+    );
     return result;
   });
 };
@@ -618,7 +534,7 @@ export const updateSelfNews = async (
     >
   >,
 ): Promise<TNews> => {
-  const data = await News.findOne({ _id: id, author: user._id }).lean();
+  const data = await NewsRepository.findOneLean({ _id: id, author: user._id });
   if (!data) {
     throw new AppError(httpStatus.NOT_FOUND, 'News not found');
   }
@@ -637,11 +553,10 @@ export const updateSelfNews = async (
 
   const flatten = Flattener.flatten(update, { safe: true });
 
-  const result = await News.findByIdAndUpdate(id, flatten, {
-    new: true,
-    runValidators: true,
-  })
-    .populate([
+  const result = await NewsRepository.findByIdAndUpdate(id, flatten);
+
+  if (result) {
+    await result.populate([
       { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
@@ -654,10 +569,12 @@ export const updateSelfNews = async (
         path: 'video',
         select: '_id url name filename mimetype caption metadata',
       },
-    ])
-    .lean();
+    ]);
+  }
 
-  if (result) {
+  const resultLean = result?.toObject() as TNews;
+
+  if (resultLean) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
     // Create a new version snapshot
@@ -670,7 +587,7 @@ export const updateSelfNews = async (
     }
   }
 
-  return result!;
+  return resultLean!;
 };
 
 export const updateNews = async (
@@ -699,7 +616,7 @@ export const updateNews = async (
     >
   >,
 ): Promise<TNews> => {
-  const data = await News.findOne({ _id: id }).lean();
+  const data = await NewsRepository.findOneLean({ _id: id });
   if (!data) {
     throw new AppError(httpStatus.NOT_FOUND, 'News not found');
   }
@@ -718,11 +635,10 @@ export const updateNews = async (
 
   const flatten = Flattener.flatten(update, { safe: true });
 
-  const result = await News.findByIdAndUpdate(id, flatten, {
-    new: true,
-    runValidators: true,
-  })
-    .populate([
+  const result = await NewsRepository.findByIdAndUpdate(id, flatten);
+
+  if (result) {
+    await result.populate([
       { path: 'author', select: '_id name email image' },
       { path: 'category', select: '_id name slug' },
       { path: 'categories', select: '_id name slug' },
@@ -735,10 +651,12 @@ export const updateNews = async (
         path: 'video',
         select: '_id url name filename mimetype caption metadata',
       },
-    ])
-    .lean();
+    ]);
+  }
 
-  if (result) {
+  const resultLean = result?.toObject() as TNews;
+
+  if (resultLean) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
     // Create a new version snapshot
@@ -778,14 +696,14 @@ export const updateSelfBulkNews = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const allNews = await News.find({
+  const allNews = await NewsRepository.findManyLean({
     _id: { $in: ids },
     author: user._id,
-  }).lean();
+  });
   const foundIds = allNews.map((news) => news._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  const result = await News.updateMany(
+  const result = await NewsRepository.updateMany(
     { _id: { $in: foundIds }, author: user._id },
     { ...payload },
   );
@@ -807,11 +725,11 @@ export const updateBulkNews = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const allNews = await News.find({ _id: { $in: ids } }).lean();
+  const allNews = await NewsRepository.findManyLean({ _id: { $in: ids } });
   const foundIds = allNews.map((news) => news._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  const result = await News.updateMany(
+  const result = await NewsRepository.updateMany(
     { _id: { $in: foundIds } },
     { ...payload },
   );
@@ -830,7 +748,7 @@ export const deleteSelfNews = async (
   user: TJwtPayload,
   id: string,
 ): Promise<void> => {
-  const news = await News.findOne({ _id: id, author: user._id });
+  const news = await NewsRepository.findOne({ _id: id, author: user._id });
   if (!news) {
     throw new AppError(httpStatus.NOT_FOUND, 'News not found');
   }
@@ -840,7 +758,7 @@ export const deleteSelfNews = async (
 };
 
 export const deleteNews = async (id: string): Promise<void> => {
-  const news = await News.findById(id);
+  const news = await NewsRepository.findById(id);
   if (!news) {
     throw new AppError(httpStatus.NOT_FOUND, 'News not found');
   }
@@ -850,9 +768,9 @@ export const deleteNews = async (id: string): Promise<void> => {
 };
 
 export const deleteNewsPermanent = async (id: string): Promise<void> => {
-  const news = await News.findById(id)
-    .setOptions({ bypassDeleted: true })
-    .lean();
+  const news = await NewsRepository.findOneLean({ _id: id }, [], {
+    bypassDeleted: true,
+  });
   if (!news) {
     throw new AppError(httpStatus.NOT_FOUND, 'News not found');
   }
@@ -866,7 +784,7 @@ export const deleteNewsPermanent = async (id: string): Promise<void> => {
     PollModel.deleteMany({ news: id }),
   ]);
 
-  await News.findByIdAndDelete(id).setOptions({ bypassDeleted: true });
+  await NewsRepository.deleteById(id);
 };
 
 export const deleteSelfBulkNews = async (
@@ -876,14 +794,14 @@ export const deleteSelfBulkNews = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const allNews = await News.find({
+  const allNews = await NewsRepository.findManyLean({
     _id: { $in: ids },
     author: user._id,
-  }).lean();
+  });
   const foundIds = allNews.map((news) => news._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await News.updateMany(
+  await NewsRepository.updateMany(
     { _id: { $in: foundIds }, author: user._id },
     { is_deleted: true },
   );
@@ -900,11 +818,13 @@ export const deleteBulkNews = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const allNews = await News.find({ _id: { $in: ids } }).lean();
+  const allNews = await NewsRepository.findManyLean({ _id: { $in: ids } });
   const foundIds = allNews.map((news) => news._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
-
-  await News.updateMany({ _id: { $in: foundIds } }, { is_deleted: true });
+  await NewsRepository.updateMany(
+    { _id: { $in: foundIds } },
+    { is_deleted: true },
+  );
 
   return {
     count: foundIds.length,
@@ -918,19 +838,21 @@ export const deleteBulkNewsPermanent = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const allNews = await News.find({
-    _id: { $in: ids },
-    is_deleted: true,
-  })
-    .setOptions({ bypassDeleted: true })
-    .lean();
+  const allNews = await NewsRepository.findManyLean(
+    { _id: { $in: ids }, is_deleted: true },
+    [],
+    { bypassDeleted: true },
+  );
   const foundIds = allNews.map((news) => news._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await News.deleteMany({
-    _id: { $in: foundIds },
-    is_deleted: true,
-  }).setOptions({ bypassDeleted: true });
+  await NewsRepository.deleteMany(
+    {
+      _id: { $in: foundIds },
+      is_deleted: true,
+    },
+    { bypassDeleted: true },
+  );
 
   return {
     count: foundIds.length,
@@ -942,31 +864,23 @@ export const restoreSelfNews = async (
   user: TJwtPayload,
   id: string,
 ): Promise<TNews> => {
-  const news = await News.findOneAndUpdate(
-    { _id: id, is_deleted: true, author: user._id },
-    { is_deleted: false },
-    { new: true },
-  ).lean();
+  const news = await NewsRepository.restoreById(id);
 
-  if (!news) {
+  if (!news || news.author.toString() !== user._id.toString()) {
     throw new AppError(httpStatus.NOT_FOUND, 'News not found or not deleted');
   }
 
-  return news;
+  return news.toObject() as TNews;
 };
 
 export const restoreNews = async (id: string): Promise<TNews> => {
-  const news = await News.findOneAndUpdate(
-    { _id: id, is_deleted: true },
-    { is_deleted: false },
-    { new: true },
-  ).lean();
+  const news = await NewsRepository.restoreById(id);
 
   if (!news) {
     throw new AppError(httpStatus.NOT_FOUND, 'News not found or not deleted');
   }
 
-  return news;
+  return news.toObject() as TNews;
 };
 
 export const restoreSelfBulkNews = async (
@@ -976,15 +890,12 @@ export const restoreSelfBulkNews = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const result = await News.updateMany(
-    { _id: { $in: ids }, is_deleted: true, author: user._id },
-    { is_deleted: false },
-  );
+  const result = await NewsRepository.restoreManyByIds(ids);
 
-  const restoredBulkNews = await News.find({
+  const restoredBulkNews = await NewsRepository.findManyLean({
     _id: { $in: ids },
     author: user._id,
-  }).lean();
+  });
   const restoredIds = restoredBulkNews.map((news) => news._id.toString());
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 
@@ -1000,12 +911,11 @@ export const restoreBulkNews = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const result = await News.updateMany(
-    { _id: { $in: ids }, is_deleted: true },
-    { is_deleted: false },
-  );
+  const result = await NewsRepository.restoreManyByIds(ids);
 
-  const restoredBulkNews = await News.find({ _id: { $in: ids } }).lean();
+  const restoredBulkNews = await NewsRepository.findManyLean({
+    _id: { $in: ids },
+  });
   const restoredIds = restoredBulkNews.map((news) => news._id.toString());
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 

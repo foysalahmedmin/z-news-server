@@ -1,13 +1,13 @@
 import httpStatus from 'http-status';
-import AppError from '../../builder/app-error';
-import { UserProfile } from '../user-profile/user-profile.model';
-import { Badge } from './badge.model';
-import { TBadge } from './badge.type';
 import mongoose from 'mongoose';
+import AppError from '../../builder/app-error';
+import * as UserProfileRepository from '../user-profile/user-profile.repository';
+import * as BadgeRepository from './badge.repository';
+import { TBadge } from './badge.type';
 
 // Create badge
 const createBadge = async (payload: TBadge) => {
-  const badge = await Badge.create(payload);
+  const badge = await BadgeRepository.create(payload);
   return badge;
 };
 
@@ -15,7 +15,7 @@ const createBadge = async (payload: TBadge) => {
 const getAllBadges = async (
   query: Record<string, string | boolean | undefined>,
 ) => {
-  const filter: Record<string, string | boolean | undefined> = {};
+  const filter: Record<string, unknown> = {};
 
   if (query.category) {
     filter.category = query.category;
@@ -29,26 +29,26 @@ const getAllBadges = async (
     filter.is_active = query.is_active === 'true';
   }
 
-  const badges = await Badge.find(filter).sort({ category: 1, rarity: 1 });
+  const badges = await BadgeRepository.findMany(filter);
 
   return badges;
 };
 
 // Get active badges
 const getActiveBadges = async () => {
-  const badges = await Badge.getActiveBadges();
+  const badges = await BadgeRepository.getActiveBadges();
   return badges;
 };
 
 // Get badges by category
 const getBadgesByCategory = async (category: TBadge['category']) => {
-  const badges = await Badge.getBadgesByCategory(category);
+  const badges = await BadgeRepository.getBadgesByCategory(category);
   return badges;
 };
 
 // Get badge by ID
 const getBadgeById = async (badgeId: string) => {
-  const badge = await Badge.findById(badgeId);
+  const badge = await BadgeRepository.findById(badgeId);
 
   if (!badge) {
     throw new AppError(httpStatus.NOT_FOUND, 'Badge not found');
@@ -59,21 +59,18 @@ const getBadgeById = async (badgeId: string) => {
 
 // Update badge
 const updateBadge = async (badgeId: string, payload: Partial<TBadge>) => {
-  const badge = await Badge.findById(badgeId);
+  const badge = await BadgeRepository.findByIdAndUpdate(badgeId, payload);
 
   if (!badge) {
     throw new AppError(httpStatus.NOT_FOUND, 'Badge not found');
   }
-
-  Object.assign(badge, payload);
-  await badge.save();
 
   return badge;
 };
 
 // Delete badge
 const deleteBadge = async (badgeId: string) => {
-  const badge = await Badge.findById(badgeId);
+  const badge = await BadgeRepository.findById(badgeId);
 
   if (!badge) {
     throw new AppError(httpStatus.NOT_FOUND, 'Badge not found');
@@ -86,19 +83,19 @@ const deleteBadge = async (badgeId: string) => {
 
 // Check and award badges to user
 const checkAndAwardBadges = async (userId: string) => {
-  const profile = await UserProfile.findOne({ user: userId });
+  const profile = await UserProfileRepository.findOne({ user: userId });
 
   if (!profile) {
     return [];
   }
 
-  const allBadges = await Badge.getActiveBadges();
+  const allBadges = await BadgeRepository.getActiveBadges();
   const earnedBadgeIds = profile.badges.map((b) => b.badge_id.toString());
   const newBadges: TBadge[] = [];
 
   for (const badge of allBadges!) {
     // Skip if already earned
-    if (earnedBadgeIds.includes(badge._id.toString())) {
+    if (earnedBadgeIds.includes(badge._id!.toString())) {
       continue;
     }
 
@@ -146,7 +143,7 @@ const checkAndAwardBadges = async (userId: string) => {
       // Award reputation points
       profile.reputation_score += badge.points;
 
-      newBadges.push(badge);
+      newBadges.push(badge as TBadge);
     }
   }
 
@@ -354,13 +351,13 @@ const seedDefaultBadges = async () => {
   ];
 
   for (const badgeData of defaultBadges) {
-    const exists = await Badge.findOne({ name: badgeData.name });
+    const exists = await BadgeRepository.findOne({ name: badgeData.name });
     if (!exists) {
-      await Badge.create(badgeData);
+      await BadgeRepository.create(badgeData);
     }
   }
 
-  return await Badge.find();
+  return await BadgeRepository.findMany({});
 };
 
 export const BadgeService = {
