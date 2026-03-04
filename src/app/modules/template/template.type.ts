@@ -1,6 +1,7 @@
 import { Document, Model, Types } from 'mongoose';
 
 export type TTemplate = {
+  _id?: Types.ObjectId | string;
   name: string;
   description?: string;
   category?: Types.ObjectId;
