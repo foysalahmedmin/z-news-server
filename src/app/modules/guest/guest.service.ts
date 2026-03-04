@@ -1,19 +1,18 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
-import AppQueryFind from '../../builder/app-query-find';
-import { Guest } from './guest.model';
+import * as GuestRepository from './guest.repository';
 import { TGuest } from './guest.type';
 
 export const getSelf = async (guest: TGuest): Promise<TGuest> => {
-  const result = await Guest.findById(guest._id).lean();
+  const result = await GuestRepository.findByIdLean(guest._id.toString());
   if (!result) {
-    throw new AppError(404, 'Guest not found');
+    throw new AppError(httpStatus.NOT_FOUND, 'Guest not found');
   }
   return result;
 };
 
 export const getGuest = async (id: string): Promise<TGuest> => {
-  const result = await Guest.findById(id).lean();
+  const result = await GuestRepository.findByIdLean(id);
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'Guest not found');
   }
@@ -26,16 +25,7 @@ export const getGuests = async (
   data: TGuest[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const guestQuery = new AppQueryFind(Guest, query)
-    .search(['name', 'email'])
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
-
-  const result = await guestQuery.execute();
-
+  const result = await GuestRepository.findPaginated({}, query);
   return result;
 };
 
@@ -43,15 +33,15 @@ export const updateSelf = async (
   guest: TGuest,
   payload: Partial<Pick<TGuest, 'name' | 'email'>>,
 ): Promise<TGuest> => {
-  const data = await Guest.findById(guest._id);
+  const data = await GuestRepository.findById(guest._id.toString());
   if (!data) {
     throw new AppError(httpStatus.NOT_FOUND, 'Guest not found');
   }
 
-  const result = await Guest.findByIdAndUpdate(guest._id, payload, {
-    new: true,
-    runValidators: true,
-  });
+  const result = await GuestRepository.updateByIdLean(
+    guest._id.toString(),
+    payload,
+  );
 
   return result!;
 };
@@ -60,15 +50,12 @@ export const updateGuest = async (
   id: string,
   payload: Partial<Pick<TGuest, 'name' | 'email' | 'status'>>,
 ): Promise<TGuest> => {
-  const guest = await Guest.findById(id);
+  const guest = await GuestRepository.findById(id);
   if (!guest) {
     throw new AppError(httpStatus.NOT_FOUND, 'Guest not found');
   }
 
-  const updatedGuest = await Guest.findByIdAndUpdate(id, payload, {
-    new: true,
-    runValidators: true,
-  });
+  const updatedGuest = await GuestRepository.updateByIdLean(id, payload);
 
   return updatedGuest!;
 };
@@ -80,11 +67,11 @@ export const updateGuests = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const guests = await Guest.find({ _id: { $in: ids } }).lean();
+  const guests = await GuestRepository.findManyLean({ _id: { $in: ids } });
   const foundIds = guests.map((guest) => guest._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  const result = await Guest.updateMany(
+  const result = await GuestRepository.updateMany(
     { _id: { $in: foundIds } },
     { ...payload },
   );
@@ -96,7 +83,7 @@ export const updateGuests = async (
 };
 
 export const deleteGuest = async (id: string): Promise<void> => {
-  const guest = await Guest.findById(id);
+  const guest = await GuestRepository.findById(id);
   if (!guest) {
     throw new AppError(httpStatus.NOT_FOUND, 'Guest not found');
   }
@@ -105,12 +92,12 @@ export const deleteGuest = async (id: string): Promise<void> => {
 };
 
 export const deleteGuestPermanent = async (id: string): Promise<void> => {
-  const guest = await Guest.findById(id);
+  const guest = await GuestRepository.findById(id);
   if (!guest) {
     throw new AppError(httpStatus.NOT_FOUND, 'Guest not found');
   }
 
-  await Guest.findByIdAndDelete(id);
+  await GuestRepository.deleteById(id);
 };
 
 export const deleteGuests = async (
@@ -119,11 +106,14 @@ export const deleteGuests = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const guests = await Guest.find({ _id: { $in: ids } }).lean();
+  const guests = await GuestRepository.findManyLean({ _id: { $in: ids } });
   const foundIds = guests.map((guest) => guest._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Guest.updateMany({ _id: { $in: foundIds } }, { is_deleted: true });
+  await GuestRepository.updateMany(
+    { _id: { $in: foundIds } },
+    { is_deleted: true },
+  );
 
   return {
     count: foundIds.length,
@@ -137,11 +127,11 @@ export const deleteGuestsPermanent = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const guests = await Guest.find({ _id: { $in: ids } }).lean();
+  const guests = await GuestRepository.findManyLean({ _id: { $in: ids } });
   const foundIds = guests.map((guest) => guest._id.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Guest.deleteMany({ _id: { $in: foundIds } });
+  await GuestRepository.deleteMany({ _id: { $in: foundIds } });
 
   return {
     count: foundIds.length,
@@ -150,10 +140,9 @@ export const deleteGuestsPermanent = async (
 };
 
 export const restoreGuest = async (id: string): Promise<TGuest> => {
-  const guest = await Guest.findOneAndUpdate(
+  const guest = await GuestRepository.updateOne(
     { _id: id, is_deleted: true },
     { is_deleted: false },
-    { new: true },
   );
 
   if (!guest) {
@@ -169,12 +158,14 @@ export const restoreGuests = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const result = await Guest.updateMany(
+  const result = await GuestRepository.updateMany(
     { _id: { $in: ids }, is_deleted: true },
     { is_deleted: false },
   );
 
-  const restoredGuests = await Guest.find({ _id: { $in: ids } }).lean();
+  const restoredGuests = await GuestRepository.findManyLean({
+    _id: { $in: ids },
+  });
   const restoredIds = restoredGuests.map((guest) => guest._id.toString());
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 
