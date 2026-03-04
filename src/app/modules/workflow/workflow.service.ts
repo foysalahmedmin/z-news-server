@@ -2,7 +2,7 @@ import httpStatus from 'http-status';
 import { Types } from 'mongoose';
 import AppError from '../../builder/app-error';
 import { News } from '../news/news.model';
-import { Workflow } from './workflow.model';
+import * as WorkflowRepository from './workflow.repository';
 import { TWorkflow, TWorkflowStageStatus } from './workflow.type';
 
 // Default workflow stages
@@ -24,7 +24,7 @@ const startWorkflow = async (payload: Partial<TWorkflow>) => {
   }
 
   // Check if workflow already exists for this news
-  const existingWorkflow = await Workflow.findOne({ news: newsId });
+  const existingWorkflow = await WorkflowRepository.findOne({ news: newsId });
   if (existingWorkflow) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
@@ -34,8 +34,8 @@ const startWorkflow = async (payload: Partial<TWorkflow>) => {
 
   const workflowStages = stages && stages.length > 0 ? stages : DEFAULT_STAGES;
 
-  const result = await Workflow.create({
-    news: newsId,
+  const result = await WorkflowRepository.create({
+    news: newsId as unknown as Types.ObjectId,
     stages: workflowStages,
     current_stage: workflowStages[0].stage_name,
     ...rest,
@@ -54,7 +54,7 @@ const updateWorkflowStage = async (
     assignee?: string;
   },
 ) => {
-  const workflow = await Workflow.findById(workflowId);
+  const workflow = await WorkflowRepository.findById(workflowId);
   if (!workflow) {
     throw new AppError(httpStatus.NOT_FOUND, 'Workflow not found');
   }
@@ -106,7 +106,7 @@ const updateWorkflowStage = async (
 
 // Get workflow by News ID
 const getWorkflowByNewsId = async (newsId: string) => {
-  const result = await Workflow.findOne({ news: newsId }).populate([
+  const result = await WorkflowRepository.findOne({ news: newsId }, [
     { path: 'news', select: 'title slug status' },
     { path: 'stages.assignee', select: 'name email role' },
   ]);
@@ -123,7 +123,7 @@ const getWorkflowByNewsId = async (newsId: string) => {
 
 // Get all workflows (admin only)
 const getAllWorkflows = async (query: Record<string, unknown>) => {
-  const result = await Workflow.find(query).populate([
+  const result = await WorkflowRepository.findManyLean(query, [
     { path: 'news', select: 'title slug status' },
     { path: 'stages.assignee', select: 'name email role' },
   ]);

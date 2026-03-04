@@ -16,6 +16,7 @@ export type TWorkflowStage = {
 };
 
 export type TWorkflow = {
+  _id?: Types.ObjectId | string;
   news: Types.ObjectId;
   current_stage: string;
   stages: TWorkflowStage[];
