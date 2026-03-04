@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
 import AppQueryFind from '../../builder/app-query-find';

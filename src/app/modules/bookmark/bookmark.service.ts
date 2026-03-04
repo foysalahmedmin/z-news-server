@@ -1,4 +1,5 @@
 import httpStatus from 'http-status';
+import { Types } from 'mongoose';
 import AppError from '../../builder/app-error';
 import { News } from '../news/news.model';
 import { Bookmark, ReadingList } from './bookmark.model';
@@ -45,8 +46,11 @@ const createBookmark = async (userId: string, payload: Partial<TBookmark>) => {
 };
 
 // Get my bookmarks
-const getMyBookmarks = async (userId: string, query: any) => {
-  const filter: any = { user: userId };
+const getMyBookmarks = async (
+  userId: string,
+  query: Record<string, unknown>,
+) => {
+  const filter: Record<string, unknown> = { user: userId };
 
   if (query.is_read !== undefined) {
     filter.is_read = query.is_read === 'true';
@@ -144,7 +148,7 @@ const moveToReadingList = async (
   }
 
   // Add to new list
-  bookmark.reading_list = readingListId as any;
+  bookmark.reading_list = readingListId as unknown as Types.ObjectId;
   await bookmark.save();
 
   await ReadingList.findByIdAndUpdate(readingListId, {
@@ -315,14 +319,14 @@ const followReadingList = async (listId: string, userId: string) => {
   }
 
   // Check if already following
-  if (list.followers.includes(userId as any)) {
+  if (list.followers.includes(userId as unknown as Types.ObjectId)) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       'Already following this reading list',
     );
   }
 
-  list.followers.push(userId as any);
+  list.followers.push(userId as unknown as Types.ObjectId);
   await list.save();
 
   return list;

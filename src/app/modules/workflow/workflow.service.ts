@@ -1,4 +1,5 @@
 import httpStatus from 'http-status';
+import { Types } from 'mongoose';
 import AppError from '../../builder/app-error';
 import { News } from '../news/news.model';
 import { Workflow } from './workflow.model';
@@ -73,7 +74,8 @@ const updateWorkflowStage = async (
   // Update stage status and metadata
   stage.status = payload.status;
   if (payload.comments) stage.comments = payload.comments;
-  if (payload.assignee) stage.assignee = payload.assignee as any;
+  if (payload.assignee)
+    stage.assignee = payload.assignee as unknown as Types.ObjectId;
   if (['approved', 'rejected', 'skipped'].includes(payload.status)) {
     stage.completed_at = new Date();
   }
@@ -120,7 +122,7 @@ const getWorkflowByNewsId = async (newsId: string) => {
 };
 
 // Get all workflows (admin only)
-const getAllWorkflows = async (query: Record<string, any>) => {
+const getAllWorkflows = async (query: Record<string, unknown>) => {
   const result = await Workflow.find(query).populate([
     { path: 'news', select: 'title slug status' },
     { path: 'stages.assignee', select: 'name email role' },

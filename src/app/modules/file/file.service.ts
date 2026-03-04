@@ -1,12 +1,7 @@
-/**
- * File Service
- *
- * Business logic for the unified File/Media module.
- * Handles both local and cloud (GCS) storage providers.
- */
-
+/* eslint-disable no-console */
 import { Storage } from '@google-cloud/storage';
 import httpStatus from 'http-status';
+import { Types } from 'mongoose';
 import path from 'node:path';
 import AppError from '../../builder/app-error';
 import config from '../../config';
@@ -50,7 +45,7 @@ export const createLocalFile = async (
     url: `${baseUrl}/${filePath}`,
     mimetype: file.mimetype,
     size: file.size,
-    author: user._id as any,
+    author: user._id as unknown as Types.ObjectId,
     provider: 'local',
     category: payload.category,
     description: payload.description,
@@ -89,7 +84,7 @@ export const createCloudFiles = async (
       url: result.publicUrl || '',
       mimetype: result.mimetype,
       size: result.size,
-      author: user._id as any,
+      author: user._id as unknown as Types.ObjectId,
       provider: 'gcs',
       category: payload.category,
       description: payload.description,
@@ -233,9 +228,12 @@ export const deleteFilePermanent = async (id: string): Promise<void> => {
       const bucket = storageClient.bucket(file.metadata.bucket);
       const cloudFile = bucket.file(file.filename);
       await cloudFile.delete();
-    } catch (error: any) {
-      if (error.code !== 404) {
-        console.error(`GCS Delete Error (${file.filename}):`, error.message);
+    } catch (error: unknown) {
+      if ((error as { code?: number }).code !== 404) {
+        console.error(
+          `GCS Delete Error (${file.filename}):`,
+          (error as Error).message,
+        );
       }
     }
   }
@@ -262,11 +260,11 @@ export const deleteFilesPermanent = async (
         const bucket = storageClient.bucket(file.metadata.bucket);
         const cloudFile = bucket.file(file.filename);
         await cloudFile.delete();
-      } catch (error: any) {
-        if (error.code !== 404) {
+      } catch (error: unknown) {
+        if ((error as { code?: number }).code !== 404) {
           console.warn(
             `GCS Batch Delete Fail (${file.filename}):`,
-            error.message,
+            (error as Error).message,
           );
         }
       }

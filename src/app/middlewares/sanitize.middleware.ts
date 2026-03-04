@@ -13,7 +13,7 @@ const sanitize = (req: Request, _res: Response, next: NextFunction) => {
     // params can be a getter in some versions/routers
     try {
       req.params = sanitized;
-    } catch (e) {
+    } catch (_e) {
       Object.keys(req.params).forEach((key) => delete req.params[key]);
       Object.assign(req.params, sanitized);
     }
@@ -23,8 +23,8 @@ const sanitize = (req: Request, _res: Response, next: NextFunction) => {
     const sanitized = mongoSanitize(req.query);
     // query is a getter in Express 5 and cannot be reassigned directly
     try {
-      (req as any).query = sanitized;
-    } catch (e) {
+      (req as unknown as { query: unknown }).query = sanitized;
+    } catch (_e) {
       Object.keys(req.query).forEach((key) => delete req.query[key]);
       Object.assign(req.query, sanitized);
     }

@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { createClient, RedisClientOptions } from 'redis';
 import config from '../config';
 

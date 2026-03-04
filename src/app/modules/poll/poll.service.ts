@@ -1,4 +1,5 @@
 import httpStatus from 'http-status';
+import mongoose from 'mongoose';
 import AppError from '../../builder/app-error';
 import { News } from '../news/news.model';
 import { UserProfile } from '../user-profile/user-profile.model';
@@ -38,8 +39,8 @@ const createPoll = async (userId: string, payload: Partial<TPoll>) => {
 };
 
 // Get all polls
-const getAllPolls = async (query: any) => {
-  const filter: any = {};
+const getAllPolls = async (query: Record<string, unknown>) => {
+  const filter: Record<string, unknown> = {};
 
   if (query.is_active !== undefined) {
     filter.is_active = query.is_active === 'true';
@@ -54,7 +55,7 @@ const getAllPolls = async (query: any) => {
   }
 
   if (query.tags) {
-    filter.tags = { $in: query.tags.split(',') };
+    filter.tags = { $in: (query.tags as string).split(',') };
   }
 
   // Filter by status
@@ -243,11 +244,13 @@ const vote = async (
     poll.options[index].votes += 1;
 
     if (userId) {
-      poll.options[index].voters.push(userId as any);
+      poll.options[index].voters.push(
+        userId as unknown as mongoose.Types.ObjectId,
+      );
     }
 
     poll.votes.push({
-      user: userId as any,
+      user: userId as unknown as mongoose.Types.ObjectId,
       guest_id: guestId,
       option_index: index,
       voted_at: new Date(),

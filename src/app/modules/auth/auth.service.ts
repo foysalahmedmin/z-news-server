@@ -7,6 +7,7 @@ import config from '../../config';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
 import { sendEmail } from '../../utils/send-email';
 import { User } from '../user/user.model';
+import { TUserDocument } from '../user/user.type';
 import {
   TChangePassword,
   TForgetPassword,
@@ -38,10 +39,14 @@ export const googleLogin = async (idToken: string) => {
     );
   }
 
-  let user = (await User.findOne({ email }).select('+password')) as any;
+  let user = (await User.findOne({ email }).select(
+    '+password',
+  )) as TUserDocument | null;
 
   if (!user) {
-    user = (await User.findOne({ google_id }).select('+password')) as any;
+    user = (await User.findOne({ google_id }).select(
+      '+password',
+    )) as TUserDocument | null;
   }
 
   if (user) {

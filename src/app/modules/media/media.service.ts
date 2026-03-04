@@ -8,7 +8,6 @@ export const getMedias = async (
   folder: string = '',
   base: string = '',
 ): Promise<TMedia[]> => {
-  console.log(folder);
   const uploadPath = path.join(
     __dirname,
     '../../../../uploads',

@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { Storage } from '@google-cloud/storage';
 import { NextFunction, Request, Response } from 'express';
 import httpStatus from 'http-status';
@@ -92,12 +93,12 @@ const storage = (...files: TStorageFile[]) => {
   );
 
   return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    upload(req, res, async (err: any) => {
+    upload(req, res, async (err: unknown) => {
       if (err) {
         return next(
           new AppError(
             httpStatus.BAD_REQUEST,
-            err.message || 'File upload error',
+            (err as Error).message || 'File upload error',
           ),
         );
       }
@@ -174,11 +175,11 @@ const storage = (...files: TStorageFile[]) => {
                 if (makePublic) {
                   try {
                     await bucketFile.makePublic();
-                  } catch (makePublicError: any) {
+                  } catch (makePublicError: unknown) {
                     // If uniform bucket-level access is enabled, makePublic() will fail
                     // but the file can still be accessed if the bucket is public
                     if (
-                      makePublicError.message?.includes(
+                      (makePublicError as Error).message?.includes(
                         'uniform bucket-level access',
                       )
                     ) {
@@ -210,14 +211,14 @@ const storage = (...files: TStorageFile[]) => {
                   mimetype: file.mimetype,
                   uploadedAt: new Date(),
                 });
-              } catch (uploadError: any) {
+              } catch (uploadError: unknown) {
                 console.error(
                   `Failed to upload file ${file.originalname} to Google Cloud Storage:`,
                   uploadError,
                 );
                 throw new AppError(
                   httpStatus.INTERNAL_SERVER_ERROR,
-                  `Failed to upload file "${file.originalname}": ${uploadError.message || 'Unknown error'}`,
+                  `Failed to upload file "${file.originalname}": ${(uploadError as Error).message || 'Unknown error'}`,
                 );
               }
             }
@@ -248,12 +249,12 @@ const storage = (...files: TStorageFile[]) => {
               const oldFile = oldBucket.file(oldFilename);
 
               await oldFile.delete();
-            } catch (deleteError: any) {
+            } catch (deleteError: unknown) {
               // Ignore errors if file doesn't exist (404)
-              if (deleteError.code !== 404) {
+              if ((deleteError as { code?: number }).code !== 404) {
                 console.warn(
                   `Failed to delete old file from cloud storage: ${oldPath}`,
-                  deleteError.message,
+                  (deleteError as Error).message,
                 );
               }
             }
@@ -277,12 +278,12 @@ const storage = (...files: TStorageFile[]) => {
               const oldFile = oldBucket.file(oldFilename);
 
               await oldFile.delete();
-            } catch (deleteError: any) {
+            } catch (deleteError: unknown) {
               // Ignore errors if file doesn't exist (404)
-              if (deleteError.code !== 404) {
+              if ((deleteError as { code?: number }).code !== 404) {
                 console.warn(
                   `Failed to delete old file from cloud storage: ${oldFilePath}`,
-                  deleteError.message,
+                  (deleteError as Error).message,
                 );
               }
             }

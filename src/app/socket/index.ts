@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { createAdapter } from '@socket.io/redis-adapter';
 import http from 'http';
 import jwt from 'jsonwebtoken';
@@ -195,28 +196,40 @@ const verifyToken = (token: string): TJwtPayload | null => {
 // Utility functions for emitting events
 
 // Emit to specific user
-export const emitToUser = (userId: string, event: string, data: any): void => {
+export const emitToUser = (
+  userId: string,
+  event: string,
+  data: unknown,
+): void => {
   if (io) {
     io.to(`user:${userId}`).emit(event, data);
   }
 };
 
 // Emit to users with specific role
-export const emitToRole = (role: string, event: string, data: any): void => {
+export const emitToRole = (
+  role: string,
+  event: string,
+  data: unknown,
+): void => {
   if (io) {
     io.to(`role:${role}`).emit(event, data);
   }
 };
 
 // Emit to custom room
-export const emitToRoom = (roomId: string, event: string, data: any): void => {
+export const emitToRoom = (
+  roomId: string,
+  event: string,
+  data: unknown,
+): void => {
   if (io) {
     io.to(roomId).emit(event, data);
   }
 };
 
 // Broadcast to all connected clients
-export const broadcast = (event: string, data: any): void => {
+export const broadcast = (event: string, data: unknown): void => {
   if (io) {
     io.emit(event, data);
   }

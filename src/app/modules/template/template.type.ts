@@ -4,8 +4,8 @@ export type TTemplate = {
   name: string;
   description?: string;
   category?: Types.ObjectId;
-  structure: Record<string, any>; // BlockNote JSON structure or other rich text structure
-  default_fields?: Record<string, any>;
+  structure: Record<string, unknown>; // BlockNote JSON structure or other rich text structure
+  default_fields?: Record<string, unknown>;
   is_active: boolean;
   is_deleted: boolean;
 };

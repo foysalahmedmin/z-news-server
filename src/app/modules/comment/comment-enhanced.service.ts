@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
 import { invalidateCacheByPattern } from '../../utils/cache.utils';
@@ -15,7 +16,7 @@ export const getThreadedComments = async (newsId: string) => {
 
   // For each top-level comment, fetch its replies
   const commentsWithReplies = await Promise.all(
-    topLevelComments!.map(async (comment: any) => {
+    topLevelComments!.map(async (comment) => {
       const replies = await Comment.getCommentReplies(comment._id.toString());
       return {
         ...comment.toObject(),
@@ -231,7 +232,7 @@ export const processMentions = async (
     }
   }
 
-  comment.mentions = mentions as any;
+  comment.mentions = mentions as unknown as typeof comment.mentions;
   await comment.save();
 
   return comment;
@@ -293,7 +294,7 @@ export const flagComment = async (
 
   // Check if user already flagged
   const alreadyFlagged = comment.flagged_by.some(
-    (id: any) => id.toString() === userId,
+    (id) => id.toString() === userId,
   );
 
   if (alreadyFlagged) {
@@ -303,7 +304,7 @@ export const flagComment = async (
     );
   }
 
-  comment.flagged_by.push(userId as any);
+  comment.flagged_by.push(userId as unknown as (typeof comment.flagged_by)[0]);
   comment.flagged_count += 1;
 
   // Auto-change status to flagged if threshold reached
@@ -327,7 +328,7 @@ export const unflagComment = async (comment_id: string, userId: string) => {
   }
 
   comment.flagged_by = comment.flagged_by.filter(
-    (id: any) => id.toString() !== userId,
+    (id) => id.toString() !== userId,
   );
   comment.flagged_count = Math.max(0, comment.flagged_count - 1);
 
@@ -352,7 +353,7 @@ export const moderateComment = async (
   }
 
   comment.status = status;
-  comment.moderated_by = moderatorId as any;
+  comment.moderated_by = moderatorId as unknown as typeof comment.moderated_by;
   comment.moderated_at = new Date();
   comment.moderation_reason = reason;
 

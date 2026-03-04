@@ -1,4 +1,5 @@
 import httpStatus from 'http-status';
+import mongoose from 'mongoose';
 import AppError from '../../builder/app-error';
 import { Badge } from '../badge/badge.model';
 import { Category } from '../category/category.model';
@@ -12,7 +13,7 @@ const createOrGetProfile = async (userId: string) => {
 
   if (!profile) {
     // Create default profile
-    profile = await UserProfile.create({
+    await UserProfile.create({
       user: userId,
       notification_preferences: {
         email_notifications: true,
@@ -110,11 +111,17 @@ const followAuthor = async (userId: string, authorId: string) => {
   }
 
   // Check if already following
-  if (profile.following_authors.includes(authorId as any)) {
+  if (
+    profile.following_authors.includes(
+      authorId as unknown as mongoose.Types.ObjectId,
+    )
+  ) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Already following this author');
   }
 
-  profile.following_authors.push(authorId as any);
+  profile.following_authors.push(
+    authorId as unknown as mongoose.Types.ObjectId,
+  );
   await profile.save();
 
   return profile;
@@ -152,14 +159,20 @@ const followCategory = async (userId: string, categoryId: string) => {
   }
 
   // Check if already following
-  if (profile.following_categories.includes(categoryId as any)) {
+  if (
+    profile.following_categories.includes(
+      categoryId as unknown as mongoose.Types.ObjectId,
+    )
+  ) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       'Already following this category',
     );
   }
 
-  profile.following_categories.push(categoryId as any);
+  profile.following_categories.push(
+    categoryId as unknown as mongoose.Types.ObjectId,
+  );
   await profile.save();
 
   return profile;
@@ -243,7 +256,7 @@ const addBadge = async (userId: string, badgeId: string) => {
   }
 
   profile.badges.push({
-    badge_id: badge._id as any,
+    badge_id: badge._id as mongoose.Types.ObjectId,
     earned_at: new Date(),
   });
 

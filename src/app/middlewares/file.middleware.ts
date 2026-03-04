@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { NextFunction, Request, Response } from 'express';
 import fs from 'fs';
 import httpStatus from 'http-status';
@@ -85,12 +86,12 @@ const file = (...files: TFile[]) => {
   );
 
   return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    upload(req, res, (err: any) => {
+    upload(req, res, (err: unknown) => {
       if (err) {
         return next(
           new AppError(
             httpStatus.BAD_REQUEST,
-            err.message || 'File upload error',
+            (err as Error).message || 'File upload error',
           ),
         );
       }
@@ -122,10 +123,13 @@ const file = (...files: TFile[]) => {
           oldFilePaths.forEach((oldPath) => {
             const fullPath = path.resolve(oldPath);
             fs.unlink(fullPath, (unlinkErr) => {
-              if (unlinkErr && unlinkErr.code !== 'ENOENT') {
+              if (
+                unlinkErr &&
+                (unlinkErr as { code?: string }).code !== 'ENOENT'
+              ) {
                 console.warn(
                   `Failed to delete old file: ${fullPath}`,
-                  unlinkErr.message,
+                  (unlinkErr as Error).message,
                 );
               }
             });
@@ -136,10 +140,13 @@ const file = (...files: TFile[]) => {
           if (oldFilePath) {
             const fullPath = path.resolve(oldFilePath);
             fs.unlink(fullPath, (unlinkErr) => {
-              if (unlinkErr && unlinkErr.code !== 'ENOENT') {
+              if (
+                unlinkErr &&
+                (unlinkErr as { code?: string }).code !== 'ENOENT'
+              ) {
                 console.warn(
                   `Failed to delete old file: ${fullPath}`,
-                  unlinkErr.message,
+                  (unlinkErr as Error).message,
                 );
               }
             });

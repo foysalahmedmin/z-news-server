@@ -17,4 +17,3 @@ const handleDuplicateError = (err: MongoServerError): TErrorResponse => {
 };
 
 export default handleDuplicateError;
-

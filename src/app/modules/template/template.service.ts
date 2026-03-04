@@ -18,7 +18,7 @@ const createTemplate = async (payload: TTemplate) => {
 };
 
 // Get all templates (active only or all for admin)
-const getAllTemplates = async (query: Record<string, any>) => {
+const getAllTemplates = async (query: Record<string, unknown>) => {
   const result = await Template.find(query).populate('category', 'name slug');
   return result;
 };

@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import config from '../config';
 import { cacheClient } from '../redis';
 
@@ -7,16 +8,16 @@ import { cacheClient } from '../redis';
  * @param ttl Time-to-live in seconds.
  * @param fn The function to execute if cache misses.
  */
-export const generateCacheKey = (prefix: string, parts: any[]): string => {
-  const processPart = (part: any): string => {
+export const generateCacheKey = (prefix: string, parts: unknown[]): string => {
+  const processPart = (part: unknown): string => {
     if (part === null || part === undefined) return '';
     if (typeof part === 'object') {
       // Stable stringify for objects
       return JSON.stringify(
-        Object.keys(part)
+        Object.keys(part as Record<string, unknown>)
           .sort()
-          .reduce((acc: any, key) => {
-            acc[key] = part[key];
+          .reduce((acc: Record<string, unknown>, key) => {
+            acc[key] = (part as Record<string, unknown>)[key];
             return acc;
           }, {}),
       );

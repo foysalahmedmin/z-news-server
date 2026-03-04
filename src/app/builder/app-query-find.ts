@@ -1,4 +1,5 @@
-import { Document, FilterQuery, Model, Query, PopulateOptions } from 'mongoose';
+/* eslint-disable no-console */
+import { Document, FilterQuery, Model, PopulateOptions, Query } from 'mongoose';
 
 interface QueryParams {
   search?: string;
@@ -12,12 +13,12 @@ interface QueryParams {
 
 type DocumentType<T> = T & Document;
 
-class AppQueryFind<T = any> {
+class AppQueryFind<T> {
   private model: Model<DocumentType<T>>;
   public query: Query<DocumentType<T>[], DocumentType<T>>;
   public query_params: QueryParams;
   public query_filter: FilterQuery<DocumentType<T>>;
-  
+
   private page = 1;
   private limit = 0;
 
@@ -66,14 +67,16 @@ class AppQueryFind<T = any> {
       });
     }
 
-    const mongoFilter: Record<string, any> = {};
+    const mongoFilter: Record<string, unknown> = {};
 
     // Handle OR
     if (queryObj.or) {
       try {
-        mongoFilter.$or = Object.values(queryObj.or).map((cond: any) => cond);
-      } catch (e) {
-        console.error('Invalid OR format:', e);
+        mongoFilter.$or = Object.values(
+          queryObj.or as Record<string, unknown>,
+        ).map((cond: unknown) => cond);
+      } catch (_e) {
+        console.error('Invalid OR format:', _e);
       }
       delete queryObj.or;
     }
@@ -81,9 +84,11 @@ class AppQueryFind<T = any> {
     // Handle AND
     if (queryObj.and) {
       try {
-        mongoFilter.$and = Object.values(queryObj.and).map((cond: any) => cond);
-      } catch (e) {
-        console.error('Invalid AND format:', e);
+        mongoFilter.$and = Object.values(
+          queryObj.and as Record<string, unknown>,
+        ).map((cond: unknown) => cond);
+      } catch (_e) {
+        console.error('Invalid AND format:', _e);
       }
       delete queryObj.and;
     }
@@ -148,20 +153,22 @@ class AppQueryFind<T = any> {
   }
 
   populate(
-    populateConfig:
-      | string
-      | PopulateOptions
-      | Array<string | PopulateOptions>,
+    populateConfig: string | PopulateOptions | Array<string | PopulateOptions>,
   ): this {
     // Mongoose populate accepts string, PopulateOptions, or array of both
-    this.query = this.query.populate(populateConfig as any);
+    this.query = this.query.populate(
+      populateConfig as
+        | string
+        | PopulateOptions
+        | Array<string | PopulateOptions>,
+    );
     return this;
   }
 
   tap(
     callback: (
       query: Query<DocumentType<T>[], DocumentType<T>>,
-    ) => Query<any, DocumentType<T>>,
+    ) => Query<unknown, DocumentType<T>>,
   ): this {
     this.query = callback(this.query) as Query<
       DocumentType<T>[],
@@ -171,7 +178,7 @@ class AppQueryFind<T = any> {
   }
 
   async execute(
-    statisticsQueries?: { key: string; filter: Record<string, any> }[],
+    statisticsQueries?: { key: string; filter: Record<string, unknown> }[],
   ): Promise<{
     data: T[];
     meta: {
@@ -213,7 +220,7 @@ class AppQueryFind<T = any> {
         {} as Record<string, number>,
       ) || undefined;
 
-    if (Boolean(this.query_params.is_count_only)) {
+    if (this.query_params.is_count_only) {
       return {
         data: [],
         meta: {
@@ -235,4 +242,3 @@ class AppQueryFind<T = any> {
 }
 
 export default AppQueryFind;
-

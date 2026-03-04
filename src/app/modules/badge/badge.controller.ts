@@ -2,6 +2,7 @@ import httpStatus from 'http-status';
 import catchAsync from '../../utils/catch-async';
 import sendResponse from '../../utils/send-response';
 import { BadgeService } from './badge.service';
+import { TBadge } from './badge.type';
 
 // Create badge
 const createBadge = catchAsync(async (req, res) => {
@@ -17,7 +18,9 @@ const createBadge = catchAsync(async (req, res) => {
 
 // Get all badges
 const getAllBadges = catchAsync(async (req, res) => {
-  const badges = await BadgeService.getAllBadges(req.query);
+  const badges = await BadgeService.getAllBadges(
+    req.query as Record<string, string | boolean | undefined>,
+  );
 
   sendResponse(res, {
     success: true,
@@ -43,7 +46,9 @@ const getActiveBadges = catchAsync(async (_req, res) => {
 const getBadgesByCategory = catchAsync(async (req, res) => {
   const { category } = req.params;
 
-  const badges = await BadgeService.getBadgesByCategory(category as any);
+  const badges = await BadgeService.getBadgesByCategory(
+    category as TBadge['category'],
+  );
 
   sendResponse(res, {
     success: true,

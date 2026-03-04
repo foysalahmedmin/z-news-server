@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { Flattener } from 'flattener-kit';
 import fs from 'fs';
 import httpStatus from 'http-status';
@@ -99,35 +100,14 @@ export const uploadNewsFile = async (
 export const deleteNewsFile = async (path: string) => {
   if (!path) return;
   fs.unlink(path, (err) => {
-    if (err && err.code !== 'ENOENT') {
-      console.warn(`❌ Failed to delete file: ${path}`, err.message);
+    if (err && (err as { code?: string }).code !== 'ENOENT') {
+      console.warn(`❌ Failed to delete file: ${path}`, (err as Error).message);
     } else {
       console.log(`🗑️ Deleted file: ${path}`);
     }
   });
 
   return path;
-};
-
-export const createNews = async (
-  user: TJwtPayload,
-  payload: TNews,
-): Promise<TNews> => {
-  const created_news = await News.create({ ...payload, author: user._id });
-
-  if (created_news && user.role !== 'admin' && user.role !== 'super-admin') {
-    await sendNewsNotification({
-      news: created_news._id.toString(),
-      sender: user?._id.toString(),
-      type: 'news-request',
-    });
-  }
-
-  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
-  await invalidateCacheByPattern(`news-break:*`);
-  await invalidateCacheByPattern(`news-headline:*`);
-
-  return created_news.toObject();
 };
 
 export const getPublicNews = async (slug: string): Promise<TNews> => {
@@ -652,7 +632,7 @@ export const updateSelfNews = async (
   ) {
     update.is_edited = true;
     update.edited_at = new Date();
-    update.editor = user._id as any;
+    update.editor = user._id as unknown as mongoose.Types.ObjectId;
   }
 
   const flatten = Flattener.flatten(update, { safe: true });
@@ -733,7 +713,7 @@ export const updateNews = async (
   ) {
     update.is_edited = true;
     update.edited_at = new Date();
-    update.editor = user._id as any;
+    update.editor = user._id as unknown as mongoose.Types.ObjectId;
   }
 
   const flatten = Flattener.flatten(update, { safe: true });

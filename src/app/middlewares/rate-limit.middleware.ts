@@ -1,11 +1,12 @@
+import { Request } from 'express';
 import rateLimit from 'express-rate-limit';
 import config from '../config';
 
 export const rateLimiter = rateLimit;
 
-const skipServerRequests = (req: any) => {
+const skipServerRequests = (req: Request): boolean => {
   const serverApiKey = req.headers['x-server-api-key'];
-  return (
+  return !!(
     serverApiKey &&
     serverApiKey === (process.env.SERVER_API_KEY || config.server_api_key)
   );

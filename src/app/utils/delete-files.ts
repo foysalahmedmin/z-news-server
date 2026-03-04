@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { promises as fs } from 'fs';
 import path from 'path';
 
@@ -19,13 +20,15 @@ export const deleteFiles = async (
     try {
       await fs.unlink(fullPath);
       console.log(`🗑️ Deleted file: ${fullPath}`);
-    } catch (err: any) {
-      if (err.code === 'ENOENT') {
+    } catch (err: unknown) {
+      if ((err as { code?: string }).code === 'ENOENT') {
         console.warn(`⚠️ File not found: ${fullPath}`);
       } else {
-        console.error(`❌ Failed to delete file: ${fullPath}`, err.message);
+        console.error(
+          `❌ Failed to delete file: ${fullPath}`,
+          (err as Error).message,
+        );
       }
     }
   }
 };
-

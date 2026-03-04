@@ -1,4 +1,5 @@
-import { RequestHandler } from 'express';
+/* eslint-disable no-console */
+import { RequestHandler, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import mongoose, { Schema, Types } from 'mongoose';
 import config from '../config';
@@ -13,8 +14,8 @@ type TLog = {
   url: string;
   method: string;
   status: number;
-  payload: any;
-  response: any;
+  payload: unknown;
+  response: unknown;
   duration: number;
   date: Date;
 };
@@ -57,13 +58,15 @@ const log: RequestHandler = (req, res, next) => {
   const start = Date.now();
 
   // Hold response body
-  const oldSend = res.send;
-  let responseBody: any;
 
-  // Override res.send to capture response
-  (res.send as any) = function (body: any) {
+  let responseBody: unknown;
+
+  const originalSend = res.send;
+  res.send = function (body?: unknown, ...args: unknown[]): Response {
     responseBody = body;
-    return oldSend.apply(res, arguments as any);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return originalSend.apply(this, [body, ...args] as any);
   };
 
   res.on('finish', async () => {

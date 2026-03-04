@@ -45,7 +45,7 @@ export type TNews = {
   meta_title?: string;
   meta_description?: string;
   canonical_url?: string;
-  structured_data?: Record<string, any>;
+  structured_data?: Record<string, unknown>;
 
   // Content Classification
   content_type: TContentType;

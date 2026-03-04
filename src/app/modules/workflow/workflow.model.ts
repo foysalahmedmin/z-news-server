@@ -1,4 +1,4 @@
-import mongoose, { Schema, Types } from 'mongoose';
+import mongoose, { Query, Schema, Types } from 'mongoose';
 import {
   TWorkflowDocument,
   TWorkflowModel,
@@ -47,7 +47,7 @@ const workflowSchema = new Schema<TWorkflowDocument>(
 
 // Query middleware to exclude deleted docs
 workflowSchema.pre(/^find/, function (next) {
-  const query = this as any;
+  const query = this as unknown as Query<TWorkflowDocument, TWorkflowDocument>;
   query.where({ is_deleted: { $ne: true } });
   next();
 });

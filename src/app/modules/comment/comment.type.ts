@@ -1,4 +1,5 @@
 import { Document, Model, Types } from 'mongoose';
+import { TReaction } from '../reaction/reaction.type';
 
 // TCommentReaction removed as we use Reaction module now
 
@@ -51,9 +52,12 @@ export interface TCommentDocument extends TComment, Document {
   reaction_counts: {
     like: number;
     dislike: number;
+    insightful: number;
+    funny: number;
+    disagree: number;
     total: number;
   };
-  reactions?: any[];
+  reactions?: TReaction[];
   reply_count?: number;
 }
 

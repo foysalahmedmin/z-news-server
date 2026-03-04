@@ -9,7 +9,7 @@ const validation = (schema: AnyZodObject) => {
         query: req.query,
         body: req.body,
         cookies: req.cookies,
-        session: (req as any).session,
+        session: (req as Request & { session?: unknown }).session,
       });
 
       req.body = parsed.body;

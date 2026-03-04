@@ -1,8 +1,9 @@
 import httpStatus from 'http-status';
+import AppError from '../../builder/app-error';
 import { UserProfile } from '../user-profile/user-profile.model';
 import { Badge } from './badge.model';
 import { TBadge } from './badge.type';
-import AppError from '../../builder/app-error';
+import mongoose from 'mongoose';
 
 // Create badge
 const createBadge = async (payload: TBadge) => {
@@ -11,8 +12,10 @@ const createBadge = async (payload: TBadge) => {
 };
 
 // Get all badges
-const getAllBadges = async (query: any) => {
-  const filter: any = {};
+const getAllBadges = async (
+  query: Record<string, string | boolean | undefined>,
+) => {
+  const filter: Record<string, string | boolean | undefined> = {};
 
   if (query.category) {
     filter.category = query.category;
@@ -91,7 +94,7 @@ const checkAndAwardBadges = async (userId: string) => {
 
   const allBadges = await Badge.getActiveBadges();
   const earnedBadgeIds = profile.badges.map((b) => b.badge_id.toString());
-  const newBadges: any[] = [];
+  const newBadges: TBadge[] = [];
 
   for (const badge of allBadges!) {
     // Skip if already earned
@@ -119,12 +122,13 @@ const checkAndAwardBadges = async (userId: string) => {
         shouldAward = profile.reputation_score >= badge.criteria.threshold;
         break;
 
-      case 'years_member':
+      case 'years_member': {
         const yearsSinceCreation =
           (Date.now() - profile.created_at!.getTime()) /
           (1000 * 60 * 60 * 24 * 365);
         shouldAward = yearsSinceCreation >= badge.criteria.threshold;
         break;
+      }
 
       case 'custom':
         // Custom badges are awarded manually
@@ -135,7 +139,7 @@ const checkAndAwardBadges = async (userId: string) => {
     if (shouldAward) {
       // Award badge
       profile.badges.push({
-        badge_id: badge._id as any,
+        badge_id: badge._id as mongoose.Types.ObjectId,
         earned_at: new Date(),
       });
 

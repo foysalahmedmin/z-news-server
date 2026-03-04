@@ -1,4 +1,4 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { Query, Schema } from 'mongoose';
 import { TTemplateDocument, TTemplateModel } from './template.type';
 
 const templateSchema = new Schema<TTemplateDocument>(
@@ -23,7 +23,7 @@ const templateSchema = new Schema<TTemplateDocument>(
 
 // Query middleware to exclude deleted templates
 templateSchema.pre(/^find/, function (next) {
-  const query = this as any;
+  const query = this as unknown as Query<TTemplateDocument, TTemplateDocument>;
   query.where({ is_deleted: { $ne: true } });
   next();
 });

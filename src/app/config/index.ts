@@ -106,7 +106,7 @@ export default {
     bucket_name: process.env.GOOGLE_CLOUD_STORAGE_BUCKET as string,
     credentials_path: process.env.GOOGLE_APPLICATION_CREDENTIALS as string,
   },
-  
+
   google_application_credentials: process.env
     .GOOGLE_APPLICATION_CREDENTIALS as string,
 

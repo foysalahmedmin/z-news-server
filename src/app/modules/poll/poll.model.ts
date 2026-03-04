@@ -1,5 +1,5 @@
 import mongoose, { Query, Schema } from 'mongoose';
-import { TPoll, TPollDocument, TPollModel } from './poll.type';
+import { TPoll, TPollDocument, TPollModel, TPollOption } from './poll.type';
 
 const pollSchema = new Schema<TPollDocument>(
   {
@@ -192,14 +192,14 @@ pollSchema.virtual('status').get(function () {
 // Virtual for results percentage
 pollSchema.virtual('results').get(function () {
   if (this.total_votes === 0) {
-    return this.options.map((option: any) => ({
+    return this.options.map((option: TPollOption) => ({
       text: option.text,
       votes: 0,
       percentage: 0,
     }));
   }
 
-  return this.options.map((option: any) => ({
+  return this.options.map((option: TPollOption) => ({
     text: option.text,
     votes: option.votes,
     percentage: ((option.votes / this.total_votes) * 100).toFixed(2),
@@ -213,7 +213,7 @@ pollSchema.methods.toJSON = function () {
 
   // Hide voter details unless admin
   if (poll.options) {
-    poll.options = poll.options.map((option: any) => ({
+    poll.options = poll.options.map((option: TPollOption) => ({
       text: option.text,
       votes: option.votes,
     }));

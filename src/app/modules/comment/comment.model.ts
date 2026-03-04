@@ -201,8 +201,8 @@ commentSchema.virtual('reaction_counts').get(function () {
   };
 
   if (this.reactions && Array.isArray(this.reactions)) {
-    this.reactions.forEach((reaction: any) => {
-      if (counts.hasOwnProperty(reaction.type)) {
+    this.reactions.forEach((reaction) => {
+      if (Object.prototype.hasOwnProperty.call(counts, reaction.type)) {
         counts[reaction.type as keyof typeof counts]++;
         counts.total++;
       }

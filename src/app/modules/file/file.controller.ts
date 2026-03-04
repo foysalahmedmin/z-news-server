@@ -1,3 +1,4 @@
+import { Request } from 'express';
 import httpStatus from 'http-status';
 import { TStorageResult } from '../../middlewares/storage.middleware';
 import catchAsync from '../../utils/catch-async';
@@ -27,7 +28,7 @@ export const createLocalFile = catchAsync(async (req, res) => {
 });
 
 export const createCloudFiles = catchAsync(async (req, res) => {
-  const storages = (req as any).storages as TStorageResult[];
+  const storages = (req as Request & { storages: TStorageResult[] }).storages;
 
   const result = await FileServices.createCloudFiles(
     req.user!,

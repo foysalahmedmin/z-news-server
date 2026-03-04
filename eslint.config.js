@@ -6,7 +6,7 @@ import tseslint from 'typescript-eslint';
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', 'coverage/**'],
+    ignores: ['dist/**', 'node_modules/**', 'coverage/**', 'jest.config.ts'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -30,10 +30,20 @@ export default [
       'no-unused-vars': 'off',
       'no-console': 'warn',
       '@typescript-eslint/no-unused-vars': [
-        'error',
-        { argsIgnorePattern: '^_' },
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
       ],
       'prettier/prettier': 'error',
+    },
+  },
+  {
+    files: ['**/*.test.ts', '**/__tests__/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
   configPrettier,

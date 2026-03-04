@@ -43,4 +43,3 @@ export const getExtensionFromFilename = (filename: string): string => {
   if (lastDot === -1) return '';
   return filename.substring(lastDot + 1).toLowerCase();
 };
-

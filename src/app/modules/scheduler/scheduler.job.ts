@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { News } from '../news/news.model';
 
 const runScheduledJobs = async () => {

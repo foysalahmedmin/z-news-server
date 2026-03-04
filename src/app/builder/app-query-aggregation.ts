@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { Model, PipelineStage, PopulateOptions } from 'mongoose';
 
 interface QueryParams {
@@ -10,18 +11,17 @@ interface QueryParams {
   [key: string]: unknown;
 }
 
-class AppQueryAggregation<T = any> {
-  private model: Model<any>;
+class AppQueryAggregation<T> {
+  private model: Model<unknown>;
   private _pipeline: PipelineStage[];
   private query_params: QueryParams;
 
-  private baseMatchFilter: Record<string, any> = {};
-  
+  private baseMatchFilter: Record<string, unknown> = {};
+
   private page = 1;
   private limit = 0;
-  
 
-  constructor(model: Model<any>, query_params: Record<string, unknown>) {
+  constructor(model: Model<unknown>, query_params: Record<string, unknown>) {
     this.model = model;
     this.query_params = query_params;
     this._pipeline = [];
@@ -41,7 +41,7 @@ class AppQueryAggregation<T = any> {
 
       if (matchIndex >= 0) {
         const matchStage = this._pipeline[matchIndex] as {
-          $match: Record<string, any>;
+          $match: Record<string, unknown>;
         };
         matchStage.$match = { ...matchStage.$match, ...searchConditions };
       } else {
@@ -73,13 +73,15 @@ class AppQueryAggregation<T = any> {
       });
     }
 
-    const mongoFilter: Record<string, any> = {};
+    const mongoFilter: Record<string, unknown> = {};
 
     // Handle OR
     if (queryObj.or) {
       try {
-        mongoFilter.$or = Object.values(queryObj.or).map((cond: any) => cond);
-      } catch (e) {
+        mongoFilter.$or = Object.values(
+          queryObj.or as Record<string, unknown>,
+        ).map((cond: unknown) => cond);
+      } catch (_e) {
         console.error('Invalid OR format:', e);
       }
       delete queryObj.or;
@@ -88,8 +90,10 @@ class AppQueryAggregation<T = any> {
     // Handle AND
     if (queryObj.and) {
       try {
-        mongoFilter.$and = Object.values(queryObj.and).map((cond: any) => cond);
-      } catch (e) {
+        mongoFilter.$and = Object.values(
+          queryObj.and as Record<string, unknown>,
+        ).map((cond: unknown) => cond);
+      } catch (_e) {
         console.error('Invalid AND format:', e);
       }
       delete queryObj.and;
@@ -104,7 +108,7 @@ class AppQueryAggregation<T = any> {
 
       if (matchIndex >= 0) {
         const matchStage = this._pipeline[matchIndex] as {
-          $match: Record<string, any>;
+          $match: Record<string, unknown>;
         };
         matchStage.$match = { ...matchStage.$match, ...mongoFilter };
       } else {
@@ -196,13 +200,10 @@ class AppQueryAggregation<T = any> {
       path: string,
       config?: {
         select?: string | Record<string, 0 | 1>;
-        match?: Record<string, any>;
-        populate?:
-          | string
-          | PopulateOptions
-          | Array<string | PopulateOptions>;
-        model?: string | Model<any>;
-        options?: Record<string, any>;
+        match?: Record<string, unknown>;
+        populate?: string | PopulateOptions | Array<string | PopulateOptions>;
+        model?: string | Model<unknown>;
+        options?: Record<string, unknown>;
       },
     ): PipelineStage[] => {
       const stages: PipelineStage[] = [];
@@ -210,7 +211,7 @@ class AppQueryAggregation<T = any> {
       const localField = path;
       const foreignField = '_id';
       const asField = path;
-      
+
       // Get collection name from model or use path (mongoose pluralizes model names)
       // If model is provided, use it; otherwise try to infer from path
       let collectionName: string | undefined;
@@ -223,14 +224,18 @@ class AppQueryAggregation<T = any> {
           collectionName = config.model.collection.name;
         }
       }
-      
+
       if (!collectionName) {
         // Try to get collection name from the model's schema
         const schema = this.model.schema;
         const pathSchema = schema.path(path);
-        if (pathSchema && (pathSchema as any).options?.ref) {
+        if (
+          pathSchema &&
+          (pathSchema as { options?: { ref?: string } }).options?.ref
+        ) {
           // Get the referenced model
-          const refModelName = (pathSchema as any).options.ref;
+          const refModelName = (pathSchema as { options: { ref: string } })
+            .options.ref;
           try {
             const refModel = this.model.db.model(refModelName);
             if (refModel && refModel.collection) {
@@ -239,7 +244,7 @@ class AppQueryAggregation<T = any> {
               // Fallback: pluralize model name (mongoose default: ModelName -> modelnames)
               collectionName = refModelName.toLowerCase() + 's';
             }
-          } catch (e) {
+          } catch (_e) {
             // Fallback: pluralize model name (mongoose default)
             collectionName = refModelName.toLowerCase() + 's';
           }
@@ -263,7 +268,9 @@ class AppQueryAggregation<T = any> {
           // Simple nested populate
           const nestedPath = config.populate;
           const nestedLocalField = nestedPath;
-          let nestedCollectionName = nestedPath.endsWith('s') ? nestedPath : nestedPath + 's';
+          const nestedCollectionName = nestedPath.endsWith('s')
+            ? nestedPath
+            : nestedPath + 's';
           lookupPipeline.push({
             $lookup: {
               from: nestedCollectionName,
@@ -278,7 +285,9 @@ class AppQueryAggregation<T = any> {
             if (typeof nestedPop === 'string') {
               const nestedPath: string = nestedPop;
               const nestedLocalField = nestedPath;
-              const nestedCollectionName = nestedPath.endsWith('s') ? nestedPath : nestedPath + 's';
+              const nestedCollectionName = nestedPath.endsWith('s')
+                ? nestedPath
+                : nestedPath + 's';
               lookupPipeline.push({
                 $lookup: {
                   from: nestedCollectionName,
@@ -292,12 +301,22 @@ class AppQueryAggregation<T = any> {
               const nestedPopObj = nestedPop as PopulateOptions;
               const nestedPath: string = nestedPopObj.path || '';
               const nestedLocalField = nestedPath;
-              const nestedCollectionName = nestedPath.endsWith('s') ? nestedPath : nestedPath + 's';
-              const nestedLookupPipeline: any[] = [];
+              const nestedCollectionName = nestedPath.endsWith('s')
+                ? nestedPath
+                : nestedPath + 's';
+              const nestedLookupPipeline: unknown[] = [];
               if (nestedPopObj.match) {
                 nestedLookupPipeline.push({ $match: nestedPopObj.match });
               }
-              const nestedLookup: any = {
+              const nestedLookup: {
+                $lookup: {
+                  from: string;
+                  localField: string;
+                  foreignField: string;
+                  as: string;
+                  pipeline?: unknown[];
+                };
+              } = {
                 $lookup: {
                   from: nestedCollectionName,
                   localField: nestedLocalField,
@@ -316,12 +335,22 @@ class AppQueryAggregation<T = any> {
           const nestedPopObj = config.populate as PopulateOptions;
           const nestedPath: string = nestedPopObj.path || '';
           const nestedLocalField = nestedPath;
-          const nestedCollectionName = nestedPath.endsWith('s') ? nestedPath : nestedPath + 's';
-          const nestedLookupPipeline: any[] = [];
+          const nestedCollectionName = nestedPath.endsWith('s')
+            ? nestedPath
+            : nestedPath + 's';
+          const nestedLookupPipeline: unknown[] = [];
           if (nestedPopObj.match) {
             nestedLookupPipeline.push({ $match: nestedPopObj.match });
           }
-          const nestedLookup: any = {
+          const nestedLookup: {
+            $lookup: {
+              from: string;
+              localField: string;
+              foreignField: string;
+              as: string;
+              pipeline?: unknown[];
+            };
+          } = {
             $lookup: {
               from: nestedCollectionName,
               localField: nestedLocalField,
@@ -337,7 +366,15 @@ class AppQueryAggregation<T = any> {
       }
 
       // Build lookup stage
-      const lookupStage: any = {
+      const lookupStage: {
+        $lookup: {
+          from: string;
+          localField: string;
+          foreignField: string;
+          as: string;
+          pipeline?: unknown[];
+        };
+      } = {
         $lookup: {
           from: collectionName,
           localField: localField,
@@ -465,7 +502,7 @@ class AppQueryAggregation<T = any> {
   }
 
   async execute(
-    statisticsQueries?: { key: string; filter: Record<string, any> }[],
+    statisticsQueries?: { key: string; filter: Record<string, unknown> }[],
   ): Promise<{
     data: T[];
     meta: {
@@ -520,7 +557,7 @@ class AppQueryAggregation<T = any> {
 
               if (matchIndex >= 0) {
                 const matchStage = statPipeline[matchIndex] as {
-                  $match: Record<string, any>;
+                  $match: Record<string, unknown>;
                 };
                 matchStage.$match = { ...matchStage.$match, ...stat.filter };
               } else {
@@ -553,7 +590,7 @@ class AppQueryAggregation<T = any> {
         {} as Record<string, number>,
       ) || undefined;
 
-    if (Boolean(this.query_params.is_count_only)) {
+    if (this.query_params.is_count_only) {
       return {
         data: [],
         meta: {
@@ -579,4 +616,3 @@ class AppQueryAggregation<T = any> {
 }
 
 export default AppQueryAggregation;
-
