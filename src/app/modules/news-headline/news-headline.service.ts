@@ -148,7 +148,7 @@ export const updateSelfNewsHeadlines = async (
 }> => {
   const newsHeadlines = await NewsHeadlineRepository.findManyByIds(ids);
   const foundIds = newsHeadlines.map((newsHeadline) =>
-    newsHeadline._id.toString(),
+    newsHeadline._id!.toString(),
   );
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
@@ -176,7 +176,7 @@ export const updateNewsHeadlines = async (
 }> => {
   const newsHeadlines = await NewsHeadlineRepository.findManyByIds(ids);
   const foundIds = newsHeadlines.map((newsHeadline) =>
-    newsHeadline._id.toString(),
+    newsHeadline._id!.toString(),
   );
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
@@ -238,7 +238,7 @@ export const deleteSelfNewsHeadlines = async (
 }> => {
   const newsHeadlines = await NewsHeadlineRepository.findManyByIds(ids);
   const foundIds = newsHeadlines.map((newsHeadline) =>
-    newsHeadline._id.toString(),
+    newsHeadline._id!.toString(),
   );
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
@@ -258,7 +258,7 @@ export const deleteNewsHeadlines = async (
 }> => {
   const newsHeadlines = await NewsHeadlineRepository.findManyByIds(ids);
   const foundIds = newsHeadlines.map((newsHeadline) =>
-    newsHeadline._id.toString(),
+    newsHeadline._id!.toString(),
   );
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
@@ -278,7 +278,7 @@ export const deleteNewsHeadlinesPermanent = async (
 }> => {
   const newsHeadlines = await NewsHeadlineRepository.findManyByIds(ids);
   const foundIds = newsHeadlines.map((newsHeadline) =>
-    newsHeadline._id.toString(),
+    newsHeadline._id!.toString(),
   );
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
@@ -330,7 +330,7 @@ export const restoreSelfNewsHeadlines = async (
 
   const restoredNewsHeadlines = await NewsHeadlineRepository.findManyByIds(ids);
   const restoredIds = restoredNewsHeadlines.map((newsHeadline) =>
-    newsHeadline._id.toString(),
+    newsHeadline._id!.toString(),
   );
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 
@@ -350,7 +350,7 @@ export const restoreNewsHeadlines = async (
 
   const restoredNewsHeadlines = await NewsHeadlineRepository.findManyByIds(ids);
   const restoredIds = restoredNewsHeadlines.map((newsHeadline) =>
-    newsHeadline._id.toString(),
+    newsHeadline._id!.toString(),
   );
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 

@@ -1,11 +1,9 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import mongoose from 'mongoose';
-import {
-  initializeRedis,
-} from './app/redis';
-import { initializeSocket } from './app/socket';
 import app from './app';
 import config from './app/config';
+import { initializeRedis } from './app/redis';
+import { initializeSocket } from './app/socket';
 
 let isDbConnected = false;
 let isRedisInitialized = false;

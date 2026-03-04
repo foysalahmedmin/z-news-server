@@ -1,6 +1,7 @@
 import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import AppError from '../../../builder/app-error';
+import { TJwtPayload } from '../../../types/jsonwebtoken.type';
 import * as NewsBreakRepository from '../news-break.repository';
 import * as NewsBreakService from '../news-break.service';
 import { TNewsBreak } from '../news-break.type';
@@ -10,11 +11,18 @@ jest.mock('../news-break.repository');
 jest.mock('../../../utils/cache.utils', () => ({
   generateCacheKey: jest.fn(),
   invalidateCacheByPattern: jest.fn(),
-  withCache: jest.fn((key, ttl, cb) => cb()),
+  withCache: jest.fn((_key: string, _ttl: number, cb: () => Promise<unknown>) =>
+    cb(),
+  ),
 }));
 
 describe('NewsBreak Service', () => {
-  const mockUser = { _id: 'user_id', role: 'admin' } as any;
+  const mockUser: TJwtPayload = {
+    _id: 'user_id',
+    name: 'Test User',
+    email: 'test@example.com',
+    role: 'admin',
+  };
   const mockId = new mongoose.Types.ObjectId().toString();
   const mockNewsId = new mongoose.Types.ObjectId();
 
@@ -45,7 +53,10 @@ describe('NewsBreak Service', () => {
 
     it('should throw error if user not provided', async () => {
       await expect(
-        NewsBreakService.createNewsBreak(null as any, mockNewsBreak),
+        NewsBreakService.createNewsBreak(
+          null as unknown as TJwtPayload,
+          mockNewsBreak,
+        ),
       ).rejects.toThrow(new AppError(httpStatus.NOT_FOUND, 'User not found'));
     });
   });
@@ -73,7 +84,7 @@ describe('NewsBreak Service', () => {
 
   describe('updateNewsBreak', () => {
     it('should update a news break', async () => {
-      const payload = { status: 'archived' } as any;
+      const payload: Partial<TNewsBreak> = { status: 'archived' };
       const updatedBreak = {
         ...mockNewsBreak,
         ...payload,

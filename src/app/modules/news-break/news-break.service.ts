@@ -147,7 +147,7 @@ export const updateSelfNewsBreaks = async (
   not_found_ids: string[];
 }> => {
   const newsBreaks = await NewsBreakRepository.findManyByIds(ids);
-  const foundIds = newsBreaks.map((newsBreak) => newsBreak._id.toString());
+  const foundIds = newsBreaks.map((newsBreak) => newsBreak._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   const result = await NewsBreakRepository.updateManyByIds(foundIds, payload);
@@ -170,7 +170,7 @@ export const updateNewsBreaks = async (
   not_found_ids: string[];
 }> => {
   const newsBreaks = await NewsBreakRepository.findManyByIds(ids);
-  const foundIds = newsBreaks.map((newsBreak) => newsBreak._id.toString());
+  const foundIds = newsBreaks.map((newsBreak) => newsBreak._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   const result = await NewsBreakRepository.updateManyByIds(foundIds, payload);
@@ -225,7 +225,7 @@ export const deleteSelfNewsBreaks = async (
   not_found_ids: string[];
 }> => {
   const newsBreaks = await NewsBreakRepository.findManyByIds(ids);
-  const foundIds = newsBreaks.map((newsBreak) => newsBreak._id.toString());
+  const foundIds = newsBreaks.map((newsBreak) => newsBreak._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await NewsBreakRepository.softDeleteManyByIds(foundIds);
@@ -243,7 +243,7 @@ export const deleteNewsBreaks = async (
   not_found_ids: string[];
 }> => {
   const newsBreaks = await NewsBreakRepository.findManyByIds(ids);
-  const foundIds = newsBreaks.map((newsBreak) => newsBreak._id.toString());
+  const foundIds = newsBreaks.map((newsBreak) => newsBreak._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await NewsBreakRepository.softDeleteManyByIds(foundIds);
@@ -261,7 +261,7 @@ export const deleteNewsBreaksPermanent = async (
   not_found_ids: string[];
 }> => {
   const newsBreaks = await NewsBreakRepository.findManyByIds(ids);
-  const foundIds = newsBreaks.map((newsBreak) => newsBreak._id.toString());
+  const foundIds = newsBreaks.map((newsBreak) => newsBreak._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await NewsBreakRepository.hardDeleteManyByIds(foundIds);
@@ -310,7 +310,7 @@ export const restoreSelfNewsBreaks = async (
 
   const restoredNewsBreaks = await NewsBreakRepository.findManyByIds(ids);
   const restoredIds = restoredNewsBreaks.map((newsBreak) =>
-    newsBreak._id.toString(),
+    newsBreak._id!.toString(),
   );
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 
@@ -330,7 +330,7 @@ export const restoreNewsBreaks = async (
 
   const restoredNewsBreaks = await NewsBreakRepository.findManyByIds(ids);
   const restoredIds = restoredNewsBreaks.map((newsBreak) =>
-    newsBreak._id.toString(),
+    newsBreak._id!.toString(),
   );
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 

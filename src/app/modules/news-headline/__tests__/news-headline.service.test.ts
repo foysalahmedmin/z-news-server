@@ -1,6 +1,7 @@
 import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import AppError from '../../../builder/app-error';
+import { TJwtPayload } from '../../../types/jsonwebtoken.type';
 import * as NewsHeadlineRepository from '../news-headline.repository';
 import * as NewsHeadlineService from '../news-headline.service';
 import { TNewsHeadline } from '../news-headline.type';
@@ -10,11 +11,18 @@ jest.mock('../news-headline.repository');
 jest.mock('../../../utils/cache.utils', () => ({
   generateCacheKey: jest.fn(),
   invalidateCacheByPattern: jest.fn(),
-  withCache: jest.fn((key, ttl, cb) => cb()),
+  withCache: jest.fn((_key: string, _ttl: number, cb: () => Promise<unknown>) =>
+    cb(),
+  ),
 }));
 
 describe('NewsHeadline Service', () => {
-  const mockUser = { _id: 'user_id', role: 'admin' } as any;
+  const mockUser: TJwtPayload = {
+    _id: 'user_id',
+    name: 'Test User',
+    email: 'test@example.com',
+    role: 'admin',
+  };
   const mockId = new mongoose.Types.ObjectId().toString();
   const mockNewsId = new mongoose.Types.ObjectId();
 
@@ -47,7 +55,10 @@ describe('NewsHeadline Service', () => {
 
     it('should throw error if user not provided', async () => {
       await expect(
-        NewsHeadlineService.createNewsHeadline(null as any, mockNewsHeadline),
+        NewsHeadlineService.createNewsHeadline(
+          null as unknown as TJwtPayload,
+          mockNewsHeadline,
+        ),
       ).rejects.toThrow(new AppError(httpStatus.NOT_FOUND, 'User not found'));
     });
   });
@@ -77,7 +88,7 @@ describe('NewsHeadline Service', () => {
 
   describe('updateNewsHeadline', () => {
     it('should update a news headline', async () => {
-      const payload = { status: 'archived' } as any;
+      const payload: Partial<TNewsHeadline> = { status: 'archived' };
       const updatedHeadline = {
         ...mockNewsHeadline,
         ...payload,
