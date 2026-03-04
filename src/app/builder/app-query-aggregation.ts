@@ -82,7 +82,7 @@ class AppQueryAggregation<T> {
           queryObj.or as Record<string, unknown>,
         ).map((cond: unknown) => cond);
       } catch (_e) {
-        console.error('Invalid OR format:', e);
+        console.error('Invalid OR format:', _e);
       }
       delete queryObj.or;
     }
@@ -94,7 +94,7 @@ class AppQueryAggregation<T> {
           queryObj.and as Record<string, unknown>,
         ).map((cond: unknown) => cond);
       } catch (_e) {
-        console.error('Invalid AND format:', e);
+        console.error('Invalid AND format:', _e);
       }
       delete queryObj.and;
     }
@@ -229,13 +229,10 @@ class AppQueryAggregation<T> {
         // Try to get collection name from the model's schema
         const schema = this.model.schema;
         const pathSchema = schema.path(path);
-        if (
-          pathSchema &&
-          (pathSchema as { options?: { ref?: string } }).options?.ref
-        ) {
+        const options = pathSchema?.options as Record<string, unknown>;
+        if (options?.ref && typeof options.ref === 'string') {
           // Get the referenced model
-          const refModelName = (pathSchema as { options: { ref: string } })
-            .options.ref;
+          const refModelName = options.ref;
           try {
             const refModel = this.model.db.model(refModelName);
             if (refModel && refModel.collection) {
@@ -304,29 +301,21 @@ class AppQueryAggregation<T> {
               const nestedCollectionName = nestedPath.endsWith('s')
                 ? nestedPath
                 : nestedPath + 's';
-              const nestedLookupPipeline: unknown[] = [];
+              const nestedLookupPipeline: PipelineStage[] = [];
               if (nestedPopObj.match) {
                 nestedLookupPipeline.push({ $match: nestedPopObj.match });
               }
-              const nestedLookup: {
-                $lookup: {
-                  from: string;
-                  localField: string;
-                  foreignField: string;
-                  as: string;
-                  pipeline?: unknown[];
-                };
-              } = {
+              const nestedLookup = {
                 $lookup: {
                   from: nestedCollectionName,
                   localField: nestedLocalField,
                   foreignField: '_id',
                   as: nestedPath,
+                  ...(nestedLookupPipeline.length > 0 && {
+                    pipeline: nestedLookupPipeline,
+                  }),
                 },
-              };
-              if (nestedLookupPipeline.length > 0) {
-                nestedLookup.$lookup.pipeline = nestedLookupPipeline;
-              }
+              } as PipelineStage;
               lookupPipeline.push(nestedLookup);
             }
           });
@@ -338,64 +327,32 @@ class AppQueryAggregation<T> {
           const nestedCollectionName = nestedPath.endsWith('s')
             ? nestedPath
             : nestedPath + 's';
-          const nestedLookupPipeline: unknown[] = [];
+          const nestedLookupPipeline: PipelineStage[] = [];
           if (nestedPopObj.match) {
             nestedLookupPipeline.push({ $match: nestedPopObj.match });
           }
-          const nestedLookup: {
-            $lookup: {
-              from: string;
-              localField: string;
-              foreignField: string;
-              as: string;
-              pipeline?: unknown[];
-            };
-          } = {
+          const nestedLookup = {
             $lookup: {
               from: nestedCollectionName,
               localField: nestedLocalField,
               foreignField: '_id',
               as: nestedPath,
+              ...(nestedLookupPipeline.length > 0 && {
+                pipeline: nestedLookupPipeline,
+              }),
             },
-          };
-          if (nestedLookupPipeline.length > 0) {
-            nestedLookup.$lookup.pipeline = nestedLookupPipeline;
-          }
+          } as PipelineStage;
           lookupPipeline.push(nestedLookup);
         }
       }
 
-      // Build lookup stage
-      const lookupStage: {
-        $lookup: {
-          from: string;
-          localField: string;
-          foreignField: string;
-          as: string;
-          pipeline?: unknown[];
-        };
-      } = {
-        $lookup: {
-          from: collectionName,
-          localField: localField,
-          foreignField: foreignField,
-          as: asField,
-        },
-      };
-
-      if (lookupPipeline.length > 0) {
-        lookupStage.$lookup.pipeline = lookupPipeline;
-      }
-
-      stages.push(lookupStage);
-
-      // Add project stage for select if provided
+      // Build select $project into lookup pipeline before constructing lookupStage
       if (config?.select) {
         const projectObj: Record<string, 1 | 0> = {};
         if (typeof config.select === 'string') {
           // Parse string select like "name email -password"
-          const fields = config.select.split(/\s+/);
-          fields.forEach((field) => {
+          const selectFields = config.select.split(/\s+/);
+          selectFields.forEach((field) => {
             const fieldName = field.startsWith('-') ? field.slice(1) : field;
             const include = field.startsWith('-') ? 0 : 1;
             projectObj[fieldName] = include;
@@ -414,13 +371,22 @@ class AppQueryAggregation<T> {
         });
 
         if (Object.keys(selectProject).length > 0) {
-          // Add project to the lookup pipeline
-          if (!lookupStage.$lookup.pipeline) {
-            lookupStage.$lookup.pipeline = [];
-          }
-          lookupStage.$lookup.pipeline.push({ $project: selectProject });
+          lookupPipeline.push({ $project: selectProject });
         }
       }
+
+      // Build lookup stage with fully resolved pipeline
+      const lookupStage = {
+        $lookup: {
+          from: collectionName,
+          localField: localField,
+          foreignField: foreignField,
+          as: asField,
+          ...(lookupPipeline.length > 0 && { pipeline: lookupPipeline }),
+        },
+      } as PipelineStage;
+
+      stages.push(lookupStage);
 
       return stages;
     };
