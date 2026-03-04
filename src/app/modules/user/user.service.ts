@@ -1,6 +1,13 @@
+/**
+ * User Service
+ *
+ * Contains ONLY business logic. All database access is delegated to
+ * `user.repository.ts`. This makes the service independently
+ * unit-testable by mocking the repository.
+ */
+
 import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
-import AppQueryFind from '../../builder/app-query-find';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
 import {
   generateCacheKey,
@@ -8,20 +15,22 @@ import {
   withCache,
 } from '../../utils/cache.utils';
 import { deleteFiles } from '../../utils/delete-files';
-import { User } from './user.model';
+import * as UserRepository from './user.repository';
 import { TUser } from './user.type';
 
 const CACHE_PREFIX = 'user';
 const CACHE_TTL = 3600; // 1 hour
+
+// ─── Get Single ───────────────────────────────────────────────────────────────
 
 export const getSelf = async (user: TJwtPayload): Promise<TUser> => {
   return await withCache(
     generateCacheKey(CACHE_PREFIX, ['id', user._id]),
     CACHE_TTL,
     async () => {
-      const result = await User.findById(user._id).lean();
+      const result = await UserRepository.findByIdLean(user._id);
       if (!result) {
-        throw new AppError(404, 'User not found');
+        throw new AppError(httpStatus.NOT_FOUND, 'User not found');
       }
       return result;
     },
@@ -33,7 +42,7 @@ export const getUser = async (id: string): Promise<TUser> => {
     generateCacheKey(CACHE_PREFIX, ['id', id]),
     CACHE_TTL,
     async () => {
-      const result = await User.findById(id).lean();
+      const result = await UserRepository.findByIdLean(id);
       if (!result) {
         throw new AppError(httpStatus.NOT_FOUND, 'User not found');
       }
@@ -41,6 +50,8 @@ export const getUser = async (id: string): Promise<TUser> => {
     },
   );
 };
+
+// ─── Get Many ────────────────────────────────────────────────────────────────
 
 export const getWritersUsers = async (
   query: Record<string, unknown>,
@@ -50,20 +61,7 @@ export const getWritersUsers = async (
 }> => {
   const cacheKey = generateCacheKey(CACHE_PREFIX, ['writers', query]);
   return await withCache(cacheKey, CACHE_TTL, async () => {
-    const userQuery = new AppQueryFind(User, {
-      role: { $in: ['admin', 'author'] },
-      ...query,
-    })
-      .search(['name', 'email'])
-      .filter()
-      .sort()
-      .paginate()
-      .fields()
-      .tap((q) => q.lean());
-
-    const result = await userQuery.execute();
-
-    return result;
+    return await UserRepository.findWritersPaginated(query);
   });
 };
 
@@ -75,31 +73,23 @@ export const getUsers = async (
 }> => {
   const cacheKey = generateCacheKey(CACHE_PREFIX, ['admin', 'list', query]);
   return await withCache(cacheKey, CACHE_TTL, async () => {
-    const userQuery = new AppQueryFind(User, query)
-      .search(['name', 'email', 'image'])
-      .filter()
-      .sort()
-      .paginate()
-      .fields()
-      .tap((q) => q.lean());
-
-    const result = await userQuery.execute();
-
-    return result;
+    return await UserRepository.findAdminPaginated(query);
   });
 };
+
+// ─── Update Self ──────────────────────────────────────────────────────────────
 
 export const updateSelf = async (
   user: TJwtPayload,
   payload: Partial<Pick<TUser, 'name' | 'email' | 'image'>>,
 ): Promise<TUser> => {
-  const data = await User.findById(user._id);
+  const data = await UserRepository.findByIdLean(user._id);
   if (!data) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   if (payload.email && data.email !== payload.email) {
-    const emailExists = await User.findOne({ email: payload.email }).lean();
+    const emailExists = await UserRepository.findByEmail(payload.email);
     if (emailExists) {
       throw new AppError(httpStatus.CONFLICT, 'Email already exists');
     }
@@ -110,10 +100,7 @@ export const updateSelf = async (
     payload.image = payload.image || '';
   }
 
-  const result = await User.findByIdAndUpdate(user._id, payload, {
-    new: true,
-    runValidators: true,
-  });
+  const result = await UserRepository.updateById(user._id, payload);
 
   if (result) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
@@ -122,27 +109,26 @@ export const updateSelf = async (
   return result!;
 };
 
+// ─── Update ───────────────────────────────────────────────────────────────────
+
 export const updateUser = async (
   id: string,
   payload: Partial<
     Pick<TUser, 'name' | 'email' | 'role' | 'status' | 'is_verified'>
   >,
 ): Promise<TUser> => {
-  const data = await User.findById(id);
+  const data = await UserRepository.findByIdLean(id);
   if (!data) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const updatedUser = await User.findByIdAndUpdate(id, payload, {
-    new: true,
-    runValidators: true,
-  });
+  const result = await UserRepository.updateById(id, payload);
 
-  if (updatedUser) {
+  if (result) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
   }
 
-  return updatedUser!;
+  return result!;
 };
 
 export const updateUsers = async (
@@ -152,23 +138,23 @@ export const updateUsers = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const users = await User.find({ _id: { $in: ids } }).lean();
-  const foundIds = users.map((user) => user._id.toString());
+  const users = await UserRepository.findManyByIds(ids);
+  const foundIds = users.map((u) => u._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  const result = await User.updateMany(
-    { _id: { $in: foundIds } },
-    { ...payload },
-  );
+  const result = await UserRepository.updateManyByIds(foundIds, payload);
 
-  return {
-    count: result.modifiedCount,
-    not_found_ids: notFoundIds,
-  };
+  if (result.modifiedCount > 0) {
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  }
+
+  return { count: result.modifiedCount, not_found_ids: notFoundIds };
 };
 
+// ─── Soft Delete ──────────────────────────────────────────────────────────────
+
 export const deleteUser = async (id: string): Promise<void> => {
-  const user = await User.findById(id);
+  const user = await UserRepository.findById(id);
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
@@ -177,31 +163,31 @@ export const deleteUser = async (id: string): Promise<void> => {
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 };
 
-export const deleteUserPermanent = async (id: string): Promise<void> => {
-  const user = await User.findById(id).setOptions({ bypassDeleted: true });
-  if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
-  }
-
-  await User.findByIdAndDelete(id);
-};
-
 export const deleteUsers = async (
   ids: string[],
 ): Promise<{
   count: number;
   not_found_ids: string[];
 }> => {
-  const users = await User.find({ _id: { $in: ids } }).lean();
-  const foundIds = users.map((user) => user._id.toString());
+  const users = await UserRepository.findManyByIds(ids);
+  const foundIds = users.map((u) => u._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await User.updateMany({ _id: { $in: foundIds } }, { is_deleted: true });
+  await UserRepository.softDeleteManyByIds(foundIds);
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
-  return {
-    count: foundIds.length,
-    not_found_ids: notFoundIds,
-  };
+  return { count: foundIds.length, not_found_ids: notFoundIds };
+};
+
+// ─── Hard Delete ──────────────────────────────────────────────────────────────
+
+export const deleteUserPermanent = async (id: string): Promise<void> => {
+  const user = await UserRepository.findByIdWithDeleted(id);
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  await UserRepository.hardDeleteById(id);
 };
 
 export const deleteUsersPermanent = async (
@@ -210,31 +196,24 @@ export const deleteUsersPermanent = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const users = await User.find({ _id: { $in: ids } }).lean();
-  const foundIds = users.map((user) => user._id.toString());
+  const users = await UserRepository.findManyByIds(ids);
+  const foundIds = users.map((u) => u._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await User.deleteMany({ _id: { $in: foundIds } }).setOptions({
-    bypassDeleted: true,
-  });
+  await UserRepository.hardDeleteManyByIds(foundIds);
 
-  return {
-    count: foundIds.length,
-    not_found_ids: notFoundIds,
-  };
+  return { count: foundIds.length, not_found_ids: notFoundIds };
 };
 
-export const restoreUser = async (id: string): Promise<TUser> => {
-  const user = await User.findOneAndUpdate(
-    { _id: id, is_deleted: true },
-    { is_deleted: false },
-    { new: true },
-  );
+// ─── Restore ──────────────────────────────────────────────────────────────────
 
+export const restoreUser = async (id: string): Promise<TUser> => {
+  const user = await UserRepository.restoreById(id);
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found or not deleted');
   }
 
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
   return user;
 };
 
@@ -244,17 +223,11 @@ export const restoreUsers = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const result = await User.updateMany(
-    { _id: { $in: ids }, is_deleted: true },
-    { is_deleted: false },
-  );
+  const result = await UserRepository.restoreManyByIds(ids);
 
-  const restoredUsers = await User.find({ _id: { $in: ids } }).lean();
-  const restoredIds = restoredUsers.map((user) => user._id.toString());
+  const restoredUsers = await UserRepository.findRestoredByIds(ids);
+  const restoredIds = restoredUsers.map((u) => u._id!.toString());
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 
-  return {
-    count: result.modifiedCount,
-    not_found_ids: notFoundIds,
-  };
+  return { count: result.modifiedCount, not_found_ids: notFoundIds };
 };
