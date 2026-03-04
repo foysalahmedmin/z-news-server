@@ -1,6 +1,13 @@
+/**
+ * Reaction Service
+ *
+ * Contains ONLY business logic. All database access is delegated to
+ * `reaction.repository.ts`. This makes the service independently
+ * unit-testable by mocking the repository.
+ */
+
 import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
-import AppQueryFind from '../../builder/app-query-find';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
 import {
   generateCacheKey,
@@ -9,11 +16,17 @@ import {
 } from '../../utils/cache.utils';
 import { TGuest } from '../guest/guest.type';
 import { UserProfile } from '../user-profile/user-profile.model';
-import { Reaction } from './reaction.model';
+import * as ReactionRepository from './reaction.repository';
 import { TReaction } from './reaction.type';
+import { Types } from 'mongoose';
 
 const CACHE_PREFIX = 'reaction';
 const CACHE_TTL = 300; // 5 minutes
+
+const DEFAULT_POPULATE = [
+  { path: 'user', select: '_id name email image' },
+  { path: 'news', select: '_id slug title thumbnail' },
+];
 
 export const createReaction = async (
   user: TJwtPayload,
@@ -24,13 +37,13 @@ export const createReaction = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const update = {
+  const update: Partial<TReaction> = {
     ...payload,
-    ...(user?._id ? { user: user._id } : {}),
+    ...(user?._id ? { user: user._id as unknown as Types.ObjectId } : {}),
     ...(guest?.token ? { guest: guest.token } : {}),
   };
 
-  const result = await Reaction.create(update);
+  const result = await ReactionRepository.create(update);
   if (result) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
     // Also invalidate news cache because reaction counts might be cached there or used by news
@@ -71,9 +84,9 @@ export const getSelfNewsReaction = async (
         : null;
 
     const [data, likes, dislikes] = await Promise.all([
-      query ? Reaction.findOne(query).lean() : Promise.resolve(null),
-      Reaction.countDocuments({ news: news_id, type: 'like' }),
-      Reaction.countDocuments({ news: news_id, type: 'dislike' }),
+      query ? ReactionRepository.findOneLean(query) : Promise.resolve(null),
+      ReactionRepository.count({ news: news_id, type: 'like' }),
+      ReactionRepository.count({ news: news_id, type: 'dislike' }),
     ]);
 
     return { data, meta: { likes, dislikes }, guest };
@@ -95,15 +108,13 @@ export const getSelfReaction = async (
     id,
   ]);
   return await withCache(cacheKey, CACHE_TTL, async () => {
-    const result = await Reaction.findOne({
-      _id: id,
-      ...(user?._id ? { user: user._id } : { guest: guest.token }),
-    })
-      .populate([
-        { path: 'user', select: '_id name email image' },
-        { path: 'news', select: '_id slug title thumbnail' },
-      ])
-      .lean();
+    const result = await ReactionRepository.findOneLean(
+      {
+        _id: id,
+        ...(user?._id ? { user: user._id } : { guest: guest.token }),
+      },
+      DEFAULT_POPULATE,
+    );
 
     if (!result) {
       throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
@@ -118,12 +129,10 @@ export const getReaction = async (id: string): Promise<TReaction> => {
     generateCacheKey(CACHE_PREFIX, ['id', id]),
     CACHE_TTL,
     async () => {
-      const result = await Reaction.findById(id)
-        .populate([
-          { path: 'user', select: '_id name email image' },
-          { path: 'news', select: '_id slug title thumbnail' },
-        ])
-        .lean();
+      const result = await ReactionRepository.findByIdLean(
+        id,
+        DEFAULT_POPULATE,
+      );
       if (!result) {
         throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
       }
@@ -151,22 +160,15 @@ export const getSelfReactions = async (
       throw new AppError(httpStatus.NOT_FOUND, 'User not found');
     }
 
-    const reactionQuery = new AppQueryFind(Reaction, {
+    const filter = {
       ...(user?._id ? { user: user._id } : { guest: guest.token }),
-      ...query,
-    })
-      .populate([
-        { path: 'user', select: '_id name email image' },
-        { path: 'news', select: '_id slug title thumbnail' },
-      ])
-      .filter()
-      .sort()
-      .paginate()
-      .fields()
-      .tap((q) => q.lean());
+    };
 
-    const result = await reactionQuery.execute();
-    return result;
+    return await ReactionRepository.findPaginated(
+      filter,
+      query,
+      DEFAULT_POPULATE,
+    );
   });
 };
 
@@ -178,19 +180,7 @@ export const getReactions = async (
 }> => {
   const cacheKey = generateCacheKey(CACHE_PREFIX, ['admin', 'list', query]);
   return await withCache(cacheKey, CACHE_TTL, async () => {
-    const reactionQuery = new AppQueryFind(Reaction, query)
-      .populate([
-        { path: 'user', select: '_id name email image' },
-        { path: 'news', select: '_id slug title thumbnail' },
-      ])
-      .filter()
-      .sort()
-      .paginate()
-      .fields()
-      .tap((q) => q.lean());
-
-    const result = await reactionQuery.execute();
-    return result;
+    return await ReactionRepository.findPaginated({}, query, DEFAULT_POPULATE);
   });
 };
 
@@ -204,21 +194,16 @@ export const updateSelfReaction = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const data = await Reaction.findOne({
+  const data = await ReactionRepository.findOneLean({
     _id: id,
     ...(user?._id ? { user: user._id } : { guest: guest.token }),
-  }).lean();
+  });
 
   if (!data) {
     throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
   }
 
-  const update: Partial<TReaction> = { ...payload };
-
-  const result = await Reaction.findByIdAndUpdate(id, update, {
-    new: true,
-    runValidators: true,
-  }).lean();
+  const result = await ReactionRepository.updateByIdLean(id, payload);
 
   if (result) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
@@ -232,17 +217,12 @@ export const updateReaction = async (
   id: string,
   payload: Partial<Pick<TReaction, 'type' | 'status'>>,
 ): Promise<TReaction> => {
-  const data = await Reaction.findById(id).lean();
+  const data = await ReactionRepository.findByIdLean(id);
   if (!data) {
     throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
   }
 
-  const update: Partial<TReaction> = { ...payload };
-
-  const result = await Reaction.findByIdAndUpdate(id, update, {
-    new: true,
-    runValidators: true,
-  }).lean();
+  const result = await ReactionRepository.updateByIdLean(id, payload);
 
   if (result) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
@@ -265,19 +245,23 @@ export const updateSelfReactions = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const reactions = await Reaction.find({
+  const userOrGuestFilter = user?._id
+    ? { user: user._id }
+    : { guest: guest.token };
+
+  const reactions = await ReactionRepository.findManyLean({
     _id: { $in: ids },
-    ...(user?._id ? { user: user._id } : { guest: guest.token }),
-  }).lean();
-  const foundIds = reactions.map((reaction) => reaction._id.toString());
+    ...userOrGuestFilter,
+  });
+  const foundIds = reactions.map((reaction) => reaction._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  const result = await Reaction.updateMany(
+  const result = await ReactionRepository.updateMany(
     {
       _id: { $in: foundIds },
-      ...(user?._id ? { user: user._id } : { guest: guest.token }),
+      ...userOrGuestFilter,
     },
-    { ...payload },
+    payload,
   );
 
   return {
@@ -293,13 +277,15 @@ export const updateReactions = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const reactions = await Reaction.find({ _id: { $in: ids } }).lean();
-  const foundIds = reactions.map((reaction) => reaction._id.toString());
+  const reactions = await ReactionRepository.findManyLean({
+    _id: { $in: ids },
+  });
+  const foundIds = reactions.map((reaction) => reaction._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  const result = await Reaction.updateMany(
+  const result = await ReactionRepository.updateMany(
     { _id: { $in: foundIds } },
-    { ...payload },
+    payload,
   );
 
   return {
@@ -317,7 +303,7 @@ export const deleteSelfReaction = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const result = await Reaction.findOneAndDelete({
+  const result = await ReactionRepository.findOneAndDelete({
     _id: id,
     ...(user?._id ? { user: user._id } : { guest: guest.token }),
   });
@@ -329,12 +315,12 @@ export const deleteSelfReaction = async (
 };
 
 export const deleteReaction = async (id: string): Promise<void> => {
-  const reaction = await Reaction.findById(id).lean();
+  const reaction = await ReactionRepository.findByIdLean(id);
   if (!reaction) {
     throw new AppError(httpStatus.NOT_FOUND, 'Reaction not found');
   }
 
-  await Reaction.findByIdAndDelete(id);
+  await ReactionRepository.deleteById(id);
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
   await invalidateCacheByPattern(`news:*`);
 };
@@ -351,16 +337,20 @@ export const deleteSelfReactions = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const reactions = await Reaction.find({
+  const userOrGuestFilter = user?._id
+    ? { user: user._id }
+    : { guest: guest.token };
+
+  const reactions = await ReactionRepository.findManyLean({
     _id: { $in: ids },
-    ...(user?._id ? { user: user._id } : { guest: guest.token }),
-  }).lean();
-  const foundIds = reactions.map((reaction) => reaction._id.toString());
+    ...userOrGuestFilter,
+  });
+  const foundIds = reactions.map((reaction) => reaction._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Reaction.deleteMany({
+  await ReactionRepository.deleteMany({
     _id: { $in: foundIds },
-    ...(user?._id ? { user: user._id } : { guest: guest.token }),
+    ...userOrGuestFilter,
   });
 
   return {
@@ -375,11 +365,13 @@ export const deleteReactions = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const reactions = await Reaction.find({ _id: { $in: ids } }).lean();
-  const foundIds = reactions.map((reaction) => reaction._id.toString());
+  const reactions = await ReactionRepository.findManyLean({
+    _id: { $in: ids },
+  });
+  const foundIds = reactions.map((reaction) => reaction._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Reaction.deleteMany({ _id: { $in: foundIds } });
+  await ReactionRepository.deleteMany({ _id: { $in: foundIds } });
 
   return {
     count: foundIds.length,
