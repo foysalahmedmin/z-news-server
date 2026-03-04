@@ -156,12 +156,7 @@ class AppQueryFind<T> {
     populateConfig: string | PopulateOptions | Array<string | PopulateOptions>,
   ): this {
     // Mongoose populate accepts string, PopulateOptions, or array of both
-    this.query = this.query.populate(
-      populateConfig as
-        | string
-        | PopulateOptions
-        | Array<string | PopulateOptions>,
-    );
+    this.query = this.query.populate(populateConfig as any); // eslint-disable-line @typescript-eslint/no-explicit-any
     return this;
   }
 
