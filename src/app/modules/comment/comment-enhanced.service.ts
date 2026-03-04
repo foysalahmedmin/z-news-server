@@ -1,10 +1,11 @@
-/* eslint-disable no-console */
 import httpStatus from 'http-status';
+import { Types } from 'mongoose';
 import AppError from '../../builder/app-error';
 import { invalidateCacheByPattern } from '../../utils/cache.utils';
-import { Reaction } from '../reaction/reaction.model';
+import * as ReactionRepository from '../reaction/reaction.repository';
 import { UserProfile } from '../user-profile/user-profile.model';
-import { Comment } from './comment.model';
+import * as CommentRepository from './comment.repository';
+import { TCommentDocument } from './comment.type';
 
 const CACHE_PREFIX = 'comment';
 
@@ -12,12 +13,14 @@ const CACHE_PREFIX = 'comment';
 
 // Get threaded comments for a news article
 export const getThreadedComments = async (newsId: string) => {
-  const topLevelComments = await Comment.getThreadedComments(newsId);
+  const topLevelComments = await CommentRepository.getThreadedComments(newsId);
 
   // For each top-level comment, fetch its replies
   const commentsWithReplies = await Promise.all(
-    topLevelComments!.map(async (comment) => {
-      const replies = await Comment.getCommentReplies(comment._id.toString());
+    topLevelComments.map(async (comment) => {
+      const replies = await CommentRepository.getCommentReplies(
+        comment._id.toString(),
+      );
       return {
         ...comment.toObject(),
         replies,
@@ -31,13 +34,13 @@ export const getThreadedComments = async (newsId: string) => {
 
 // Get replies for a specific comment
 export const getCommentReplies = async (comment_id: string) => {
-  const comment = await Comment.findById(comment_id);
+  const comment = await CommentRepository.findById(comment_id);
 
   if (!comment) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
   }
 
-  return await Comment.getCommentReplies(comment_id);
+  return await CommentRepository.getCommentReplies(comment_id);
 };
 
 // Create a reply to a comment
@@ -51,7 +54,7 @@ export const createReply = async (
     reply_to_user?: string;
   },
 ) => {
-  const parentComment = await Comment.findById(parentcomment_id);
+  const parentComment = await CommentRepository.findById(parentcomment_id);
 
   if (!parentComment) {
     throw new AppError(httpStatus.NOT_FOUND, 'Parent comment not found');
@@ -65,12 +68,14 @@ export const createReply = async (
     );
   }
 
-  const reply = await Comment.create({
+  const reply = await CommentRepository.create({
     news: parentComment.news,
-    parent_comment: parentcomment_id,
-    reply_to_user: payload.reply_to_user || parentComment.user,
+    parent_comment: new Types.ObjectId(parentcomment_id),
+    reply_to_user: payload.reply_to_user
+      ? new Types.ObjectId(payload.reply_to_user)
+      : parentComment.user,
     thread_level: parentComment.thread_level + 1,
-    user: userId,
+    user: new Types.ObjectId(userId),
     name: payload.name,
     email: payload.email,
     content: payload.content,
@@ -98,10 +103,11 @@ export const createReply = async (
 
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
-  return await Comment.findById(reply._id)
-    .populate('user', 'name email image')
-    .populate('reply_to_user', 'name')
-    .populate('parent_comment', 'content');
+  return await CommentRepository.findByIdLean(reply._id.toString(), [
+    { path: 'user', select: 'name email image' },
+    { path: 'reply_to_user', select: 'name' },
+    { path: 'parent_comment', select: 'content' },
+  ]);
 };
 
 // ============ REACTION SERVICES ============
@@ -112,29 +118,30 @@ export const addReaction = async (
   userId: string,
   reactionType: 'like' | 'dislike' | 'insightful' | 'funny' | 'disagree',
 ) => {
-  const comment = await Comment.findById(comment_id);
+  const comment = await CommentRepository.findById(comment_id);
 
   if (!comment) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
   }
 
   // Check if user already reacted
-  const existingReaction = await Reaction.findOne({
+  const existingReaction = await ReactionRepository.findOne({
     user: userId,
     comment: comment_id,
   });
 
   if (existingReaction) {
     // Update existing reaction
-    existingReaction.type = reactionType;
-    await existingReaction.save();
+    await ReactionRepository.updateById(existingReaction._id.toString(), {
+      type: reactionType,
+    });
   } else {
     // Add new reaction
     // We need the news ID from the comment to maintain the link
-    await Reaction.create({
+    await ReactionRepository.create({
       news: comment.news,
-      comment: comment_id,
-      user: userId,
+      comment: new Types.ObjectId(comment_id),
+      user: new Types.ObjectId(userId),
       type: reactionType,
       status: 'approved',
     });
@@ -143,48 +150,52 @@ export const addReaction = async (
     await Promise.all([
       UserProfile.incrementActivityStat(userId, 'total_reactions'),
       UserProfile.updateReputationScore(userId, 1), // 1 point for a reaction
-    ]).catch((err) => console.error('Error updating profile stats:', err));
+    ]).catch((err) =>
+      // eslint-disable-next-line no-console
+      console.error('Error updating profile stats:', err),
+    );
   }
 
   // Make sure to invalidate cache
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
-  return await Comment.findById(comment._id)
-    .populate('user', 'name email image')
-    .populate('reactions', 'user type created_at');
+  return await CommentRepository.findByIdLean(comment._id.toString(), [
+    { path: 'user', select: 'name email image' },
+    { path: 'reactions', select: 'user type created_at' },
+  ]);
 };
 
 // Remove reaction from comment
 export const removeReaction = async (comment_id: string, userId: string) => {
-  const comment = await Comment.findById(comment_id);
+  const comment = await CommentRepository.findById(comment_id);
 
   if (!comment) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
   }
 
-  await Reaction.findOneAndDelete({
+  await ReactionRepository.findOneAndDelete({
     comment: comment_id,
     user: userId,
   });
 
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
-  return await Comment.findById(comment._id)
-    .populate('user', 'name email image')
-    .populate('reactions', 'user type created_at');
+  return await CommentRepository.findByIdLean(comment._id.toString(), [
+    { path: 'user', select: 'name email image' },
+    { path: 'reactions', select: 'user type created_at' },
+  ]);
 };
 
 // Get reaction summary for a comment
 export const getReactionSummary = async (comment_id: string) => {
-  const comment = await Comment.findById(comment_id);
+  const comment = await CommentRepository.findById(comment_id);
 
   if (!comment) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
   }
 
-  return await Comment.findById(comment_id)
-    .populate('reactions')
-    .then((c) => c?.reaction_counts);
+  // Note: reaction_counts is a virtual. findById returns the document which has virtuals.
+  return (comment as TCommentDocument).reaction_counts;
 };
 
 // ============ MENTION SERVICES ============
@@ -208,7 +219,7 @@ export const processMentions = async (
   content: string,
   userIds: string[],
 ) => {
-  const comment = await Comment.findById(commentId);
+  const comment = await CommentRepository.findById(commentId);
 
   if (!comment) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
@@ -242,7 +253,7 @@ export const processMentions = async (
 
 // Pin a comment (Editor/Admin only)
 export const pinComment = async (comment_id: string) => {
-  const comment = await Comment.findById(comment_id);
+  const comment = await CommentRepository.findById(comment_id);
 
   if (!comment) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
@@ -253,15 +264,14 @@ export const pinComment = async (comment_id: string) => {
 
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
-  return await Comment.findById(comment._id).populate(
-    'user',
-    'name email image',
-  );
+  return await CommentRepository.findByIdLean(comment._id.toString(), [
+    { path: 'user', select: 'name email image' },
+  ]);
 };
 
 // Unpin a comment
 export const unpinComment = async (comment_id: string) => {
-  const comment = await Comment.findById(comment_id);
+  const comment = await CommentRepository.findById(comment_id);
 
   if (!comment) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
@@ -272,10 +282,9 @@ export const unpinComment = async (comment_id: string) => {
 
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
-  return await Comment.findById(comment._id).populate(
-    'user',
-    'name email image',
-  );
+  return await CommentRepository.findByIdLean(comment._id.toString(), [
+    { path: 'user', select: 'name email image' },
+  ]);
 };
 
 // ============ MODERATION SERVICES ============
@@ -286,7 +295,7 @@ export const flagComment = async (
   userId: string,
   _reason?: string,
 ) => {
-  const comment = await Comment.findById(comment_id);
+  const comment = await CommentRepository.findById(comment_id);
 
   if (!comment) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
@@ -321,7 +330,7 @@ export const flagComment = async (
 
 // Unflag a comment (remove user's flag)
 export const unflagComment = async (comment_id: string, userId: string) => {
-  const comment = await Comment.findById(comment_id);
+  const comment = await CommentRepository.findById(comment_id);
 
   if (!comment) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
@@ -346,7 +355,7 @@ export const moderateComment = async (
   status: 'approved' | 'rejected',
   reason?: string,
 ) => {
-  const comment = await Comment.findById(comment_id);
+  const comment = await CommentRepository.findById(comment_id);
 
   if (!comment) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
@@ -367,20 +376,22 @@ export const moderateComment = async (
 
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
-  return await Comment.findById(comment._id)
-    .populate('user', 'name email image')
-    .populate('moderated_by', 'name email');
+  return await CommentRepository.findByIdLean(comment._id.toString(), [
+    { path: 'user', select: 'name email image' },
+    { path: 'moderated_by', select: 'name email' },
+  ]);
 };
 
 // Get flagged comments
 export const getFlaggedComments = async (minFlags: number = 1) => {
-  return await Comment.find({
-    flagged_count: { $gte: minFlags },
-  })
-    .sort({ flagged_count: -1, created_at: -1 })
-    .populate('user', 'name email image')
-    .populate('news', 'title slug')
-    .populate('flagged_by', 'name email');
+  return await CommentRepository.findManyLean(
+    { flagged_count: { $gte: minFlags } },
+    [
+      { path: 'user', select: 'name email image' },
+      { path: 'news', select: 'title slug' },
+      { path: 'flagged_by', select: 'name email' },
+    ],
+  );
 };
 
 // ============ EDIT HISTORY SERVICES ============
@@ -391,7 +402,7 @@ export const updateCommentWithHistory = async (
   userId: string,
   newContent: string,
 ) => {
-  const comment = await Comment.findById(comment_id);
+  const comment = await CommentRepository.findById(comment_id);
 
   if (!comment) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
@@ -424,15 +435,14 @@ export const updateCommentWithHistory = async (
 
   await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
 
-  return await Comment.findById(comment._id).populate(
-    'user',
-    'name email image',
-  );
+  return await CommentRepository.findByIdLean(comment._id.toString(), [
+    { path: 'user', select: 'name email image' },
+  ]);
 };
 
 // Get edit history
 export const getEditHistory = async (comment_id: string) => {
-  const comment = await Comment.findById(comment_id);
+  const comment = await CommentRepository.findByIdLean(comment_id);
 
   if (!comment) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
