@@ -89,6 +89,18 @@ export const findManyLean = async (
   return (await query) as TBadge[];
 };
 
+// ─── Update ───────────────────────────────────────────────────────────────────
+
+export const findByIdAndUpdate = async (
+  id: string,
+  payload: Partial<TBadge>,
+): Promise<TBadgeDocument | null> => {
+  return await Badge.findByIdAndUpdate(id, payload, {
+    new: true,
+    runValidators: true,
+  });
+};
+
 // ─── Delete ──────────────────────────────────────────────────────────────────
 
 export const deleteById = async (

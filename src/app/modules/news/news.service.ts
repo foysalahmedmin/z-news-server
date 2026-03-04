@@ -109,6 +109,19 @@ export const deleteNewsFile = async (path: string) => {
   return path;
 };
 
+export const createNews = async (
+  user: TJwtPayload,
+  payload: Partial<TNews>,
+): Promise<TNews> => {
+  const data = {
+    ...payload,
+    author: user._id as unknown as mongoose.Types.ObjectId,
+  } as TNews;
+  const result = await NewsRepository.create(data);
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  return result.toObject() as TNews;
+};
+
 export const getPublicNews = async (slug: string): Promise<TNews> => {
   return await withCache(
     generateCacheKey(CACHE_PREFIX, ['slug', slug]),
@@ -700,7 +713,9 @@ export const updateSelfBulkNews = async (
     _id: { $in: ids },
     author: user._id,
   });
-  const foundIds = allNews.map((news) => news._id.toString());
+  const foundIds = allNews.map((news) =>
+    (news as unknown as { _id: mongoose.Types.ObjectId })._id.toString(),
+  );
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   const result = await NewsRepository.updateMany(
@@ -726,7 +741,9 @@ export const updateBulkNews = async (
   not_found_ids: string[];
 }> => {
   const allNews = await NewsRepository.findManyLean({ _id: { $in: ids } });
-  const foundIds = allNews.map((news) => news._id.toString());
+  const foundIds = allNews.map((news) =>
+    (news as unknown as { _id: mongoose.Types.ObjectId })._id.toString(),
+  );
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   const result = await NewsRepository.updateMany(
@@ -798,7 +815,9 @@ export const deleteSelfBulkNews = async (
     _id: { $in: ids },
     author: user._id,
   });
-  const foundIds = allNews.map((news) => news._id.toString());
+  const foundIds = allNews.map((news) =>
+    (news as unknown as { _id: mongoose.Types.ObjectId })._id.toString(),
+  );
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await NewsRepository.updateMany(
@@ -819,7 +838,9 @@ export const deleteBulkNews = async (
   not_found_ids: string[];
 }> => {
   const allNews = await NewsRepository.findManyLean({ _id: { $in: ids } });
-  const foundIds = allNews.map((news) => news._id.toString());
+  const foundIds = allNews.map((news) =>
+    (news as unknown as { _id: mongoose.Types.ObjectId })._id.toString(),
+  );
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
   await NewsRepository.updateMany(
     { _id: { $in: foundIds } },
@@ -843,7 +864,9 @@ export const deleteBulkNewsPermanent = async (
     [],
     { bypassDeleted: true },
   );
-  const foundIds = allNews.map((news) => news._id.toString());
+  const foundIds = allNews.map((news) =>
+    (news as unknown as { _id: mongoose.Types.ObjectId })._id.toString(),
+  );
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
   await NewsRepository.deleteMany(
@@ -896,7 +919,9 @@ export const restoreSelfBulkNews = async (
     _id: { $in: ids },
     author: user._id,
   });
-  const restoredIds = restoredBulkNews.map((news) => news._id.toString());
+  const restoredIds = restoredBulkNews.map((news) =>
+    (news as unknown as { _id: mongoose.Types.ObjectId })._id.toString(),
+  );
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 
   return {
@@ -916,7 +941,9 @@ export const restoreBulkNews = async (
   const restoredBulkNews = await NewsRepository.findManyLean({
     _id: { $in: ids },
   });
-  const restoredIds = restoredBulkNews.map((news) => news._id.toString());
+  const restoredIds = restoredBulkNews.map((news) =>
+    (news as unknown as { _id: mongoose.Types.ObjectId })._id.toString(),
+  );
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 
   return {

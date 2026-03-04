@@ -10,7 +10,9 @@ import { TPoll } from './poll.type';
 const createPoll = async (userId: string, payload: Partial<TPoll>) => {
   // If attached to news, verify news exists
   if (payload.news) {
-    const news = await NewsRepository.findById(payload.news as string);
+    const news = await NewsRepository.findById(
+      payload.news as unknown as string,
+    );
     if (!news) {
       throw new AppError(httpStatus.NOT_FOUND, 'News article not found');
     }
