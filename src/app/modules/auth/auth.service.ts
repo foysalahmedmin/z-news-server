@@ -1,3 +1,11 @@
+/**
+ * Auth Service
+ *
+ * Contains ONLY business logic. All database access is delegated to
+ * `auth.repository.ts`. This makes the service independently
+ * unit-testable by mocking the repository.
+ */
+
 import bcrypt from 'bcrypt';
 import { OAuth2Client } from 'google-auth-library';
 import httpStatus from 'http-status';
@@ -6,8 +14,8 @@ import AppError from '../../builder/app-error';
 import config from '../../config';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
 import { sendEmail } from '../../utils/send-email';
-import { User } from '../user/user.model';
 import { TUserDocument } from '../user/user.type';
+import * as AuthRepository from './auth.repository';
 import {
   TChangePassword,
   TForgetPassword,
@@ -18,6 +26,32 @@ import {
 import { createToken, verifyToken } from './auth.utils';
 
 const client = new OAuth2Client(config.google_client_id);
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const buildJwtPayload = (user: TUserDocument): TJwtPayload => ({
+  _id: user._id.toString(),
+  name: user.name,
+  email: user.email,
+  role: user.role,
+  ...(user.image && { image: user.image }),
+});
+
+const createTokenPair = (jwtPayload: TJwtPayload) => {
+  const accessToken = createToken(
+    jwtPayload,
+    config.jwt_access_secret!,
+    config.jwt_access_secret_expires_in!,
+  );
+  const refreshToken = createToken(
+    jwtPayload,
+    config.jwt_refresh_secret!,
+    config.jwt_refresh_secret_expires_in!,
+  );
+  return { access_token: accessToken, refresh_token: refreshToken };
+};
+
+// ─── Google Login ─────────────────────────────────────────────────────────────
 
 export const googleLogin = async (idToken: string) => {
   const ticket = await client.verifyIdToken({
@@ -39,15 +73,10 @@ export const googleLogin = async (idToken: string) => {
     );
   }
 
-  let user = (await User.findOne({ email }).select(
-    '+password',
-  )) as TUserDocument | null;
-
-  if (!user) {
-    user = (await User.findOne({ google_id }).select(
-      '+password',
-    )) as TUserDocument | null;
-  }
+  // Try to find by email, then by google_id
+  let user =
+    (await AuthRepository.findByEmailWithPassword(email)) ||
+    (await AuthRepository.findByGoogleIdWithPassword(google_id!));
 
   if (user) {
     if (user.is_deleted) {
@@ -60,9 +89,9 @@ export const googleLogin = async (idToken: string) => {
       user.google_id = google_id;
     }
     user.auth_source = 'google';
-    await user.save();
+    await AuthRepository.saveDocument(user);
   } else {
-    user = await User.create({
+    user = await AuthRepository.createUser({
       name,
       email,
       google_id,
@@ -73,48 +102,26 @@ export const googleLogin = async (idToken: string) => {
     });
   }
 
-  const jwtPayload: TJwtPayload = {
-    _id: user._id.toString(),
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    ...(user.image && { image: user.image }),
-  };
+  const jwtPayload = buildJwtPayload(user);
+  const { access_token, refresh_token } = createTokenPair(jwtPayload);
 
-  const accessToken = createToken(
-    jwtPayload,
-    config.jwt_access_secret!,
-    config.jwt_access_secret_expires_in!,
-  );
-
-  const refreshToken = createToken(
-    jwtPayload,
-    config.jwt_refresh_secret!,
-    config.jwt_refresh_secret_expires_in!,
-  );
-
-  return {
-    access_token: accessToken,
-    refresh_token: refreshToken,
-    info: jwtPayload,
-  };
+  return { access_token, refresh_token, info: jwtPayload };
 };
 
+// ─── Sign In ──────────────────────────────────────────────────────────────────
+
 export const signin = async (payload: TSignin) => {
-  const user = await User.isUserExistByEmail(payload.email);
+  const user = await AuthRepository.findByEmailWithPassword(payload.email);
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
   }
-
-  if (user?.is_deleted) {
+  if (user.is_deleted) {
     throw new AppError(httpStatus.FORBIDDEN, 'User is deleted!');
   }
-
-  if (user?.status == 'blocked') {
+  if (user.status === 'blocked') {
     throw new AppError(httpStatus.FORBIDDEN, 'User is blocked!');
   }
-
   if (
     !user.password ||
     !(await bcrypt.compare(payload.password, user.password))
@@ -122,40 +129,25 @@ export const signin = async (payload: TSignin) => {
     throw new AppError(httpStatus.FORBIDDEN, 'Password do not matched!');
   }
 
-  const jwtPayload: TJwtPayload = {
-    _id: user._id.toString(),
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    ...(user.image && { image: user.image }),
-  };
+  const jwtPayload = buildJwtPayload(user);
+  const { access_token, refresh_token } = createTokenPair(jwtPayload);
 
-  const accessToken = createToken(
-    jwtPayload,
-    config.jwt_access_secret!,
-    config.jwt_access_secret_expires_in!,
-  );
-
-  const refreshToken = createToken(
-    jwtPayload,
-    config.jwt_refresh_secret!,
-    config.jwt_refresh_secret_expires_in!,
-  );
-
-  return {
-    access_token: accessToken,
-    refresh_token: refreshToken,
-    info: jwtPayload,
-  };
+  return { access_token, refresh_token, info: jwtPayload };
 };
 
+// ─── Sign Up ──────────────────────────────────────────────────────────────────
+
 export const signup = async (payload: TSignup) => {
-  const isExist = await User.isUserExistByEmail(payload.email);
+  const isExist = await AuthRepository.findByEmailWithPassword(payload.email);
   if (isExist) {
     throw new AppError(httpStatus.CONFLICT, 'User already exists!');
   }
 
-  const user = await User.create({ ...payload, auth_source: 'email' });
+  const user = await AuthRepository.createUser({
+    ...payload,
+    auth_source: 'email',
+    role: 'user',
+  });
 
   if (!user) {
     throw new AppError(
@@ -164,32 +156,13 @@ export const signup = async (payload: TSignup) => {
     );
   }
 
-  const jwtPayload: TJwtPayload = {
-    _id: user._id.toString(),
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    ...(user.image && { image: user.image }),
-  };
+  const jwtPayload = buildJwtPayload(user);
+  const { access_token, refresh_token } = createTokenPair(jwtPayload);
 
-  const accessToken = createToken(
-    jwtPayload,
-    config.jwt_access_secret!,
-    config.jwt_access_secret_expires_in!,
-  );
-
-  const refreshToken = createToken(
-    jwtPayload,
-    config.jwt_refresh_secret!,
-    config.jwt_refresh_secret_expires_in!,
-  );
-
-  return {
-    access_token: accessToken,
-    refresh_token: refreshToken,
-    info: jwtPayload,
-  };
+  return { access_token, refresh_token, info: jwtPayload };
 };
+
+// ─── Refresh Token ────────────────────────────────────────────────────────────
 
 export const refreshToken = async (token: string) => {
   const { email, iat } = verifyToken(token, config.jwt_refresh_secret!);
@@ -201,21 +174,19 @@ export const refreshToken = async (token: string) => {
     );
   }
 
-  const user = await User.isUserExistByEmail(email);
+  const user = await AuthRepository.findByEmailWithPassword(email);
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
   }
-
-  if (user?.is_deleted) {
+  if (user.is_deleted) {
     throw new AppError(httpStatus.FORBIDDEN, 'User is deleted!');
   }
-
-  if (user?.status == 'blocked') {
+  if (user.status === 'blocked') {
     throw new AppError(httpStatus.FORBIDDEN, 'User is blocked!');
   }
 
-  if (user?.password_changed_at) {
+  if (user.password_changed_at) {
     const passwordChangedAt = new Date(user.password_changed_at).getTime();
     const tokenIssuedAt = iat * 1000; // convert seconds → ms
 
@@ -227,39 +198,30 @@ export const refreshToken = async (token: string) => {
     }
   }
 
-  const jwtPayload: TJwtPayload = {
-    _id: user._id.toString(),
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    ...(user.image && { image: user.image }),
-  };
-
+  const jwtPayload = buildJwtPayload(user);
   const accessToken = createToken(
     jwtPayload,
     config.jwt_access_secret!,
     config.jwt_access_secret_expires_in!,
   );
 
-  return {
-    access_token: accessToken,
-    info: jwtPayload,
-  };
+  return { access_token: accessToken, info: jwtPayload };
 };
+
+// ─── Change Password ──────────────────────────────────────────────────────────
 
 export const changePassword = async (
   user: JwtPayload,
   payload: TChangePassword,
 ) => {
-  const isUserExist = await User.isUserExistByEmail(user.email);
+  const existing = await AuthRepository.findByEmailWithPassword(user.email);
 
-  if (!isUserExist) {
+  if (!existing) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
   }
-
   if (
-    !isUserExist.password ||
-    !(await bcrypt.compare(payload.current_password, isUserExist.password))
+    !existing.password ||
+    !(await bcrypt.compare(payload.current_password, existing.password))
   ) {
     throw new AppError(httpStatus.FORBIDDEN, 'Password do not matched!');
   }
@@ -269,36 +231,25 @@ export const changePassword = async (
     Number(config.bcrypt_salt_rounds),
   );
 
-  const result = await User.findOneAndUpdate(
-    {
-      email: user.email,
-      role: user.role,
-    },
-    {
-      password: hashedNewPassword,
-      password_changed_at: new Date(),
-    },
-    {
-      new: true,
-      runValidators: true,
-    },
+  return await AuthRepository.updatePasswordByEmailAndRole(
+    user.email,
+    user.role,
+    hashedNewPassword,
   );
-
-  return result;
 };
 
+// ─── Forget Password ──────────────────────────────────────────────────────────
+
 export const forgetPassword = async (payload: TForgetPassword) => {
-  const user = await User.isUserExistByEmail(payload.email);
+  const user = await AuthRepository.findByEmailWithPassword(payload.email);
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
   }
-
-  if (user?.is_deleted) {
+  if (user.is_deleted) {
     throw new AppError(httpStatus.FORBIDDEN, 'User is deleted!');
   }
-
-  if (user?.status == 'blocked') {
+  if (user.status === 'blocked') {
     throw new AppError(httpStatus.FORBIDDEN, 'User is blocked!');
   }
 
@@ -326,6 +277,8 @@ export const forgetPassword = async (payload: TForgetPassword) => {
   });
 };
 
+// ─── Reset Password ───────────────────────────────────────────────────────────
+
 export const resetPassword = async (payload: TResetPassword, token: string) => {
   const decoded = verifyToken(token, config.jwt_reset_password_secret!);
 
@@ -336,43 +289,30 @@ export const resetPassword = async (payload: TResetPassword, token: string) => {
     );
   }
 
-  const { email } = decoded;
-
-  const user = await User.isUserExistByEmail(email);
+  const user = await AuthRepository.findByEmailWithPassword(decoded.email);
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
   }
-
-  if (user?.is_deleted) {
+  if (user.is_deleted) {
     throw new AppError(httpStatus.FORBIDDEN, 'User is deleted!');
   }
-
-  if (user?.status == 'blocked') {
+  if (user.status === 'blocked') {
     throw new AppError(httpStatus.FORBIDDEN, 'User is blocked!');
   }
-
-  const { _id } = user;
 
   const hashedPassword = await bcrypt.hash(
     payload.password,
     Number(config.bcrypt_salt_rounds),
   );
 
-  const result = await User.findByIdAndUpdate(
-    _id,
-    {
-      password: hashedPassword,
-      password_changed_at: new Date(),
-    },
-    {
-      new: true,
-      runValidators: true,
-    },
+  return await AuthRepository.updatePasswordById(
+    user._id.toString(),
+    hashedPassword,
   );
-
-  return result;
 };
+
+// ─── Email Verification Source ────────────────────────────────────────────────
 
 export const emailVerificationSource = async (user: TJwtPayload) => {
   const jwtPayload: TJwtPayload = {
@@ -399,6 +339,8 @@ export const emailVerificationSource = async (user: TJwtPayload) => {
   });
 };
 
+// ─── Email Verification ───────────────────────────────────────────────────────
+
 export const emailVerification = async (token: string) => {
   const decoded = verifyToken(token, config.jwt_email_verification_secret!);
 
@@ -409,34 +351,17 @@ export const emailVerification = async (token: string) => {
     );
   }
 
-  const { email } = decoded;
-
-  const user = await User.isUserExistByEmail(email);
+  const user = await AuthRepository.findByEmailWithPassword(decoded.email);
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
   }
-
-  if (user?.is_deleted) {
+  if (user.is_deleted) {
     throw new AppError(httpStatus.FORBIDDEN, 'User is deleted!');
   }
-
-  if (user?.status == 'blocked') {
+  if (user.status === 'blocked') {
     throw new AppError(httpStatus.FORBIDDEN, 'User is blocked!');
   }
 
-  const { _id } = user;
-
-  const result = await User.findByIdAndUpdate(
-    _id,
-    {
-      is_verified: true,
-    },
-    {
-      new: true,
-      runValidators: true,
-    },
-  );
-
-  return result;
+  return await AuthRepository.updateIsVerifiedById(user._id.toString());
 };

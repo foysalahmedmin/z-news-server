@@ -33,6 +33,73 @@ export const findByEmail = async (email: string): Promise<TUser | null> => {
   return await User.findOne({ email }).lean();
 };
 
+/**
+ * Returns the user with password + password_changed_at selected
+ * (needed by auth flows: signin, refresh-token, change-password, etc.)
+ */
+export const findByEmailWithPassword = async (
+  email: string,
+): Promise<TUserDocument | null> => {
+  return await User.isUserExistByEmail(email);
+};
+
+export const findByGoogleIdWithPassword = async (
+  googleId: string,
+): Promise<TUserDocument | null> => {
+  return (await User.findOne({ google_id: googleId }).select(
+    '+password',
+  )) as TUserDocument | null;
+};
+
+// ─── Create ───────────────────────────────────────────────────────────────────
+
+export const createUser = async (
+  data: Partial<TUser>,
+): Promise<TUserDocument> => {
+  return await User.create(data);
+};
+
+// ─── Auth-specific Updates ────────────────────────────────────────────────────
+
+export const updatePasswordByEmailAndRole = async (
+  email: string,
+  role: string,
+  hashedPassword: string,
+): Promise<TUserDocument | null> => {
+  return await User.findOneAndUpdate(
+    { email, role },
+    { password: hashedPassword, password_changed_at: new Date() },
+    { new: true, runValidators: true },
+  );
+};
+
+export const updatePasswordById = async (
+  id: string,
+  hashedPassword: string,
+): Promise<TUserDocument | null> => {
+  return await User.findByIdAndUpdate(
+    id,
+    { password: hashedPassword, password_changed_at: new Date() },
+    { new: true, runValidators: true },
+  );
+};
+
+export const updateIsVerifiedById = async (
+  id: string,
+): Promise<TUserDocument | null> => {
+  return await User.findByIdAndUpdate(
+    id,
+    { is_verified: true },
+    { new: true, runValidators: true },
+  );
+};
+
+export const saveDocument = async (
+  doc: TUserDocument,
+): Promise<TUserDocument> => {
+  return await doc.save();
+};
+
 // ─── Find Many ────────────────────────────────────────────────────────────────
 
 export const findManyByIds = async (ids: string[]): Promise<TUser[]> => {
