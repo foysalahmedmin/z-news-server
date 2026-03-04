@@ -1,6 +1,5 @@
 import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
-import AppQueryFind from '../../builder/app-query-find';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
 import {
   generateCacheKey,
@@ -9,7 +8,7 @@ import {
 } from '../../utils/cache.utils';
 import { TGuest } from '../guest/guest.type';
 import { UserProfile } from '../user-profile/user-profile.model';
-import { Comment } from './comment.model';
+import * as CommentRepository from './comment.repository';
 import { TComment } from './comment.type';
 
 const CACHE_PREFIX = 'comment';
@@ -28,9 +27,9 @@ export const createComment = async (
     ...payload,
     ...(user?._id ? { user: user._id } : {}),
     ...(guest?.token ? { guest: guest.token } : {}),
-  };
+  } as Partial<TComment>;
 
-  const result = await Comment.create(update);
+  const result = await CommentRepository.create(update);
 
   // Update user activity stats
   if (user?._id) {
@@ -56,15 +55,16 @@ export const getSelfComment = async (
     id,
   ]);
   return await withCache(cacheKey, CACHE_TTL, async () => {
-    const result = await Comment.findOne({
-      _id: id,
-      ...(user?._id ? { user: user._id } : { guest: guest.token }),
-    })
-      .populate([
+    const result = await CommentRepository.findOneLean(
+      {
+        _id: id,
+        ...(user?._id ? { user: user._id } : { guest: guest.token }),
+      },
+      [
         { path: 'user', select: '_id name email image' },
         { path: 'news', select: '_id slug title thumbnail' },
-      ])
-      .lean();
+      ],
+    );
 
     if (!result) {
       throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
@@ -79,12 +79,10 @@ export const getComment = async (id: string): Promise<TComment> => {
     generateCacheKey(CACHE_PREFIX, ['id', id]),
     CACHE_TTL,
     async () => {
-      const result = await Comment.findById(id)
-        .populate([
-          { path: 'user', select: '_id name email image' },
-          { path: 'news', select: '_id slug title thumbnail' },
-        ])
-        .lean();
+      const result = await CommentRepository.findByIdLean(id, [
+        { path: 'user', select: '_id name email image' },
+        { path: 'news', select: '_id slug title thumbnail' },
+      ]);
 
       if (!result) {
         throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
@@ -103,22 +101,14 @@ export const getPublicComments = async (
 }> => {
   const cacheKey = generateCacheKey(CACHE_PREFIX, ['public', 'list', query]);
   return await withCache(cacheKey, CACHE_TTL, async () => {
-    const commentQuery = new AppQueryFind(Comment, {
-      status: 'approved',
-      ...query,
-    })
-      .populate([
+    const result = await CommentRepository.findPaginated(
+      { status: 'approved' },
+      query,
+      [
         { path: 'user', select: '_id name email image' },
         { path: 'news', select: '_id slug title thumbnail' },
-      ])
-      .search(['name', 'email', 'content'])
-      .filter()
-      .sort()
-      .paginate()
-      .fields()
-      .tap((q) => q.lean());
-
-    const result = await commentQuery.execute();
+      ],
+    );
     return result;
   });
 };
@@ -146,19 +136,11 @@ export const getSelfComments = async (
       ...(user?._id ? { user: user._id } : { guest: guest.token }),
     };
 
-    const commentQuery = new AppQueryFind(Comment, { ...filter, ...query })
-      .populate([
-        { path: 'user', select: '_id name email image' },
-        { path: 'news', select: '_id slug title thumbnail' },
-      ])
-      .search(['name', 'email', 'content'])
-      .filter()
-      .sort()
-      .paginate()
-      .fields()
-      .tap((q) => q.lean());
+    const result = await CommentRepository.findPaginated(filter, query, [
+      { path: 'user', select: '_id name email image' },
+      { path: 'news', select: '_id slug title thumbnail' },
+    ]);
 
-    const result = await commentQuery.execute();
     return result;
   });
 };
@@ -171,19 +153,10 @@ export const getComments = async (
 }> => {
   const cacheKey = generateCacheKey(CACHE_PREFIX, ['admin', 'list', query]);
   return await withCache(cacheKey, CACHE_TTL, async () => {
-    const commentQuery = new AppQueryFind(Comment, query)
-      .populate([
-        { path: 'user', select: '_id name email image' },
-        { path: 'news', select: '_id slug title thumbnail' },
-      ])
-      .search(['name', 'email', 'content'])
-      .filter()
-      .sort()
-      .paginate()
-      .fields()
-      .tap((q) => q.lean());
-
-    const result = await commentQuery.execute();
+    const result = await CommentRepository.findPaginated({}, query, [
+      { path: 'user', select: '_id name email image' },
+      { path: 'news', select: '_id slug title thumbnail' },
+    ]);
     return result;
   });
 };
@@ -198,10 +171,10 @@ export const updateSelfComment = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const data = await Comment.findOne({
+  const data = await CommentRepository.findOneLean({
     _id: id,
     ...(user?._id ? { user: user._id } : { guest: guest.token }),
-  }).lean();
+  });
 
   if (!data) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
@@ -214,10 +187,7 @@ export const updateSelfComment = async (
     update.edited_at = new Date();
   }
 
-  const result = await Comment.findByIdAndUpdate(id, update, {
-    new: true,
-    runValidators: true,
-  }).lean();
+  const result = await CommentRepository.findByIdAndUpdateLean(id, update);
 
   if (result) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
@@ -230,7 +200,7 @@ export const updateComment = async (
   id: string,
   payload: Partial<Pick<TComment, 'content' | 'status'>>,
 ): Promise<TComment> => {
-  const data = await Comment.findById(id).lean();
+  const data = await CommentRepository.findByIdLean(id);
   if (!data) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
   }
@@ -242,10 +212,7 @@ export const updateComment = async (
     update.edited_at = new Date();
   }
 
-  const result = await Comment.findByIdAndUpdate(id, update, {
-    new: true,
-    runValidators: true,
-  }).lean();
+  const result = await CommentRepository.findByIdAndUpdateLean(id, update);
 
   if (result) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
@@ -267,14 +234,14 @@ export const updateSelfComments = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const comments = await Comment.find({
+  const comments = await CommentRepository.findManyLean({
     _id: { $in: ids },
     ...(user?._id ? { user: user._id } : { guest: guest.token }),
-  }).lean();
-  const foundIds = comments.map((comment) => comment._id.toString());
+  });
+  const foundIds = comments.map((comment) => comment._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  const result = await Comment.updateMany(
+  const result = await CommentRepository.updateMany(
     {
       _id: { $in: foundIds },
       ...(user?._id ? { user: user._id } : { guest: guest.token }),
@@ -295,11 +262,11 @@ export const updateComments = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const comments = await Comment.find({ _id: { $in: ids } }).lean();
-  const foundIds = comments.map((comment) => comment._id.toString());
+  const comments = await CommentRepository.findManyLean({ _id: { $in: ids } });
+  const foundIds = comments.map((comment) => comment._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  const result = await Comment.updateMany(
+  const result = await CommentRepository.updateMany(
     { _id: { $in: foundIds } },
     { ...payload },
   );
@@ -319,7 +286,7 @@ export const deleteSelfComment = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const comment = await Comment.findOne({
+  const comment = await CommentRepository.findOne({
     _id: id,
     ...(user?._id ? { user: user._id } : { guest: guest.token }),
   });
@@ -332,7 +299,7 @@ export const deleteSelfComment = async (
 };
 
 export const deleteComment = async (id: string): Promise<void> => {
-  const comment = await Comment.findById(id);
+  const comment = await CommentRepository.findById(id);
   if (!comment) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
   }
@@ -342,14 +309,14 @@ export const deleteComment = async (id: string): Promise<void> => {
 };
 
 export const deleteCommentPermanent = async (id: string): Promise<void> => {
-  const comment = await Comment.findById(id)
-    .setOptions({ bypassDeleted: true })
-    .lean();
+  const comment = await CommentRepository.findByIdLean(id, [], {
+    bypassDeleted: true,
+  });
   if (!comment) {
     throw new AppError(httpStatus.NOT_FOUND, 'Comment not found');
   }
 
-  await Comment.findByIdAndDelete(id);
+  await CommentRepository.deleteById(id);
 };
 
 export const deleteSelfComments = async (
@@ -364,14 +331,14 @@ export const deleteSelfComments = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const comments = await Comment.find({
+  const comments = await CommentRepository.findManyLean({
     _id: { $in: ids },
     ...(user?._id ? { user: user._id } : { guest: guest.token }),
-  }).lean();
-  const foundIds = comments.map((comment) => comment._id.toString());
+  });
+  const foundIds = comments.map((comment) => comment._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Comment.updateMany(
+  await CommentRepository.updateMany(
     {
       _id: { $in: foundIds },
       ...(user?._id ? { user: user._id } : { guest: guest.token }),
@@ -391,11 +358,14 @@ export const deleteComments = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const comments = await Comment.find({ _id: { $in: ids } }).lean();
-  const foundIds = comments.map((comment) => comment._id.toString());
+  const comments = await CommentRepository.findManyLean({ _id: { $in: ids } });
+  const foundIds = comments.map((comment) => comment._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Comment.updateMany({ _id: { $in: foundIds } }, { is_deleted: true });
+  await CommentRepository.updateMany(
+    { _id: { $in: foundIds } },
+    { is_deleted: true },
+  );
 
   return {
     count: foundIds.length,
@@ -409,19 +379,21 @@ export const deleteCommentsPermanent = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  // Use lean for finding existing comments
-  const comments = await Comment.find({ _id: { $in: ids }, is_deleted: true })
-    .setOptions({ bypassDeleted: true })
-    .lean();
-  const foundIds = comments.map((comment) => comment._id.toString());
+  const comments = await CommentRepository.findManyLean(
+    { _id: { $in: ids }, is_deleted: true },
+    [],
+    { bypassDeleted: true },
+  );
+  const foundIds = comments.map((comment) => comment._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Comment.deleteMany({
-    _id: { $in: foundIds },
-    is_deleted: true,
-  }).setOptions({
-    bypassDeleted: true,
-  });
+  await CommentRepository.deleteMany(
+    {
+      _id: { $in: foundIds },
+      is_deleted: true,
+    },
+    { bypassDeleted: true },
+  );
 
   return {
     count: foundIds.length,
@@ -438,15 +410,14 @@ export const restoreSelfComment = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const comment = await Comment.findOneAndUpdate(
+  const comment = await CommentRepository.findOneAndUpdateLean(
     {
       _id: id,
       is_deleted: true,
       ...(user?._id ? { user: user._id } : { guest: guest.token }),
     },
     { is_deleted: false },
-    { new: true },
-  ).lean();
+  );
 
   if (!comment) {
     throw new AppError(
@@ -459,11 +430,10 @@ export const restoreSelfComment = async (
 };
 
 export const restoreComment = async (id: string): Promise<TComment> => {
-  const comment = await Comment.findOneAndUpdate(
+  const comment = await CommentRepository.findOneAndUpdateLean(
     { _id: id, is_deleted: true },
     { is_deleted: false },
-    { new: true },
-  ).lean();
+  );
 
   if (!comment) {
     throw new AppError(
@@ -487,7 +457,7 @@ export const restoreSelfComments = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const result = await Comment.updateMany(
+  const result = await CommentRepository.updateMany(
     {
       _id: { $in: ids },
       is_deleted: true,
@@ -496,11 +466,13 @@ export const restoreSelfComments = async (
     { is_deleted: false },
   );
 
-  const restoredComments = await Comment.find({
+  const restoredComments = await CommentRepository.findManyLean({
     _id: { $in: ids },
     ...(user?._id ? { user: user._id } : { guest: guest.token }),
-  }).lean();
-  const restoredIds = restoredComments.map((comment) => comment._id.toString());
+  });
+  const restoredIds = restoredComments.map((comment) =>
+    comment._id!.toString(),
+  );
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 
   return {
@@ -515,13 +487,17 @@ export const restoreComments = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const result = await Comment.updateMany(
+  const result = await CommentRepository.updateMany(
     { _id: { $in: ids }, is_deleted: true },
     { is_deleted: false },
   );
 
-  const restoredComments = await Comment.find({ _id: { $in: ids } }).lean();
-  const restoredIds = restoredComments.map((comment) => comment._id.toString());
+  const restoredComments = await CommentRepository.findManyLean({
+    _id: { $in: ids },
+  });
+  const restoredIds = restoredComments.map((comment) =>
+    comment._id!.toString(),
+  );
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 
   return {

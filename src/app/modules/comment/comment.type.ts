@@ -11,6 +11,7 @@ export type TCommentMention = {
 export type TStatus = 'pending' | 'approved' | 'rejected' | 'flagged';
 
 export type TComment = {
+  _id?: Types.ObjectId | string;
   news: Types.ObjectId;
   parent_comment?: Types.ObjectId; // For threading
   reply_to_user?: Types.ObjectId; // Direct reply to specific user
