@@ -3,6 +3,7 @@ import { Document, Model, Types } from 'mongoose';
 export type TStatus = 'pending' | 'approved' | 'rejected';
 
 export type TView = {
+  _id?: Types.ObjectId | string;
   news: Types.ObjectId;
   user?: Types.ObjectId;
   guest?: string;

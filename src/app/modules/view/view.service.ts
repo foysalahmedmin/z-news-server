@@ -1,6 +1,6 @@
 import httpStatus from 'http-status';
+import { Types } from 'mongoose';
 import AppError from '../../builder/app-error';
-import AppQueryFind from '../../builder/app-query-find';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
 import {
   generateCacheKey,
@@ -10,7 +10,7 @@ import {
 import { TGuest } from '../guest/guest.type';
 import { UserProfile } from '../user-profile/user-profile.model';
 import { UserProfileService } from '../user-profile/user-profile.service';
-import { View } from './view.model';
+import * as ViewRepository from './view.repository';
 import { TView } from './view.type';
 
 const CACHE_PREFIX = 'view';
@@ -25,17 +25,17 @@ export const createView = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const update = {
+  const update: Partial<TView> = {
     ...payload,
-    ...(user?._id ? { user: user._id } : {}),
+    ...(user?._id ? { user: user._id as unknown as Types.ObjectId } : {}),
     ...(guest?.token ? { guest: guest.token } : {}),
   };
 
-  const result = await View.create(update);
+  const result = await ViewRepository.create(update);
   if (result) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
   }
-  return result.toObject();
+  return result.toObject() as TView;
 };
 
 export const getSelfView = async (
@@ -53,10 +53,10 @@ export const getSelfView = async (
     id,
   ]);
   return await withCache(cacheKey, CACHE_TTL, async () => {
-    const result = await View.findOne({
+    const result = await ViewRepository.findOneLean({
       _id: id,
       ...(user?._id ? { user: user._id } : { guest: guest.token }),
-    }).lean();
+    });
 
     if (!result) {
       throw new AppError(httpStatus.NOT_FOUND, 'View not found');
@@ -71,7 +71,7 @@ export const getView = async (id: string): Promise<TView> => {
     generateCacheKey(CACHE_PREFIX, ['id', id]),
     CACHE_TTL,
     async () => {
-      const result = await View.findById(id).lean();
+      const result = await ViewRepository.findByIdLean(id);
       if (!result) {
         throw new AppError(httpStatus.NOT_FOUND, 'View not found');
       }
@@ -92,17 +92,13 @@ export const getSelfViews = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const viewQuery = new AppQueryFind(View, {
-    ...(user?._id ? { user: user._id } : { guest: guest.token }),
-    ...query,
-  })
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
+  const result = await ViewRepository.findPaginated(
+    {
+      ...(user?._id ? { user: user._id } : { guest: guest.token }),
+    },
+    query,
+  );
 
-  const result = await viewQuery.execute();
   return result;
 };
 
@@ -112,14 +108,7 @@ export const getViews = async (
   data: TView[];
   meta: { total: number; page: number; limit: number };
 }> => {
-  const viewQuery = new AppQueryFind(View, query)
-    .filter()
-    .sort()
-    .paginate()
-    .fields()
-    .tap((q) => q.lean());
-
-  const result = await viewQuery.execute();
+  const result = await ViewRepository.findPaginated({}, query);
   return result;
 };
 
@@ -129,7 +118,7 @@ export const getSelfNewsView = async (
   news_id: string,
 ): Promise<{ data: TView | null; meta: { views: number } }> => {
   if (!news_id) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found news_id');
+    throw new AppError(httpStatus.NOT_FOUND, 'News ID is required');
   }
 
   const query = user?._id
@@ -139,12 +128,12 @@ export const getSelfNewsView = async (
       : undefined;
 
   if (query) {
-    const isSelfViewed = await View.findOne(query).lean();
+    const isSelfViewed = await ViewRepository.findOneLean(query);
 
     if (!isSelfViewed) {
-      const created = await View.create({
-        news: news_id,
-        ...(user?._id ? { user: user._id } : {}),
+      const created = await ViewRepository.create({
+        news: news_id as unknown as Types.ObjectId,
+        ...(user?._id ? { user: user._id as unknown as Types.ObjectId } : {}),
         ...(guest?.token ? { guest: guest.token } : {}),
       });
       if (created) {
@@ -163,7 +152,7 @@ export const getSelfNewsView = async (
     generateCacheKey(CACHE_PREFIX, ['news', news_id, 'count']),
     60,
     async () => {
-      return await View.countDocuments({ news: news_id });
+      return await ViewRepository.count({ news: news_id });
     },
   );
 
@@ -179,19 +168,19 @@ export const deleteSelfView = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  await View.findOneAndDelete({
+  await ViewRepository.findOneAndDelete({
     _id: id,
     ...(user?._id ? { user: user._id } : { guest: guest.token }),
   });
 };
 
 export const deleteView = async (id: string): Promise<void> => {
-  const view = await View.findById(id).lean();
+  const view = await ViewRepository.findByIdLean(id);
   if (!view) {
     throw new AppError(httpStatus.NOT_FOUND, 'View not found');
   }
 
-  await View.findByIdAndDelete(id);
+  await ViewRepository.deleteById(id);
 };
 
 export const deleteSelfViews = async (
@@ -206,23 +195,20 @@ export const deleteSelfViews = async (
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const views = await View.find({
+  const views = await ViewRepository.findManyLean({
     _id: { $in: ids },
     ...(user?._id ? { user: user._id } : { guest: guest.token }),
-  }).lean();
-  const foundIds = views.map((view) => view._id.toString());
+  });
+  const foundIds = views.map((view) => view?._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await View.deleteMany(
-    {
-      _id: { $in: foundIds },
-      ...(user?._id ? { user: user._id } : { guest: guest.token }),
-    },
-    { is_deleted: true },
-  );
+  const result = await ViewRepository.deleteMany({
+    _id: { $in: foundIds },
+    ...(user?._id ? { user: user._id } : { guest: guest.token }),
+  });
 
   return {
-    count: foundIds.length,
+    count: result.deletedCount,
     not_found_ids: notFoundIds,
   };
 };
@@ -233,14 +219,14 @@ export const deleteViews = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const views = await View.find({ _id: { $in: ids } }).lean();
-  const foundIds = views.map((view) => view._id.toString());
+  const views = await ViewRepository.findManyLean({ _id: { $in: ids } });
+  const foundIds = views.map((view) => view._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await View.deleteMany({ _id: { $in: foundIds } });
+  const result = await ViewRepository.deleteMany({ _id: { $in: foundIds } });
 
   return {
-    count: foundIds.length,
+    count: result.deletedCount,
     not_found_ids: notFoundIds,
   };
 };
