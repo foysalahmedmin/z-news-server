@@ -1,0 +1,6 @@
+export const BOOKMARK_CACHE_PREFIX = 'bookmark';
+export const BOOKMARK_CACHE_TTL = 1800; // 30 minutes
+export const BOOKMARK_DEFAULT_PAGE_LIMIT = 20;
+export const BOOKMARK_MAX_READING_LISTS = 20;
+export const BOOKMARK_MAX_PER_READING_LIST = 500;
+export const BOOKMARK_READING_LIST_MAX_NAME_LENGTH = 100;

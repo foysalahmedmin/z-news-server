@@ -1,0 +1,9 @@
+export const POLL_CACHE_PREFIX = 'poll';
+export const POLL_CACHE_TTL = 600; // 10 minutes — vote counts change often
+export const POLL_MIN_OPTIONS = 2;
+export const POLL_MAX_OPTIONS = 10;
+export const POLL_DEFAULT_PAGE_LIMIT = 20;
+export const POLL_MAX_TITLE_LENGTH = 300;
+export const POLL_MAX_OPTION_LENGTH = 200;
+export const POLL_RESULTS_CACHE_TTL = 60; // 1 minute for live results
+export const POLL_ANONYMOUS_VOTE_COOKIE = 'poll_votes';

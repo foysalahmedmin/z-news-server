@@ -1,0 +1,9 @@
+export const COMMENT_CACHE_PREFIX = 'comment';
+export const COMMENT_CACHE_TTL = 600; // 10 minutes
+export const COMMENT_MAX_THREAD_LEVEL = 5;
+export const COMMENT_MAX_LENGTH = 2000;
+export const COMMENT_MIN_LENGTH = 1;
+export const COMMENT_FLAG_THRESHOLD = 3; // Auto-hide after N flags
+export const COMMENT_DEFAULT_PAGE_LIMIT = 20;
+export const COMMENT_EDIT_WINDOW_MINUTES = 15;
+export const COMMENT_MAX_MENTIONS = 10;

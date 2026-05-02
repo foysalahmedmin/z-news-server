@@ -1,42 +1,45 @@
-/* eslint-disable no-console */
-import cluster from 'cluster';
 import http from 'http';
-import mongoose from 'mongoose';
 import os from 'os';
 import app from './app';
-import config from './app/config';
-import { initScheduler } from './app/modules/scheduler/scheduler.job';
+import config from './config/env';
+import { KafkaClient, initializeKafka } from './config/kafka';
+import { RabbitMQ, initializeRabbitMQ } from './config/rabbitmq';
 import {
   cacheClient,
   initializeRedis,
   pubClient,
   subClient,
-} from './app/redis';
-import { initializeSocket } from './app/socket';
+} from './config/redis';
+import { initializeSocket } from './config/socket';
+import { initializeDB, disconnectDB } from './config/db';
+import { initializeJobs } from './jobs';
+import cluster from 'cluster';
 
 let server: http.Server | null = null;
 
 // Start the server
 const main = async (): Promise<void> => {
   try {
-    await mongoose.connect(config.database_url);
-    console.log(`✅ MongoDB connected - PID: ${process.pid}`);
-
-    // Initialize background jobs (only once in clustered mode or always in single mode)
-    // In cluster mode, we might want to run this only in the primary or a specific worker.
-    // For simplicity, we run it here. In production with multiple instances, use a job queue like Agenda or Bull.
-    if (
-      !config.cluster_enabled ||
-      (cluster.isWorker && cluster.worker?.id === 1)
-    ) {
-      initScheduler();
-    }
+    await initializeDB();
 
     try {
       await initializeRedis();
       console.log(`🔌 Redis initialized - PID: ${process.pid}`);
     } catch (redisErr) {
       console.warn(`⚠️ Redis setup failed - PID: ${process.pid}`, redisErr);
+    }
+
+    try {
+      await initializeRabbitMQ();
+    } catch (rabbitErr) {
+      console.warn(`⚠️ RabbitMQ setup failed - PID: ${process.pid}`, rabbitErr);
+    }
+
+    try {
+      await initializeKafka();
+      console.log(`📨 Kafka initialized - PID: ${process.pid}`);
+    } catch (kafkaErr) {
+      console.warn(`⚠️ Kafka setup failed - PID: ${process.pid}`, kafkaErr);
     }
 
     server = http.createServer(app);
@@ -54,6 +57,9 @@ const main = async (): Promise<void> => {
     server.listen(config.port, () => {
       console.log(`🚀 Worker ${process.pid} listening on port ${config.port}`);
     });
+
+    // Initialize background jobs
+    initializeJobs();
   } catch (error) {
     console.error('❌ Error starting server:', error);
     process.exit(1);
@@ -65,8 +71,7 @@ const shutdown = async (reason: string): Promise<void> => {
   console.log(`🛑 Shutdown initiated: ${reason}`);
   try {
     // Disconnect MongoDB
-    await mongoose.disconnect();
-    console.log('✅ MongoDB disconnected');
+    await disconnectDB();
 
     // Disconnect Redis cache
     if (cacheClient.isOpen) {
@@ -84,6 +89,12 @@ const shutdown = async (reason: string): Promise<void> => {
       await subClient.quit();
       console.log('🔌 Redis (sub) disconnected');
     }
+
+    // Close RabbitMQ connection
+    await RabbitMQ.disconnect();
+
+    // Close Kafka connection
+    await KafkaClient.disconnect();
 
     // Close HTTP server
     if (server) {

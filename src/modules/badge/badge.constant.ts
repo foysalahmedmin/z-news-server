@@ -1,0 +1,22 @@
+export const BADGE_CACHE_PREFIX = 'badge';
+export const BADGE_CACHE_TTL = 7200; // 2 hours — badges change rarely
+export const BADGE_DEFAULT_PAGE_LIMIT = 30;
+export const BADGE_AWARD_CHECK_INTERVAL_HOURS = 24;
+
+export const BADGE_POINTS = {
+  COMMON: 10,
+  RARE: 25,
+  EPIC: 50,
+  LEGENDARY: 100,
+} as const;
+
+export const BADGE_THRESHOLDS = {
+  ARTICLES_READ_BRONZE: 10,
+  ARTICLES_READ_SILVER: 50,
+  ARTICLES_READ_GOLD: 200,
+  COMMENTS_BRONZE: 5,
+  COMMENTS_SILVER: 25,
+  COMMENTS_GOLD: 100,
+  STREAK_WEEK: 7,
+  STREAK_MONTH: 30,
+} as const;
