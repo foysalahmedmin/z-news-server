@@ -18,6 +18,7 @@ export type TGuest = {
   };
   status: TStatus;
   is_deleted?: boolean;
+  created_at?: Date;
 };
 
 export interface TGuestDocument extends TGuest, Document {

@@ -12,6 +12,25 @@ import * as FileRepository from './file.repository';
 import { TFile, TFileInput } from './file.type';
 import { getExtensionFromFilename, getFileTypeFromMime } from './file.util';
 
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+  'video/mp4',
+  'video/webm',
+  'video/ogg',
+  'audio/mpeg',
+  'audio/ogg',
+  'audio/wav',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain',
+]);
+
 // Initialize GCS client
 const storageClient = new Storage({
   ...(config.gcp.credentials_path && {
@@ -32,6 +51,13 @@ export const createLocalFile = async (
 ): Promise<TFile> => {
   if (!file) {
     throw new AppError(httpStatus.BAD_REQUEST, 'No file uploaded');
+  }
+
+  if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      `File type "${file.mimetype}" is not allowed`,
+    );
   }
 
   const filePath = file.path.replace(/\\/g, '/');
@@ -71,6 +97,14 @@ export const createCloudFiles = async (
 ): Promise<TFile[]> => {
   if (!results || results.length === 0) {
     throw new AppError(httpStatus.BAD_REQUEST, 'No storage results found');
+  }
+
+  const invalidMime = results.find((r) => !ALLOWED_MIME_TYPES.has(r.mimetype));
+  if (invalidMime) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      `File type "${invalidMime.mimetype}" is not allowed`,
+    );
   }
 
   const storagesData: Partial<TFile>[] = results.map((result) => {

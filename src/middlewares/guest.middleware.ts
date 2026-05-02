@@ -25,6 +25,15 @@ const initialize = async (req: Request, res: Response): Promise<TGuest> => {
   // Try find guest in DB
   let guest = await Guest.findOne({ token: token });
 
+  // Invalidate expired guest sessions (1 year TTL, matching cookie maxAge)
+  const GUEST_TTL_MS = 365 * 24 * 60 * 60 * 1000;
+  if (
+    guest?.created_at &&
+    Date.now() - new Date(guest.created_at).getTime() > GUEST_TTL_MS
+  ) {
+    guest = null;
+  }
+
   if (!guest) {
     guest = await Guest.create({
       token: token,

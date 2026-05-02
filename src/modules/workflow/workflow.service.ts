@@ -1,6 +1,7 @@
 import httpStatus from 'http-status';
 import { Types } from 'mongoose';
 import AppError from '../../builder/app-error';
+import { User } from '../user/user.model';
 import { News } from '../news/news.model';
 import * as WorkflowRepository from './workflow.repository';
 import { TWorkflow, TWorkflowStageStatus } from './workflow.type';
@@ -70,6 +71,21 @@ const updateWorkflowStage = async (
   }
 
   const stage = workflow.stages[stageIndex];
+
+  // Validate assignee role before assignment
+  if (payload.assignee) {
+    const assigneeUser = await User.findById(payload.assignee);
+    if (!assigneeUser) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Assignee user not found');
+    }
+    const allowedRoles = ['super-admin', 'admin', 'editor'];
+    if (!allowedRoles.includes(assigneeUser.role)) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        'Assignee must have editor, admin, or super-admin role',
+      );
+    }
+  }
 
   // Update stage status and metadata
   stage.status = payload.status;

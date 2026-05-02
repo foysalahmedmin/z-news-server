@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import auth from '../../middlewares/auth.middleware';
+import guest from '../../middlewares/guest.middleware';
 import validation from '../../middlewares/validation.middleware';
 import { PollController } from './poll.controller';
 import { PollValidation } from './poll.validator';
@@ -41,9 +42,20 @@ router.patch(
   PollController.updatePoll,
 );
 
-// Vote on poll (Public or Authenticated based on poll settings)
+// Vote on poll — guest session required for dedup; poll.allow_anonymous controls unauthenticated access
 router.post(
   '/:pollId/vote',
+  guest('optional'),
+  auth(
+    'super-admin',
+    'admin',
+    'editor',
+    'author',
+    'contributor',
+    'subscriber',
+    'user',
+    'guest',
+  ),
   validation(PollValidation.voteSchema),
   PollController.vote,
 );
