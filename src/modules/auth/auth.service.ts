@@ -318,6 +318,17 @@ export const resetPassword = async (payload: TResetPassword, token: string) => {
     throw new AppError(httpStatus.FORBIDDEN, 'User is blocked!');
   }
 
+  if (user.password_changed_at && typeof decoded.iat === 'number') {
+    const passwordChangedAt = new Date(user.password_changed_at).getTime();
+    const tokenIssuedAt = decoded.iat * 1000;
+    if (passwordChangedAt > tokenIssuedAt) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        'Reset link has already been used. Please request a new one.',
+      );
+    }
+  }
+
   const hashedPassword = await bcrypt.hash(
     payload.password,
     Number(config.bcrypt_salt_rounds),

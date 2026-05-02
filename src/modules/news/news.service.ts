@@ -3,6 +3,7 @@ import { Flattener } from 'flattener-kit';
 import fs from 'fs';
 import httpStatus from 'http-status';
 import mongoose from 'mongoose';
+import nodePath from 'path';
 import AppError from '../../builder/app-error';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
 import {
@@ -96,17 +97,28 @@ export const uploadNewsFile = async (
   };
 };
 
-export const deleteNewsFile = async (path: string) => {
-  if (!path) return;
-  fs.unlink(path, (err) => {
+export const deleteNewsFile = async (filePath: string) => {
+  if (!filePath) return;
+
+  const uploadsDir = nodePath.resolve('uploads');
+  const resolved = nodePath.resolve(filePath);
+
+  if (!resolved.startsWith(uploadsDir + nodePath.sep)) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Invalid file path');
+  }
+
+  fs.unlink(resolved, (err) => {
     if (err && (err as { code?: string }).code !== 'ENOENT') {
-      console.warn(`❌ Failed to delete file: ${path}`, (err as Error).message);
+      console.warn(
+        `❌ Failed to delete file: ${resolved}`,
+        (err as Error).message,
+      );
     } else {
-      console.log(`🗑️ Deleted file: ${path}`);
+      console.log(`🗑️ Deleted file: ${resolved}`);
     }
   });
 
-  return path;
+  return filePath;
 };
 
 export const createNews = async (
