@@ -104,7 +104,9 @@ export const updateSelf = async (
   const result = await UserRepository.updateById(user._id, payload);
 
   if (result) {
-    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+    await invalidateCache(generateCacheKey(CACHE_PREFIX, ['id', user._id]));
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:admin:list:*`);
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:writers:*`);
   }
 
   return result!;
@@ -135,7 +137,9 @@ export const updateUser = async (
   const result = await UserRepository.updateById(id, payload);
 
   if (result) {
-    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+    await invalidateCache(generateCacheKey(CACHE_PREFIX, ['id', id]));
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:admin:list:*`);
+    await invalidateCacheByPattern(`${CACHE_PREFIX}:writers:*`);
   }
 
   return result!;
@@ -170,7 +174,8 @@ export const deleteUser = async (id: string): Promise<void> => {
   }
 
   await user.softDelete();
-  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  await invalidateCache(generateCacheKey(CACHE_PREFIX, ['id', id]));
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:admin:list:*`);
 };
 
 export const deleteUsers = async (
@@ -223,7 +228,9 @@ export const restoreUser = async (id: string): Promise<TUser> => {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found or not deleted');
   }
 
-  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  await invalidateCache(generateCacheKey(CACHE_PREFIX, ['id', id]));
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:admin:list:*`);
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:writers:*`);
   return user;
 };
 

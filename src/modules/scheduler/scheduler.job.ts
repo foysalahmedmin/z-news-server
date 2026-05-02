@@ -46,12 +46,15 @@ const runScheduledJobs = async () => {
 };
 
 // Start the scheduler (running every minute)
+// Only runs on cluster worker 0 (or non-cluster mode) to prevent race conditions
 export const initScheduler = () => {
+  const instanceId = process.env.NODE_APP_INSTANCE;
+  if (instanceId !== undefined && instanceId !== '0') {
+    return;
+  }
+
   console.log('[Scheduler] Background jobs initialized.');
 
-  // Run immediately on start
   runScheduledJobs();
-
-  // Schedule to run every 60 seconds
   setInterval(runScheduledJobs, 60 * 1000);
 };

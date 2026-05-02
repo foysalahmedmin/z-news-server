@@ -1,5 +1,5 @@
 import httpStatus from 'http-status';
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import AppError from '../../builder/app-error';
 import { User } from '../user/user.model';
 import { News } from '../news/news.model';
@@ -98,40 +98,56 @@ const updateWorkflowStage = async (
     stage.completed_at = new Date();
   }
 
-  // If stage is approved, move to the next stage if it exists
-  if (payload.status === 'approved') {
-    if (stageIndex < workflow.stages.length - 1) {
-      workflow.current_stage = workflow.stages[stageIndex + 1].stage_name;
-    } else {
-      // If it's the last stage and it's approved, the article is ready for final publishing
-      // We'll update the news status automatically
-      const news = await News.findById(workflow.news);
-      if (news && news.status !== 'published') {
-        news.status = 'published';
-        news.published_at = new Date();
-        await news.save();
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    // If stage is approved, move to the next stage if it exists
+    if (payload.status === 'approved') {
+      if (stageIndex < workflow.stages.length - 1) {
+        workflow.current_stage = workflow.stages[stageIndex + 1].stage_name;
+      } else {
+        const news = await News.findById(workflow.news).session(session);
+        if (news && news.status !== 'published') {
+          news.status = 'published';
+          news.published_at = new Date();
+          await news.save({ session });
+        }
       }
     }
+
+    // If stage is rejected, revert news to draft and notify the author
+    if (payload.status === 'rejected') {
+      const news = await News.findById(workflow.news).session(session);
+      if (news) {
+        news.status = 'draft';
+        await news.save({ session });
+      }
+    }
+
+    await workflow.save({ session });
+    await session.commitTransaction();
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
   }
 
-  // If stage is rejected, revert news to draft and notify the author
-  if (payload.status === 'rejected') {
+  // Post-commit side effects (notification is fire-and-forget)
+  if (payload.status === 'rejected' && actorId) {
     const news = await News.findById(workflow.news);
     if (news) {
-      news.status = 'draft';
-      await news.save();
-
-      if (actorId) {
-        await sendNewsNotification({
-          news: news._id.toString(),
-          sender: actorId,
-          type: 'news-request-response',
-        });
-      }
+      sendNewsNotification({
+        news: news._id.toString(),
+        sender: actorId,
+        type: 'news-request-response',
+      }).catch(
+        // eslint-disable-next-line no-console
+        (err) => console.error('Failed to send rejection notification:', err),
+      );
     }
   }
-
-  await workflow.save();
 
   return workflow;
 };

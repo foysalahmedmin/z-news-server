@@ -15,6 +15,7 @@ export type TType =
   | 'reply';
 
 export type TNotification = {
+  _id?: Types.ObjectId;
   title: string;
   message: string;
   type: TType;

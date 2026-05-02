@@ -16,19 +16,7 @@ import router from './routes';
 dotenv.config();
 const app: Application = express();
 
-app.use(helmet());
-
-// Apply global rate limiting
-app.use(globalRateLimiter);
-
-app.set('trust proxy', true);
-
-app.use(express.json({ limit: '1mb' }));
-
-app.use(sanitize);
-
-app.use(cookieParser());
-
+// CORS must be first so preflight OPTIONS requests are handled before any other middleware
 app.use(
   cors({
     origin: [
@@ -42,6 +30,19 @@ app.use(
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   }),
 );
+
+app.use(helmet());
+
+// Apply global rate limiting
+app.use(globalRateLimiter);
+
+app.set('trust proxy', true);
+
+app.use(express.json({ limit: '1mb' }));
+
+app.use(sanitize);
+
+app.use(cookieParser());
 
 app.use(
   session({

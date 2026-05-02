@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 import httpStatus from 'http-status';
 import AppError from '../../builder/app-error';
-import AppQueryFind from '../../builder/app-query-find';
 import { emitToUser } from '../../config/socket';
 import {
   generateCacheKey,
@@ -12,7 +11,7 @@ import { sendEmail } from '../../utils/send-email';
 import { News } from '../news/news.model';
 import { NotificationRecipient } from '../notification-recipient/notification-recipient.model';
 import { User } from '../user/user.model';
-import { Notification } from './notification.model';
+import * as NotificationRepository from './notification.repository';
 import { TNotification, TType } from './notification.type';
 
 const CACHE_PREFIX = 'notification';
@@ -21,11 +20,9 @@ const CACHE_TTL = 300; // 5 minutes
 export const createNotification = async (
   data: TNotification,
 ): Promise<TNotification> => {
-  const result = await Notification.create(data);
-  if (result) {
-    await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
-  }
-  return result.toObject();
+  const result = await NotificationRepository.create(data);
+  await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
+  return result;
 };
 
 export const sendNewsNotification = async (payload: {
@@ -48,7 +45,8 @@ export const sendNewsNotification = async (payload: {
         sender: sender?._id.toString(),
       };
 
-      const notification = await Notification.create(notificationPayload);
+      const notification =
+        await NotificationRepository.create(notificationPayload);
 
       const admins = await User.find({
         role: 'admin',
@@ -116,7 +114,8 @@ export const sendNewsNotification = async (payload: {
         sender: sender?._id.toString(),
       };
 
-      const notification = await Notification.create(notificationPayload);
+      const notification =
+        await NotificationRepository.create(notificationPayload);
 
       const recipient = {
         notification: notification._id,
@@ -193,7 +192,7 @@ export const getNotification = async (id: string): Promise<TNotification> => {
     generateCacheKey(CACHE_PREFIX, ['id', id]),
     CACHE_TTL,
     async () => {
-      const result = await Notification.findById(id);
+      const result = await NotificationRepository.findByIdLean(id);
       if (!result) {
         throw new AppError(httpStatus.NOT_FOUND, 'Notification not found');
       }
@@ -209,19 +208,9 @@ export const getNotifications = async (
   meta: { total: number; page: number; limit: number };
 }> => {
   const cacheKey = generateCacheKey(CACHE_PREFIX, ['list', query]);
-  return await withCache(cacheKey, CACHE_TTL, async () => {
-    const notificationQuery = new AppQueryFind(Notification, query)
-      .search(['title', 'message', 'type', 'priority'])
-      .filter()
-      .sort()
-      .paginate()
-      .fields()
-      .tap((q) => q.lean());
-
-    const result = await notificationQuery.execute();
-
-    return result;
-  });
+  return await withCache(cacheKey, CACHE_TTL, () =>
+    NotificationRepository.findPaginated(query),
+  );
 };
 
 export const updateNotification = async (
@@ -230,16 +219,12 @@ export const updateNotification = async (
     Pick<TNotification, 'title' | 'message' | 'type' | 'priority'>
   >,
 ): Promise<TNotification> => {
-  const data = await Notification.findById(id).lean();
-  if (!data) {
+  const exists = await NotificationRepository.findByIdLean(id);
+  if (!exists) {
     throw new AppError(httpStatus.NOT_FOUND, 'Notification not found');
   }
 
-  const result = await Notification.findByIdAndUpdate(id, payload, {
-    new: true,
-    runValidators: true,
-  });
-
+  const result = await NotificationRepository.updateById(id, payload);
   if (result) {
     await invalidateCacheByPattern(`${CACHE_PREFIX}:*`);
   }
@@ -254,15 +239,13 @@ export const updateNotifications = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const notifications = await Notification.find({ _id: { $in: ids } }).lean();
-  const foundIds = notifications.map((notification) =>
-    notification._id.toString(),
-  );
+  const notifications = await NotificationRepository.findManyByIds(ids);
+  const foundIds = notifications.map((n) => n._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  const result = await Notification.updateMany(
-    { _id: { $in: foundIds } },
-    { ...payload },
+  const result = await NotificationRepository.updateManyByIds(
+    foundIds,
+    payload,
   );
 
   return {
@@ -272,7 +255,7 @@ export const updateNotifications = async (
 };
 
 export const deleteNotification = async (id: string): Promise<void> => {
-  const notification = await Notification.findById(id);
+  const notification = await NotificationRepository.findById(id);
   if (!notification) {
     throw new AppError(httpStatus.NOT_FOUND, 'Notification not found');
   }
@@ -284,14 +267,12 @@ export const deleteNotification = async (id: string): Promise<void> => {
 export const deleteNotificationPermanent = async (
   id: string,
 ): Promise<void> => {
-  const notification = await Notification.findById(id)
-    .setOptions({ bypassDeleted: true })
-    .lean();
+  const notification = await NotificationRepository.findByIdWithBypass(id);
   if (!notification) {
     throw new AppError(httpStatus.NOT_FOUND, 'Notification not found');
   }
 
-  await Notification.findByIdAndDelete(id);
+  await NotificationRepository.hardDeleteById(id);
 };
 
 export const deleteNotifications = async (
@@ -300,16 +281,11 @@ export const deleteNotifications = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const notifications = await Notification.find({ _id: { $in: ids } }).lean();
-  const foundIds = notifications.map((notification) =>
-    notification._id.toString(),
-  );
+  const notifications = await NotificationRepository.findManyByIds(ids);
+  const foundIds = notifications.map((n) => n._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Notification.updateMany(
-    { _id: { $in: foundIds } },
-    { is_deleted: true },
-  );
+  await NotificationRepository.softDeleteManyByIds(foundIds);
 
   return {
     count: foundIds.length,
@@ -323,21 +299,13 @@ export const deleteNotificationsPermanent = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const notifications = await Notification.find({
-    _id: { $in: ids },
+  const notifications = await NotificationRepository.findManyByIdsBypass(ids, {
     is_deleted: true,
-  })
-    .setOptions({ bypassDeleted: true })
-    .lean();
-  const foundIds = notifications.map((notification) =>
-    notification._id.toString(),
-  );
+  });
+  const foundIds = notifications.map((n) => n._id!.toString());
   const notFoundIds = ids.filter((id) => !foundIds.includes(id));
 
-  await Notification.deleteMany({
-    _id: { $in: foundIds },
-    is_deleted: true,
-  }).setOptions({ bypassDeleted: true });
+  await NotificationRepository.hardDeleteManyByIds(foundIds);
 
   return {
     count: foundIds.length,
@@ -348,11 +316,7 @@ export const deleteNotificationsPermanent = async (
 export const restoreNotification = async (
   id: string,
 ): Promise<TNotification> => {
-  const notification = await Notification.findOneAndUpdate(
-    { _id: id, is_deleted: true },
-    { is_deleted: false },
-    { new: true },
-  );
+  const notification = await NotificationRepository.restoreById(id);
 
   if (!notification) {
     throw new AppError(
@@ -370,17 +334,10 @@ export const restoreNotifications = async (
   count: number;
   not_found_ids: string[];
 }> => {
-  const result = await Notification.updateMany(
-    { _id: { $in: ids }, is_deleted: true },
-    { is_deleted: false },
-  );
+  const result = await NotificationRepository.restoreManyByIds(ids);
 
-  const restoredNotifications = await Notification.find({
-    _id: { $in: ids },
-  }).lean();
-  const restoredIds = restoredNotifications.map((notification) =>
-    notification._id.toString(),
-  );
+  const restoredNotifications = await NotificationRepository.findManyByIds(ids);
+  const restoredIds = restoredNotifications.map((n) => n._id!.toString());
   const notFoundIds = ids.filter((id) => !restoredIds.includes(id));
 
   return {
