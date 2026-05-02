@@ -1,3 +1,5 @@
-// import cron from 'node-cron';
+import { initScheduler } from '../modules/scheduler/scheduler.job';
 
-export const initializeJobs = () => {};
+export const initializeJobs = () => {
+  initScheduler();
+};
