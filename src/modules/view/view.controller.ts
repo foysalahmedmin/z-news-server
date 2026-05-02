@@ -124,3 +124,35 @@ export const deleteViews = catchAsync(async (req, res) => {
     },
   });
 });
+
+export const getTopViewedNews = catchAsync(async (req, res) => {
+  const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+  const result = await ViewServices.getTopViewedNews(limit);
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'Top viewed news retrieved successfully',
+    data: result,
+  });
+});
+
+export const getViewTrends = catchAsync(async (req, res) => {
+  const days = req.query.days ? parseInt(req.query.days as string, 10) : 7;
+  const result = await ViewServices.getViewTrends(days);
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'View trends retrieved successfully',
+    data: result,
+  });
+});
+
+export const getTotalViewCount = catchAsync(async (_req, res) => {
+  const result = await ViewServices.getTotalViewCount();
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'Total view count retrieved successfully',
+    data: result,
+  });
+});

@@ -7,6 +7,23 @@ import * as ViewValidations from './view.validator';
 
 const router = express.Router();
 
+// GET — Analytics
+router.get(
+  '/analytics/top',
+  auth('super-admin', 'admin'),
+  ViewControllers.getTopViewedNews,
+);
+router.get(
+  '/analytics/trends',
+  auth('super-admin', 'admin'),
+  ViewControllers.getViewTrends,
+);
+router.get(
+  '/analytics/total',
+  auth('super-admin', 'admin'),
+  ViewControllers.getTotalViewCount,
+);
+
 // GET
 router.get(
   '/self',

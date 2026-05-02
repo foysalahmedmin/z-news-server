@@ -4,6 +4,7 @@ import AppError from '../../builder/app-error';
 import { invalidateCacheByPattern } from '../../utils/cache.utils';
 import * as ReactionRepository from '../reaction/reaction.repository';
 import * as UserProfileRepository from '../user-profile/user-profile.repository';
+import { BadgeService } from '../badge/badge.service';
 import * as UserRepository from '../user/user.repository';
 import * as CommentRepository from './comment.repository';
 import { TCommentDocument } from './comment.type';
@@ -89,6 +90,10 @@ export const createReply = async (
     'reputation_score',
     5,
   ); // 5 points for a reply
+  BadgeService.checkAndAwardBadges(userId).catch(
+    // eslint-disable-next-line no-console
+    (err) => console.error('Badge check error:', err),
+  );
 
   // Process mentions
   const mentionedUsernames = extractMentions(payload.content);

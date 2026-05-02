@@ -245,6 +245,7 @@ newsSchema.index({ created_at: -1 });
 newsSchema.index({ published_at: -1 });
 
 newsSchema.index({ title: 1, description: 1 });
+newsSchema.index({ title: 'text', description: 'text', tags: 'text' });
 
 newsSchema.virtual('news_headline', {
   ref: 'NewsHeadline',

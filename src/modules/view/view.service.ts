@@ -10,7 +10,9 @@ import {
 import { TGuest } from '../guest/guest.type';
 import * as UserProfileRepository from '../user-profile/user-profile.repository';
 import { UserProfileService } from '../user-profile/user-profile.service';
+import { BadgeService } from '../badge/badge.service';
 import * as ViewRepository from './view.repository';
+import { View } from './view.model';
 import { TView } from './view.type';
 
 const CACHE_PREFIX = 'view';
@@ -146,6 +148,10 @@ export const getSelfNewsView = async (
             user._id,
             'articles_read',
           );
+          BadgeService.checkAndAwardBadges(user._id).catch(
+            // eslint-disable-next-line no-console
+            (err) => console.error('Badge check error:', err),
+          );
         }
       }
     }
@@ -232,4 +238,64 @@ export const deleteViews = async (
     count: result.deletedCount,
     not_found_ids: notFoundIds,
   };
+};
+
+export const getTopViewedNews = async (
+  limit: number = 10,
+): Promise<
+  {
+    _id: string;
+    title: string;
+    slug: string;
+    status: string;
+    view_count: number;
+  }[]
+> => {
+  return await View.aggregate([
+    { $group: { _id: '$news', view_count: { $sum: 1 } } },
+    { $sort: { view_count: -1 } },
+    { $limit: limit },
+    {
+      $lookup: {
+        from: 'news',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'news',
+      },
+    },
+    { $unwind: '$news' },
+    {
+      $project: {
+        _id: '$news._id',
+        title: '$news.title',
+        slug: '$news.slug',
+        status: '$news.status',
+        view_count: 1,
+      },
+    },
+  ]);
+};
+
+export const getViewTrends = async (
+  days: number = 7,
+): Promise<{ date: string; count: number }[]> => {
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+
+  return await View.aggregate([
+    { $match: { created_at: { $gte: since } } },
+    {
+      $group: {
+        _id: { $dateToString: { format: '%Y-%m-%d', date: '$created_at' } },
+        count: { $sum: 1 },
+      },
+    },
+    { $sort: { _id: 1 } },
+    { $project: { _id: 0, date: '$_id', count: 1 } },
+  ]);
+};
+
+export const getTotalViewCount = async (): Promise<{ total: number }> => {
+  const total = await View.countDocuments();
+  return { total };
 };

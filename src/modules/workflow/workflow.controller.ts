@@ -17,6 +17,7 @@ const updateWorkflowStage = catchAsync(async (req, res) => {
   const result = await WorkflowService.updateWorkflowStage(
     req.params.id,
     req.body,
+    req.user._id,
   );
   sendResponse(res, {
     status: httpStatus.OK,

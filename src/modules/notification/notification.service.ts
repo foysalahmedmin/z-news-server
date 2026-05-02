@@ -8,6 +8,7 @@ import {
   invalidateCacheByPattern,
   withCache,
 } from '../../utils/cache.utils';
+import { sendEmail } from '../../utils/send-email';
 import { News } from '../news/news.model';
 import { NotificationRecipient } from '../notification-recipient/notification-recipient.model';
 import { User } from '../user/user.model';
@@ -152,19 +153,34 @@ export const sendNewsNotification = async (payload: {
       // Send to the news author
       if (result && news.author) {
         let authorId: string;
+        let authorEmail: string | null = null;
         if (
           typeof news.author === 'object' &&
           news.author !== null &&
           '_id' in news.author
         ) {
-          authorId = (
-            news.author as { _id: { toString(): string } }
-          )._id.toString();
+          const authorObj = news.author as {
+            _id: { toString(): string };
+            email?: string;
+          };
+          authorId = authorObj._id.toString();
+          authorEmail = authorObj.email ?? null;
         } else {
           authorId = String(news.author);
         }
 
         emitToUser(authorId, 'notification-recipient-created', result);
+
+        if (authorEmail) {
+          sendEmail({
+            to: authorEmail,
+            subject: notificationPayload.title,
+            text: notificationPayload.message,
+            html: `<p>${notificationPayload.message}</p><p><a href="${recipient.metadata.url}">View article</a></p>`,
+          }).catch((err) =>
+            console.error('Failed to send notification email:', err),
+          );
+        }
       }
     }
   } catch (error) {

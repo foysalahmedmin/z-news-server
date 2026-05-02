@@ -8,6 +8,7 @@ import {
 } from '../../utils/cache.utils';
 import { TGuest } from '../guest/guest.type';
 import * as UserProfileRepository from '../user-profile/user-profile.repository';
+import { BadgeService } from '../badge/badge.service';
 import * as CommentRepository from './comment.repository';
 import { TComment } from './comment.type';
 
@@ -36,6 +37,10 @@ export const createComment = async (
     await UserProfileRepository.incrementActivityStat(
       user._id,
       'total_comments',
+    );
+    BadgeService.checkAndAwardBadges(user._id).catch(
+      // eslint-disable-next-line no-console
+      (err) => console.error('Badge check error:', err),
     );
   }
 

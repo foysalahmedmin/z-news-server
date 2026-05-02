@@ -3,6 +3,7 @@ import { Types } from 'mongoose';
 import AppError from '../../builder/app-error';
 import { User } from '../user/user.model';
 import { News } from '../news/news.model';
+import { sendNewsNotification } from '../notification/notification.service';
 import * as WorkflowRepository from './workflow.repository';
 import { TWorkflow, TWorkflowStageStatus } from './workflow.type';
 
@@ -54,6 +55,7 @@ const updateWorkflowStage = async (
     comments?: string;
     assignee?: string;
   },
+  actorId?: string,
 ) => {
   const workflow = await WorkflowRepository.findById(workflowId);
   if (!workflow) {
@@ -112,8 +114,22 @@ const updateWorkflowStage = async (
     }
   }
 
-  // If stage is rejected, move back to drafting or special rejection stage?
-  // For simplicity, we'll keep it as rejected and maybe author needs to fix it.
+  // If stage is rejected, revert news to draft and notify the author
+  if (payload.status === 'rejected') {
+    const news = await News.findById(workflow.news);
+    if (news) {
+      news.status = 'draft';
+      await news.save();
+
+      if (actorId) {
+        await sendNewsNotification({
+          news: news._id.toString(),
+          sender: actorId,
+          type: 'news-request-response',
+        });
+      }
+    }
+  }
 
   await workflow.save();
 
