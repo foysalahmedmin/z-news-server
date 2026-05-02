@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import AppError from '../../builder/app-error';
 import * as NewsRepository from '../news/news.repository';
 import * as UserProfileRepository from '../user-profile/user-profile.repository';
-import { Poll } from './poll.model';
+import * as PollRepository from './poll.repository';
 import { TPoll } from './poll.type';
 
 // Create poll
@@ -25,19 +25,20 @@ const createPoll = async (userId: string, payload: Partial<TPoll>) => {
     voters: [],
   }));
 
-  const poll = await Poll.create({
+  const poll = await PollRepository.create({
     ...payload,
-    created_by: userId,
+    created_by: userId as unknown as mongoose.Types.ObjectId,
     options,
     total_votes: 0,
     unique_voters: 0,
     votes: [],
   });
 
-  return await Poll.findById(poll._id)
-    .populate('created_by', 'name email')
-    .populate('category', 'name')
-    .populate('news', 'title slug');
+  return await PollRepository.findOne({ _id: poll._id }, [
+    { path: 'created_by', select: 'name email' },
+    { path: 'category', select: 'name' },
+    { path: 'news', select: 'title slug' },
+  ]);
 };
 
 // Get all polls
@@ -70,40 +71,47 @@ const getAllPolls = async (query: Record<string, unknown>) => {
     filter.end_date = { $lt: now };
   }
 
-  const polls = await Poll.find(filter)
-    .sort({ created_at: -1 })
-    .populate('created_by', 'name email')
-    .populate('category', 'name')
-    .populate('news', 'title slug');
+  const polls = await PollRepository.findMany(
+    filter,
+    [
+      { path: 'created_by', select: 'name email' },
+      { path: 'category', select: 'name' },
+      { path: 'news', select: 'title slug' },
+    ],
+    { created_at: -1 },
+  );
 
   return polls;
 };
 
 // Get active polls
 const getActivePolls = async () => {
-  return await Poll.getActivePolls();
+  return await PollRepository.getActivePolls();
 };
 
 // Get featured polls
 const getFeaturedPolls = async (limit: number = 5) => {
-  return await Poll.getFeaturedPolls(limit);
+  return await PollRepository.getFeaturedPolls(limit);
 };
 
 // Get polls by news
 const getPollsByNews = async (newsId: string) => {
-  const polls = await Poll.find({ news: newsId })
-    .sort({ created_at: -1 })
-    .populate('created_by', 'name email');
+  const polls = await PollRepository.findMany(
+    { news: newsId },
+    [{ path: 'created_by', select: 'name email' }],
+    { created_at: -1 },
+  );
 
   return polls;
 };
 
 // Get poll by ID
 const getPollById = async (pollId: string, userId?: string) => {
-  const poll = await Poll.findById(pollId)
-    .populate('created_by', 'name email image')
-    .populate('category', 'name')
-    .populate('news', 'title slug');
+  const poll = await PollRepository.findOne({ _id: pollId }, [
+    { path: 'created_by', select: 'name email image' },
+    { path: 'category', select: 'name' },
+    { path: 'news', select: 'title slug' },
+  ]);
 
   if (!poll) {
     throw new AppError(httpStatus.NOT_FOUND, 'Poll not found');
@@ -112,7 +120,7 @@ const getPollById = async (pollId: string, userId?: string) => {
   // Check if user has voted
   let hasVoted = false;
   if (userId) {
-    hasVoted = await Poll.hasUserVoted(pollId, userId);
+    hasVoted = await PollRepository.hasUserVoted(pollId, userId);
   }
 
   return {
@@ -127,7 +135,7 @@ const updatePoll = async (
   userId: string,
   payload: Partial<TPoll>,
 ) => {
-  const poll = await Poll.findById(pollId);
+  const poll = await PollRepository.findById(pollId);
 
   if (!poll) {
     throw new AppError(httpStatus.NOT_FOUND, 'Poll not found');
@@ -150,11 +158,12 @@ const updatePoll = async (
   }
 
   Object.assign(poll, payload);
-  await poll.save();
+  await PollRepository.save(poll);
 
-  return await Poll.findById(poll._id)
-    .populate('created_by', 'name email')
-    .populate('category', 'name');
+  return await PollRepository.findOne({ _id: poll._id }, [
+    { path: 'created_by', select: 'name email' },
+    { path: 'category', select: 'name' },
+  ]);
 };
 
 // Vote on poll
@@ -164,7 +173,7 @@ const vote = async (
   optionIndices: number[],
   guestId?: string,
 ) => {
-  const poll = await Poll.findById(pollId);
+  const poll = await PollRepository.findById(pollId);
 
   if (!poll) {
     throw new AppError(httpStatus.NOT_FOUND, 'Poll not found');
@@ -202,7 +211,7 @@ const vote = async (
 
   // Check if user has already voted
   if (userId) {
-    const hasVoted = await Poll.hasUserVoted(pollId, userId);
+    const hasVoted = await PollRepository.hasUserVoted(pollId, userId);
     if (hasVoted) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
@@ -262,7 +271,7 @@ const vote = async (
   poll.total_votes += optionIndices.length;
   poll.unique_voters += 1;
 
-  await poll.save();
+  await PollRepository.save(poll);
 
   // Update user activity stats
   if (userId) {
@@ -272,14 +281,15 @@ const vote = async (
     );
   }
 
-  return await Poll.findById(poll._id)
-    .populate('created_by', 'name email')
-    .populate('category', 'name');
+  return await PollRepository.findOne({ _id: poll._id }, [
+    { path: 'created_by', select: 'name email' },
+    { path: 'category', select: 'name' },
+  ]);
 };
 
 // Get poll results
 const getPollResults = async (pollId: string) => {
-  const poll = await Poll.findById(pollId);
+  const poll = await PollRepository.findById(pollId);
 
   if (!poll) {
     throw new AppError(httpStatus.NOT_FOUND, 'Poll not found');
@@ -296,7 +306,7 @@ const getPollResults = async (pollId: string) => {
 
 // Delete poll
 const deletePoll = async (pollId: string, userId: string) => {
-  const poll = await Poll.findById(pollId);
+  const poll = await PollRepository.findById(pollId);
 
   if (!poll) {
     throw new AppError(httpStatus.NOT_FOUND, 'Poll not found');
