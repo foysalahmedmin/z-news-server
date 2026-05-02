@@ -23,4 +23,5 @@ export {
   updateIsVerifiedById,
   updatePasswordByEmailAndRole,
   updatePasswordById,
+  incrementTokenVersion,
 } from '../user/user.repository';

@@ -47,7 +47,7 @@ export const findByGoogleIdWithPassword = async (
   googleId: string,
 ): Promise<TUserDocument | null> => {
   return (await User.findOne({ google_id: googleId }).select(
-    '+password',
+    '+password +token_version',
   )) as TUserDocument | null;
 };
 
@@ -68,7 +68,10 @@ export const updatePasswordByEmailAndRole = async (
 ): Promise<TUserDocument | null> => {
   return await User.findOneAndUpdate(
     { email, role },
-    { password: hashedPassword, password_changed_at: new Date() },
+    {
+      $set: { password: hashedPassword, password_changed_at: new Date() },
+      $inc: { token_version: 1 },
+    },
     { new: true, runValidators: true },
   );
 };
@@ -79,9 +82,16 @@ export const updatePasswordById = async (
 ): Promise<TUserDocument | null> => {
   return await User.findByIdAndUpdate(
     id,
-    { password: hashedPassword, password_changed_at: new Date() },
+    {
+      $set: { password: hashedPassword, password_changed_at: new Date() },
+      $inc: { token_version: 1 },
+    },
     { new: true, runValidators: true },
   );
+};
+
+export const incrementTokenVersion = async (id: string): Promise<void> => {
+  await User.findByIdAndUpdate(id, { $inc: { token_version: 1 } });
 };
 
 export const updateIsVerifiedById = async (

@@ -13,6 +13,7 @@ import { JwtPayload } from 'jsonwebtoken';
 import AppError from '../../builder/app-error';
 import config from '../../config';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
+import { invalidateCache } from '../../utils/cache.utils';
 import { sendEmail } from '../../utils/send-email';
 import { TUserDocument } from '../user/user.type';
 import * as AuthRepository from './auth.repository';
@@ -29,11 +30,15 @@ const client = new OAuth2Client(config.google_client_id);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+const invalidateAuthCache = (userId: string) =>
+  invalidateCache(`auth:user:${userId}`);
+
 const buildJwtPayload = (user: TUserDocument): TJwtPayload => ({
   _id: user._id.toString(),
   name: user.name,
   email: user.email,
   role: user.role,
+  token_version: user.token_version,
   ...(user.image && { image: user.image }),
 });
 
@@ -165,7 +170,8 @@ export const signup = async (payload: TSignup) => {
 // ─── Refresh Token ────────────────────────────────────────────────────────────
 
 export const refreshToken = async (token: string) => {
-  const { email, iat } = verifyToken(token, config.jwt_refresh_secret!);
+  const decoded = verifyToken(token, config.jwt_refresh_secret!);
+  const { email, iat, token_version } = decoded;
 
   if (!email || typeof iat !== 'number') {
     throw new AppError(
@@ -184,6 +190,13 @@ export const refreshToken = async (token: string) => {
   }
   if (user.status === 'blocked') {
     throw new AppError(httpStatus.FORBIDDEN, 'User is blocked!');
+  }
+
+  if (token_version !== undefined && token_version !== user.token_version) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      'Session invalidated. Please login again.',
+    );
   }
 
   if (user.password_changed_at) {
@@ -231,11 +244,15 @@ export const changePassword = async (
     Number(config.bcrypt_salt_rounds),
   );
 
-  return await AuthRepository.updatePasswordByEmailAndRole(
+  const result = await AuthRepository.updatePasswordByEmailAndRole(
     user.email,
     user.role,
     hashedNewPassword,
   );
+
+  await invalidateAuthCache(existing._id.toString());
+
+  return result;
 };
 
 // ─── Forget Password ──────────────────────────────────────────────────────────
@@ -306,10 +323,14 @@ export const resetPassword = async (payload: TResetPassword, token: string) => {
     Number(config.bcrypt_salt_rounds),
   );
 
-  return await AuthRepository.updatePasswordById(
+  const result = await AuthRepository.updatePasswordById(
     user._id.toString(),
     hashedPassword,
   );
+
+  await invalidateAuthCache(user._id.toString());
+
+  return result;
 };
 
 // ─── Email Verification Source ────────────────────────────────────────────────
@@ -337,6 +358,13 @@ export const emailVerificationSource = async (user: TJwtPayload) => {
     text: 'Verify your email within 10 minuets',
     html: content,
   });
+};
+
+// ─── Logout All Sessions ──────────────────────────────────────────────────────
+
+export const logoutAllSessions = async (userId: string) => {
+  await AuthRepository.incrementTokenVersion(userId);
+  await invalidateAuthCache(userId);
 };
 
 // ─── Email Verification ───────────────────────────────────────────────────────

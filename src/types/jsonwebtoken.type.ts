@@ -14,4 +14,5 @@ export type TJwtPayload = {
   image?: string;
   role?: TRole;
   is_verified?: boolean;
+  token_version?: number;
 };

@@ -13,6 +13,7 @@ export type TUser = {
   google_id?: string;
   auth_source: TAuthSource;
   password_changed_at?: Date;
+  token_version?: number;
   role: TRole;
   status: TStatus;
   is_verified: boolean;

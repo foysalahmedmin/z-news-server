@@ -11,6 +11,7 @@ import AppError from '../../builder/app-error';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
 import {
   generateCacheKey,
+  invalidateCache,
   invalidateCacheByPattern,
   withCache,
 } from '../../utils/cache.utils';
@@ -120,6 +121,15 @@ export const updateUser = async (
   const data = await UserRepository.findByIdLean(id);
   if (!data) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+
+  const roleOrStatusChanged =
+    (payload.role !== undefined && payload.role !== data.role) ||
+    (payload.status !== undefined && payload.status !== data.status);
+
+  if (roleOrStatusChanged) {
+    await UserRepository.incrementTokenVersion(id);
+    await invalidateCache(`auth:user:${id}`);
   }
 
   const result = await UserRepository.updateById(id, payload);

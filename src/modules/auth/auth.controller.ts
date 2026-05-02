@@ -149,3 +149,13 @@ export const emailVerification = catchAsync(async (req, res) => {
     data: result,
   });
 });
+
+export const logoutAllSessions = catchAsync(async (req, res) => {
+  await AuthServices.logoutAllSessions(req.user._id);
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'All sessions have been invalidated successfully!',
+    data: null,
+  });
+});

@@ -68,6 +68,20 @@ router.post(
 
 router.post('/email-verification', AuthControllers.emailVerification);
 
+router.post(
+  '/logout-all',
+  auth(
+    'super-admin',
+    'admin',
+    'editor',
+    'author',
+    'contributor',
+    'subscriber',
+    'user',
+  ),
+  AuthControllers.logoutAllSessions,
+);
+
 const authRoutes = router;
 
 export default authRoutes;

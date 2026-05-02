@@ -62,6 +62,7 @@ const userSchema = new Schema<TUserDocument>(
     },
     is_verified: { type: Boolean, default: false },
     is_deleted: { type: Boolean, default: false, select: false },
+    token_version: { type: Number, default: 1, select: false },
   },
   {
     timestamps: {
@@ -93,6 +94,7 @@ userSchema.methods.toJSON = function () {
   delete user.password;
   delete user.password_changed_at;
   delete user.is_deleted;
+  delete user.token_version;
   return user;
 };
 
@@ -154,12 +156,14 @@ userSchema.pre('aggregate', function (next) {
 
 // Static methods
 userSchema.statics.isUserExist = async function (_id: string) {
-  return await this.findById(_id).select('+password +password_changed_at');
+  return await this.findById(_id).select(
+    '+password +password_changed_at +token_version +is_deleted',
+  );
 };
 
 userSchema.statics.isUserExistByEmail = async function (email: string) {
   return await this.findOne({ email: email }).select(
-    '+password +password_changed_at',
+    '+password +password_changed_at +token_version',
   );
 };
 

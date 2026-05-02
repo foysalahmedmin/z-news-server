@@ -60,7 +60,7 @@ const auth = (...roles: (TRole | 'guest')[]) => {
         throw new AppError(httpStatus.UNAUTHORIZED, 'Invalid token');
       }
 
-      const { _id, role, iat } = decoded;
+      const { _id, role, iat, token_version } = decoded;
 
       if (!_id || !role || typeof iat !== 'number') {
         throw new AppError(httpStatus.UNAUTHORIZED, 'Invalid token.');
@@ -76,6 +76,13 @@ const auth = (...roles: (TRole | 'guest')[]) => {
         throw new AppError(httpStatus.FORBIDDEN, 'User is blocked');
       }
 
+      if (token_version !== undefined && token_version !== user.token_version) {
+        throw new AppError(
+          httpStatus.FORBIDDEN,
+          'Session invalidated. Please login again.',
+        );
+      }
+
       if (user?.password_changed_at) {
         const passwordChangedAt = new Date(user.password_changed_at).getTime();
         const tokenIssuedAt = iat * 1000; // convert seconds → ms
@@ -88,7 +95,7 @@ const auth = (...roles: (TRole | 'guest')[]) => {
         }
       }
 
-      if (!roles.includes(role) || !roles.includes(user?.role)) {
+      if (!roles.includes(user?.role)) {
         throw new AppError(httpStatus.FORBIDDEN, 'Access denied');
       }
 
