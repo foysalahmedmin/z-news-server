@@ -28,20 +28,28 @@ const CACHE_PREFIX = 'news';
 
 const ensureUniqueSlug = async (
   baseSlug: string,
-  excludeId: string,
+  excludeId?: string,
 ): Promise<string> => {
-  let slug = baseSlug;
-  let counter = 1;
-  while (true) {
-    const existing = await NewsRepository.findOneLean({ slug });
-    const existingId = (existing as unknown as { _id?: { toString(): string } })
-      ?._id;
-    if (!existing || existingId?.toString() === excludeId) {
-      return slug;
-    }
-    counter += 1;
-    slug = `${baseSlug}-${counter}`;
+  const escaped = baseSlug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(`^${escaped}(-\\d+)?$`);
+
+  const filter: Record<string, unknown> = { slug: pattern };
+  if (excludeId) {
+    filter._id = { $ne: new mongoose.Types.ObjectId(excludeId) };
   }
+
+  const matches = await NewsRepository.findManyLean(filter, [], {
+    bypassDeleted: true,
+  });
+
+  if (matches.length === 0) return baseSlug;
+
+  const taken = new Set(matches.map((n) => n.slug));
+  if (!taken.has(baseSlug)) return baseSlug;
+
+  let counter = 2;
+  while (taken.has(`${baseSlug}-${counter}`)) counter++;
+  return `${baseSlug}-${counter}`;
 };
 const CACHE_TTL = 1800; // 30 minutes
 

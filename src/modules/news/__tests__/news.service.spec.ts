@@ -171,10 +171,8 @@ describe('News Service', () => {
 
   describe('updateNews', () => {
     it('should update a news article', async () => {
-      // First call: news existence check; second call: slug uniqueness check (null = slug is free)
-      (NewsRepository.findOneLean as jest.Mock)
-        .mockResolvedValueOnce(mockNews)
-        .mockResolvedValueOnce(null);
+      (NewsRepository.findOneLean as jest.Mock).mockResolvedValue(mockNews);
+      (NewsRepository.findManyLean as jest.Mock).mockResolvedValue([]);
       (NewsRepository.findByIdAndUpdate as jest.Mock).mockResolvedValue(
         mockNewsDoc,
       );
