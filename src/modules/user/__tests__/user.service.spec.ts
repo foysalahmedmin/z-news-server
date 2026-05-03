@@ -13,6 +13,7 @@ import httpStatus from 'http-status';
 jest.mock('../user.repository');
 jest.mock('../../../utils/cache.utils', () => ({
   withCache: jest.fn((_key: string, _ttl: number, fn: () => unknown) => fn()),
+  invalidateCache: jest.fn().mockResolvedValue(undefined),
   invalidateCacheByPattern: jest.fn().mockResolvedValue(undefined),
   generateCacheKey: jest.fn(
     (_prefix: string, parts: unknown[]) => `mock:${parts.join(':')}`,
@@ -187,7 +188,7 @@ describe('UserService.updateSelf', () => {
   });
 
   it('should invalidate cache after a successful update', async () => {
-    const { invalidateCacheByPattern } = jest.requireMock(
+    const { invalidateCacheByPattern, invalidateCache } = jest.requireMock(
       '../../../utils/cache.utils',
     );
     (UserRepository.findByIdLean as jest.Mock).mockResolvedValue(mockUser());
@@ -198,7 +199,8 @@ describe('UserService.updateSelf', () => {
 
     await UserService.updateSelf(mockJwtPayload(), { name: 'Updated' });
 
-    expect(invalidateCacheByPattern).toHaveBeenCalledWith('user:*');
+    expect(invalidateCache).toHaveBeenCalled();
+    expect(invalidateCacheByPattern).toHaveBeenCalledWith('user:admin:list:*');
   });
 });
 

@@ -22,10 +22,31 @@ jest.mock('../../article-version/article-version.service', () => ({
 jest.mock('../../notification/notification.service', () => ({
   sendNewsNotification: jest.fn(),
 }));
+jest.mock('../../file/file.service', () => ({
+  deleteFilePermanent: jest.fn().mockResolvedValue(undefined),
+}));
+jest.mock('../../category/category.model', () => ({
+  Category: { aggregate: jest.fn().mockResolvedValue([]) },
+}));
+jest.mock('../../article-version/article-version.model', () => ({
+  ArticleVersion: { deleteMany: jest.fn().mockResolvedValue(undefined) },
+}));
+jest.mock('../../bookmark/bookmark.model', () => ({
+  Bookmark: { deleteMany: jest.fn().mockResolvedValue(undefined) },
+}));
+jest.mock('../../comment/comment.model', () => ({
+  Comment: { deleteMany: jest.fn().mockResolvedValue(undefined) },
+}));
+jest.mock('../../reaction/reaction.model', () => ({
+  Reaction: { deleteMany: jest.fn().mockResolvedValue(undefined) },
+}));
+jest.mock('../../poll/poll.model', () => ({
+  Poll: { deleteMany: jest.fn().mockResolvedValue(undefined) },
+}));
 
 describe('News Service', () => {
   const mockUser: TJwtPayload = {
-    _id: 'user_id',
+    _id: '507f1f77bcf86cd799439011',
     name: 'Test User',
     email: 'test@example.com',
     role: 'admin',

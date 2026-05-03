@@ -17,15 +17,16 @@ jest.mock('../../../utils/cache.utils', () => ({
     (_prefix: string, parts: unknown[]) => `mock:${parts.join(':')}`,
   ),
 }));
-jest.mock('../../user-profile/user-profile.model', () => ({
-  UserProfile: {
-    incrementActivityStat: jest.fn().mockResolvedValue(undefined),
-  },
+jest.mock('../../user-profile/user-profile.repository', () => ({
+  incrementActivityStat: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('../../user-profile/user-profile.service', () => ({
   UserProfileService: {
     updateReadingStreak: jest.fn().mockResolvedValue(undefined),
   },
+}));
+jest.mock('../../badge/badge.service', () => ({
+  BadgeService: { checkAndAwardBadges: jest.fn().mockResolvedValue([]) },
 }));
 
 import { TJwtPayload } from '../../../types/jsonwebtoken.type';

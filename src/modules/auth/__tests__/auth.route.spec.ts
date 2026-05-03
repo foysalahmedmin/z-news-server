@@ -20,6 +20,11 @@ jest.mock('../../../middlewares/rate-limit.middleware', () => ({
     _res: express.Response,
     next: express.NextFunction,
   ) => next(),
+  forgetPasswordRateLimiter: (
+    _req: express.Request,
+    _res: express.Response,
+    next: express.NextFunction,
+  ) => next(),
 }));
 
 // ── Stub file middleware ───────────────────────────────────────────────────────

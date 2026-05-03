@@ -8,12 +8,17 @@ import { TNotification } from '../notification.type';
 jest.mock('../notification.model', () => ({
   Notification: {
     create: jest.fn(),
-    findById: jest.fn(),
+    findById: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }),
     findByIdAndUpdate: jest.fn(),
     find: jest.fn(),
     updateMany: jest.fn(),
     deleteMany: jest.fn(),
     findOneAndUpdate: jest.fn(),
+  },
+}));
+jest.mock('../../user-profile/user-profile.model', () => ({
+  UserProfile: {
+    findOne: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }),
   },
 }));
 jest.mock('../../notification-recipient/notification-recipient.model', () => ({
@@ -98,13 +103,8 @@ describe('Notification Service', () => {
   describe('getNotification', () => {
     it('should return a notification by id', async () => {
       (Notification.findById as jest.Mock).mockReturnValue({
-        then: jest.fn().mockResolvedValue(mockNotificationDoc),
-        setOptions: jest.fn().mockReturnThis(),
         lean: jest.fn().mockResolvedValue(mockNotificationDoc),
       });
-      (Notification.findById as jest.Mock).mockResolvedValue(
-        mockNotificationDoc,
-      );
 
       const result = await NotificationService.getNotification(mockId);
 
@@ -113,7 +113,9 @@ describe('Notification Service', () => {
     });
 
     it('should throw error if notification not found', async () => {
-      (Notification.findById as jest.Mock).mockResolvedValue(null);
+      (Notification.findById as jest.Mock).mockReturnValue({
+        lean: jest.fn().mockResolvedValue(null),
+      });
 
       await expect(NotificationService.getNotification(mockId)).rejects.toThrow(
         new AppError(httpStatus.NOT_FOUND, 'Notification not found'),

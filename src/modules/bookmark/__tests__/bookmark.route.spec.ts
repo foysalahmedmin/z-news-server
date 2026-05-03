@@ -56,7 +56,7 @@ describe('Bookmark Routes', () => {
   // ── BOOKMARK ROUTES ────────────────────────────────────────────────────────
 
   describe('POST /api/bookmark', () => {
-    it('should return 200 when bookmark created', async () => {
+    it('should return 201 when bookmark created', async () => {
       (BookmarkService.createBookmark as jest.Mock).mockResolvedValue({
         _id: mockId,
       });
@@ -65,7 +65,7 @@ describe('Bookmark Routes', () => {
         news: mockId,
       });
 
-      expect(res.status).toBe(httpStatus.OK);
+      expect(res.status).toBe(httpStatus.CREATED);
       expect(res.body.success).toBe(true);
       expect(BookmarkService.createBookmark).toHaveBeenCalled();
     });
@@ -133,7 +133,7 @@ describe('Bookmark Routes', () => {
   // ── READING LIST ROUTES ────────────────────────────────────────────────────
 
   describe('POST /api/bookmark/reading-list', () => {
-    it('should return 200 when reading list created', async () => {
+    it('should return 201 when reading list created', async () => {
       (BookmarkService.createReadingList as jest.Mock).mockResolvedValue({
         _id: mockListId,
         name: 'My List',
@@ -143,7 +143,7 @@ describe('Bookmark Routes', () => {
         .post('/api/bookmark/reading-list')
         .send({ name: 'My List' });
 
-      expect(res.status).toBe(httpStatus.OK);
+      expect(res.status).toBe(httpStatus.CREATED);
       expect(res.body.success).toBe(true);
       expect(BookmarkService.createReadingList).toHaveBeenCalled();
     });

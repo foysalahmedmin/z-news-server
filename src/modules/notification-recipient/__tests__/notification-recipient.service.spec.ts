@@ -9,7 +9,9 @@ import { TNotificationRecipient } from '../notification-recipient.type';
 jest.mock('../notification-recipient.model', () => ({
   NotificationRecipient: {
     create: jest.fn(),
-    findById: jest.fn(),
+    findById: jest.fn().mockReturnValue({
+      populate: jest.fn().mockResolvedValue(null),
+    }),
     findOne: jest.fn(),
     find: jest.fn(),
     findByIdAndUpdate: jest.fn(),
@@ -45,7 +47,7 @@ import { NotificationRecipient } from '../notification-recipient.model';
 
 describe('NotificationRecipient Service', () => {
   const mockUser: TJwtPayload = {
-    _id: 'user_id',
+    _id: '507f1f77bcf86cd799439011',
     name: 'Test User',
     email: 'test@example.com',
     role: 'admin',
@@ -159,9 +161,9 @@ describe('NotificationRecipient Service', () => {
 
   describe('deleteNotificationRecipient', () => {
     it('should soft delete a notification recipient', async () => {
-      (NotificationRecipient.findById as jest.Mock).mockResolvedValue(
-        mockRecipientDoc,
-      );
+      (NotificationRecipient.findById as jest.Mock).mockReturnValue({
+        populate: jest.fn().mockResolvedValue(mockRecipientDoc),
+      });
 
       await NotificationRecipientService.deleteNotificationRecipient(mockId);
 
@@ -169,7 +171,9 @@ describe('NotificationRecipient Service', () => {
     });
 
     it('should throw error if recipient not found on delete', async () => {
-      (NotificationRecipient.findById as jest.Mock).mockResolvedValue(null);
+      (NotificationRecipient.findById as jest.Mock).mockReturnValue({
+        populate: jest.fn().mockResolvedValue(null),
+      });
 
       await expect(
         NotificationRecipientService.deleteNotificationRecipient(mockId),

@@ -14,6 +14,23 @@ jest.mock('../../news/news.model', () => ({
     findById: jest.fn(),
   },
 }));
+jest.mock('../../user/user.model', () => ({ User: { findById: jest.fn() } }));
+jest.mock('../../notification/notification.service', () => ({
+  sendNewsNotification: jest.fn().mockResolvedValue(undefined),
+}));
+jest.mock('mongoose', () => {
+  const actual = jest.requireActual('mongoose');
+  const mockSession = {
+    startTransaction: jest.fn(),
+    commitTransaction: jest.fn().mockResolvedValue(undefined),
+    abortTransaction: jest.fn().mockResolvedValue(undefined),
+    endSession: jest.fn(),
+  };
+  return {
+    ...actual,
+    startSession: jest.fn().mockResolvedValue(mockSession),
+  };
+});
 
 import { News } from '../../news/news.model';
 import * as WorkflowRepository from '../workflow.repository';
@@ -120,7 +137,9 @@ describe('WorkflowService.updateWorkflowStage', () => {
     } as any;
 
     (WorkflowRepository.findById as jest.Mock).mockResolvedValue(workflowDoc);
-    (News.findById as jest.Mock).mockResolvedValue(news);
+    (News.findById as jest.Mock).mockReturnValue({
+      session: jest.fn().mockResolvedValue(news),
+    });
 
     await WorkflowService.updateWorkflowStage(workflowDoc._id.toString(), {
       stage_name: 'editing',

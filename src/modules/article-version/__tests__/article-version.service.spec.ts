@@ -13,7 +13,11 @@ jest.mock('../../news/news.model', () => ({
 
 jest.mock('../article-version.model', () => ({
   ArticleVersion: {
-    findOne: jest.fn(),
+    findOne: jest.fn().mockReturnValue({
+      sort: jest.fn().mockReturnValue({
+        select: jest.fn().mockResolvedValue(null),
+      }),
+    }),
     create: jest.fn(),
     findById: jest.fn(),
     getVersionsByNewsId: jest.fn(),
@@ -71,8 +75,10 @@ describe('ArticleVersion Service', () => {
   describe('createVersion', () => {
     it('should create a new version snapshot', async () => {
       (News.findById as jest.Mock).mockResolvedValue(mockNews);
-      (ArticleVersion.findOne as jest.Mock).mockResolvedValue({
-        version_number: 1,
+      (ArticleVersion.findOne as jest.Mock).mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          select: jest.fn().mockResolvedValue({ version_number: 1 }),
+        }),
       });
       (ArticleVersion.create as jest.Mock).mockResolvedValue(mockVersion);
 
@@ -100,7 +106,11 @@ describe('ArticleVersion Service', () => {
 
     it('should start version from 1 when no previous versions exist', async () => {
       (News.findById as jest.Mock).mockResolvedValue(mockNews);
-      (ArticleVersion.findOne as jest.Mock).mockResolvedValue(null);
+      (ArticleVersion.findOne as jest.Mock).mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          select: jest.fn().mockResolvedValue(null),
+        }),
+      });
       (ArticleVersion.create as jest.Mock).mockResolvedValue({
         ...mockVersion,
         version_number: 1,

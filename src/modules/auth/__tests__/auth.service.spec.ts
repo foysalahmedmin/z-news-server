@@ -19,7 +19,7 @@ jest.mock('bcrypt', () => ({
 }));
 
 // ── Mock JWT utils ────────────────────────────────────────────────────────────
-jest.mock('../auth.utils', () => ({
+jest.mock('../auth.util', () => ({
   createToken: jest.fn().mockReturnValue('mock_token'),
   verifyToken: jest.fn(),
 }));

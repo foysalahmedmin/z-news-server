@@ -17,6 +17,9 @@ jest.mock('../../../middlewares/auth.middleware', () => {
     next();
   });
 });
+jest.mock('../../../middlewares/guest.middleware', () => {
+  return jest.fn(() => (_req: any, _res: any, next: any) => next());
+});
 jest.mock('../../../middlewares/validation.middleware', () => {
   return jest.fn(() => (_req: any, _res: any, next: any) => next());
 });
@@ -65,7 +68,7 @@ describe('Poll Routes', () => {
         start_date: new Date(),
       });
 
-      expect(res.status).toBe(httpStatus.OK);
+      expect(res.status).toBe(httpStatus.CREATED);
       expect(res.body.success).toBe(true);
       expect(PollService.createPoll).toHaveBeenCalled();
     });

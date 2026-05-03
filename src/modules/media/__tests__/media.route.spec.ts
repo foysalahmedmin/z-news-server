@@ -97,7 +97,7 @@ describe('Media Routes', () => {
         status: 'active',
       });
 
-      expect(res.status).toBe(httpStatus.OK);
+      expect(res.status).toBe(httpStatus.CREATED);
       expect(res.body.success).toBe(true);
       expect(MediaService.createMedia).toHaveBeenCalled();
     });
