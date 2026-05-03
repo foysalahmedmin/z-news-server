@@ -42,7 +42,7 @@
 - [x] Integration test: news lifecycle (`news-flow.spec.ts` — 9 tests)
 - [x] Integration test: editorial workflow (`editorial-workflow.spec.ts` — 8 tests)
 - [x] Validator audit: 7 validator files completed
-- [ ] Integration test: notification flow
+- [x] Integration test: notification flow (`notification-flow.spec.ts` — 6 tests)
 
 ---
 
