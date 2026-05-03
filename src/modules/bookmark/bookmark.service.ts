@@ -3,6 +3,7 @@ import { Types } from 'mongoose';
 import AppError from '../../builder/app-error';
 import { News } from '../news/news.model';
 import { Bookmark, ReadingList } from './bookmark.model';
+import * as BookmarkRepository from './bookmark.repository';
 import { TBookmark, TReadingList } from './bookmark.type';
 
 // ============ BOOKMARK SERVICES ============
@@ -50,22 +51,7 @@ const getMyBookmarks = async (
   userId: string,
   query: Record<string, unknown>,
 ) => {
-  const filter: Record<string, unknown> = { user: userId };
-
-  if (query.is_read !== undefined) {
-    filter.is_read = query.is_read === 'true';
-  }
-
-  if (query.reading_list) {
-    filter.reading_list = query.reading_list;
-  }
-
-  const bookmarks = await Bookmark.find(filter)
-    .sort({ created_at: -1 })
-    .populate('news', 'title slug thumbnail description published_at category')
-    .populate('reading_list', 'name');
-
-  return bookmarks;
+  return await BookmarkRepository.findBookmarksPaginated(query, { user: userId });
 };
 
 // Get bookmark by ID

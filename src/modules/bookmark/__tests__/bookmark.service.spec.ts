@@ -4,6 +4,28 @@ import AppError from '../../../builder/app-error';
 import { BookmarkService } from '../bookmark.service';
 import { TBookmark, TReadingList } from '../bookmark.type';
 
+jest.mock('../bookmark.repository', () => ({
+  createBookmark: jest.fn(),
+  findBookmarkById: jest.fn(),
+  findBookmarkByIdLean: jest.fn(),
+  findOneBookmark: jest.fn(),
+  findManyBookmarksByIds: jest.fn(),
+  findBookmarksByUserId: jest.fn(),
+  findBookmarksPaginated: jest.fn(),
+  updateBookmarkById: jest.fn(),
+  updateManyBookmarksByIds: jest.fn(),
+  restoreBookmarkById: jest.fn(),
+  restoreManyBookmarksByIds: jest.fn(),
+  softDeleteManyBookmarksByIds: jest.fn(),
+  hardDeleteBookmarkById: jest.fn(),
+  hardDeleteManyBookmarksByIds: jest.fn(),
+  createReadingList: jest.fn(),
+  findReadingListById: jest.fn(),
+  findReadingListByIdLean: jest.fn(),
+  findOneReadingList: jest.fn(),
+  findManyReadingListsByIds: jest.fn(),
+}));
+
 // Mock models used in the service
 jest.mock('../../news/news.model', () => ({
   News: {
@@ -33,6 +55,7 @@ jest.mock('../bookmark.model', () => ({
 
 import { News } from '../../news/news.model';
 import { Bookmark, ReadingList } from '../bookmark.model';
+import * as BookmarkRepository from '../bookmark.repository';
 
 describe('Bookmark Service', () => {
   const mockUserId = new mongoose.Types.ObjectId().toString();
@@ -116,19 +139,17 @@ describe('Bookmark Service', () => {
   });
 
   describe('getMyBookmarks', () => {
-    it('should return user bookmarks', async () => {
-      (Bookmark.find as jest.Mock).mockReturnValue({
-        sort: jest.fn().mockReturnValue({
-          populate: jest.fn().mockReturnValue({
-            populate: jest.fn().mockResolvedValue([mockBookmark]),
-          }),
-        }),
-      });
+    it('should return paginated user bookmarks', async () => {
+      const mockPaginated = {
+        data: [mockBookmark],
+        meta: { total: 1, page: 1, limit: 10, total_pages: 1 },
+      };
+      (BookmarkRepository.findBookmarksPaginated as jest.Mock).mockResolvedValue(mockPaginated);
 
       const result = await BookmarkService.getMyBookmarks(mockUserId, {});
 
-      expect(Bookmark.find).toHaveBeenCalled();
-      expect(result).toEqual([mockBookmark]);
+      expect(BookmarkRepository.findBookmarksPaginated).toHaveBeenCalledWith({}, { user: mockUserId });
+      expect(result).toEqual(mockPaginated);
     });
   });
 

@@ -23,13 +23,14 @@ const createBookmark = catchAsync(async (req, res) => {
 const getMyBookmarks = catchAsync(async (req, res) => {
   const userId = req.user?._id;
 
-  const bookmarks = await BookmarkService.getMyBookmarks(userId, req.query);
+  const result = await BookmarkService.getMyBookmarks(userId, req.query);
 
   sendResponse(res, {
     success: true,
     status: httpStatus.OK,
     message: 'Bookmarks retrieved successfully',
-    data: bookmarks,
+    data: result.data,
+    meta: result.meta,
   });
 });
 

@@ -19,13 +19,14 @@ const createPoll = catchAsync(async (req, res) => {
 
 // Get all polls
 const getAllPolls = catchAsync(async (req, res) => {
-  const polls = await PollService.getAllPolls(req.query);
+  const result = await PollService.getAllPolls(req.query);
 
   sendResponse(res, {
     success: true,
     status: httpStatus.OK,
     message: 'Polls retrieved successfully',
-    data: polls,
+    data: result.data,
+    meta: result.meta,
   });
 });
 

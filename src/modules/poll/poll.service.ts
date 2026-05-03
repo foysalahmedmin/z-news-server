@@ -61,7 +61,6 @@ const getAllPolls = async (query: Record<string, unknown>) => {
     filter.tags = { $in: (query.tags as string).split(',') };
   }
 
-  // Filter by status
   const now = new Date();
   if (query.status === 'active') {
     filter.is_active = true;
@@ -71,17 +70,7 @@ const getAllPolls = async (query: Record<string, unknown>) => {
     filter.end_date = { $lt: now };
   }
 
-  const polls = await PollRepository.findMany(
-    filter,
-    [
-      { path: 'created_by', select: 'name email' },
-      { path: 'category', select: 'name' },
-      { path: 'news', select: 'title slug' },
-    ],
-    { created_at: -1 },
-  );
-
-  return polls;
+  return await PollRepository.findPaginated(query, filter);
 };
 
 // Get active polls

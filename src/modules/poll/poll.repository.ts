@@ -5,6 +5,7 @@
  */
 
 import { PopulateOptions } from 'mongoose';
+import AppQueryFind from '../../builder/app-query-find';
 import { Poll } from './poll.model';
 import { TPoll, TPollDocument } from './poll.type';
 
@@ -56,6 +57,22 @@ export const findMany = async (
     query = query.populate(populateFields as PopulateOptions[]);
   }
   return await query;
+};
+
+export const findPaginated = async (
+  query: Record<string, unknown>,
+  filterOverride: Record<string, unknown> = {},
+): Promise<{
+  data: TPollDocument[];
+  meta: { total: number; page: number; limit: number; total_pages: number };
+}> => {
+  const PollQuery = new AppQueryFind(Poll, { ...query, ...filterOverride })
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+
+  return await PollQuery.execute();
 };
 
 // ─── Update ───────────────────────────────────────────────────────────────────
