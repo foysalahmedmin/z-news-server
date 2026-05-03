@@ -17,6 +17,7 @@ const config: Config = {
     ],
   },
   clearMocks: true,
+  setupFiles: ['<rootDir>/src/test-setup.ts'],
   moduleNameMapper: {
     '^@google-cloud/storage$': '<rootDir>/src/__mocks__/@google-cloud/storage.ts',
   },
