@@ -6,8 +6,25 @@ import * as NewsRepository from '../news.repository';
 import * as NewsService from '../news.service';
 import { TNews } from '../news.type';
 
-// Mock the repository
-jest.mock('../news.repository');
+// Mock the repository with explicit factory to avoid loading mongoose models
+jest.mock('../news.repository', () => ({
+  create: jest.fn(),
+  findById: jest.fn(),
+  findOne: jest.fn(),
+  findOneLean: jest.fn(),
+  findMany: jest.fn(),
+  findManyLean: jest.fn(),
+  findPublicPaginated: jest.fn(),
+  findSelfPaginated: jest.fn(),
+  findAdminPaginated: jest.fn(),
+  findByIdAndUpdate: jest.fn(),
+  updateOne: jest.fn(),
+  updateMany: jest.fn(),
+  restoreById: jest.fn(),
+  restoreManyByIds: jest.fn(),
+  deleteById: jest.fn(),
+  deleteMany: jest.fn(),
+}));
 jest.mock('../../../utils/cache.utils', () => ({
   generateCacheKey: jest.fn(),
   invalidateCacheByPattern: jest.fn(),
@@ -154,7 +171,10 @@ describe('News Service', () => {
 
   describe('updateNews', () => {
     it('should update a news article', async () => {
-      (NewsRepository.findOneLean as jest.Mock).mockResolvedValue(mockNews);
+      // First call: news existence check; second call: slug uniqueness check (null = slug is free)
+      (NewsRepository.findOneLean as jest.Mock)
+        .mockResolvedValueOnce(mockNews)
+        .mockResolvedValueOnce(null);
       (NewsRepository.findByIdAndUpdate as jest.Mock).mockResolvedValue(
         mockNewsDoc,
       );

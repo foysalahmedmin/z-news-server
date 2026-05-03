@@ -1,20 +1,25 @@
 import type { Config } from 'jest';
 
 const config: Config = {
-  preset: 'ts-jest',
   testEnvironment: 'node',
   roots: ['<rootDir>/src'],
   testMatch: ['**/__tests__/**/*.spec.ts'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'json'],
   transform: {
     '^.+\\.tsx?$': [
-      'ts-jest',
+      '@swc/jest',
       {
-        tsconfig: 'tsconfig.json',
+        jsc: {
+          target: 'es2022',
+          parser: { syntax: 'typescript', decorators: true },
+        },
       },
     ],
   },
   clearMocks: true,
+  moduleNameMapper: {
+    '^@google-cloud/storage$': '<rootDir>/src/__mocks__/@google-cloud/storage.ts',
+  },
   coverageDirectory: 'coverage',
   collectCoverageFrom: [
     'src/**/*.ts',

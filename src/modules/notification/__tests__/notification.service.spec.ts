@@ -8,7 +8,9 @@ import { TNotification } from '../notification.type';
 jest.mock('../notification.model', () => ({
   Notification: {
     create: jest.fn(),
-    findById: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }),
+    findById: jest
+      .fn()
+      .mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }),
     findByIdAndUpdate: jest.fn(),
     find: jest.fn(),
     updateMany: jest.fn(),
@@ -18,7 +20,9 @@ jest.mock('../notification.model', () => ({
 }));
 jest.mock('../../user-profile/user-profile.model', () => ({
   UserProfile: {
-    findOne: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }),
+    findOne: jest
+      .fn()
+      .mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }),
   },
 }));
 jest.mock('../../notification-recipient/notification-recipient.model', () => ({
