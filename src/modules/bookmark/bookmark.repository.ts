@@ -75,7 +75,7 @@ export const findBookmarksPaginated = async (
   filterOverride: Record<string, unknown> = {},
 ): Promise<{
   data: TBookmark[];
-  meta: { total: number; page: number; limit: number };
+  meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
   const BookmarkQuery = new AppQueryFind(Bookmark, {
     ...query,
@@ -232,7 +232,7 @@ export const findReadingListsPaginated = async (
   filterOverride: Record<string, unknown> = {},
 ): Promise<{
   data: TReadingList[];
-  meta: { total: number; page: number; limit: number };
+  meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
   const ReadingListQuery = new AppQueryFind(ReadingList, {
     ...query,

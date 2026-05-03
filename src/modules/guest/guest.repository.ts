@@ -82,7 +82,7 @@ export const findPaginated = async (
   populateFields: TPopulate[] = [],
 ): Promise<{
   data: TGuest[];
-  meta: { total: number; page: number; limit: number };
+  meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
   const guestQuery = new AppQueryFind(Guest, { ...filter, ...query })
     .search(['name', 'email'])

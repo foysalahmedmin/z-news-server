@@ -106,7 +106,7 @@ export const findPublicPaginated = async (
   query: Record<string, unknown>,
 ): Promise<{
   data: TCategory[];
-  meta: { total: number; page: number; limit: number };
+  meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
   const { all = false, category, ...rest } = query;
 
@@ -135,7 +135,7 @@ export const findAdminPaginated = async (
   query: Record<string, unknown>,
 ): Promise<{
   data: TCategory[];
-  meta: { total: number; page: number; limit: number };
+  meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
   const { all = false, category, ...rest } = query;
 
@@ -170,7 +170,7 @@ export const findPublicTree = async (
   query: { page?: number; limit?: number } = {},
 ): Promise<{
   data: TCategoryTree[];
-  meta: { total: number; page: number; limit: number };
+  meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
   const page = Number(query.page) || 1;
   const limit = Number(query.limit) || 30;
@@ -223,7 +223,7 @@ export const findPublicTree = async (
 
   return {
     data: categories as TCategoryTree[],
-    meta: { total, page, limit },
+    meta: { total, page, limit, total_pages: Math.ceil(total / limit) },
   };
 };
 
@@ -272,7 +272,7 @@ export const findAdminTree = async (
   query: { page?: number; limit?: number; status?: TStatus } = {},
 ): Promise<{
   data: TCategoryTree[];
-  meta: { total: number; page: number; limit: number };
+  meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
   const page = Number(query.page) || 1;
   const limit = Number(query.limit) || 30;
@@ -325,7 +325,7 @@ export const findAdminTree = async (
 
   return {
     data: categories as TCategoryTree[],
-    meta: { total, page, limit },
+    meta: { total, page, limit, total_pages: Math.ceil(total / limit) },
   };
 };
 

@@ -60,7 +60,7 @@ export const findPaginated = async (
   filterOverride: Record<string, unknown> = {},
 ): Promise<{
   data: TFile[];
-  meta: { total: number; page: number; limit: number };
+  meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
   const fileQuery = new AppQueryFind(File, { ...query, ...filterOverride })
     .populate([{ path: 'author', select: '_id name email image' }])

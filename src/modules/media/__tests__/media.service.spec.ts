@@ -50,7 +50,9 @@ describe('Media Service', () => {
       const result = await MediaService.createMedia(mockUser, mockMedia);
 
       expect(MediaRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ uploaded_by: expect.any(mongoose.Types.ObjectId) }),
+        expect.objectContaining({
+          uploaded_by: expect.any(mongoose.Types.ObjectId),
+        }),
       );
       expect(result).toEqual(mockMedia);
     });

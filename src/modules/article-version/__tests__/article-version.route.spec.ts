@@ -55,13 +55,11 @@ describe('ArticleVersion Routes', () => {
 
   describe('GET /api/article-versions/news/:newsId', () => {
     it('should return 200 with versions for a news article', async () => {
-      (ArticleVersionService.getVersionsByNewsId as jest.Mock).mockResolvedValue(
-        [{ _id: mockId, version_number: 1 }],
-      );
+      (
+        ArticleVersionService.getVersionsByNewsId as jest.Mock
+      ).mockResolvedValue([{ _id: mockId, version_number: 1 }]);
 
-      const res = await request.get(
-        `/api/article-versions/news/${mockNewsId}`,
-      );
+      const res = await request.get(`/api/article-versions/news/${mockNewsId}`);
 
       expect(res.status).toBe(httpStatus.OK);
       expect(res.body.success).toBe(true);
@@ -93,9 +91,7 @@ describe('ArticleVersion Routes', () => {
         title: 'Restored',
       });
 
-      const res = await request.post(
-        `/api/article-versions/${mockId}/restore`,
-      );
+      const res = await request.post(`/api/article-versions/${mockId}/restore`);
 
       expect(res.status).toBe(httpStatus.OK);
       expect(res.body.success).toBe(true);

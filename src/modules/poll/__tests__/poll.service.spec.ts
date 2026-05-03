@@ -115,7 +115,9 @@ describe('Poll Service', () => {
         pollDocWithCreator,
       );
       (PollRepository.save as jest.Mock).mockResolvedValue(pollDocWithCreator);
-      (PollRepository.findOne as jest.Mock).mockResolvedValue(pollDocWithCreator);
+      (PollRepository.findOne as jest.Mock).mockResolvedValue(
+        pollDocWithCreator,
+      );
 
       const result = await PollService.updatePoll(mockPollId, mockUserId, {
         title: 'Updated Poll',

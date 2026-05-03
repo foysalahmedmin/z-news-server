@@ -65,7 +65,7 @@ export const findPublicPaginated = async (
   query: Record<string, unknown>,
 ): Promise<{
   data: TEvent[];
-  meta: { total: number; page: number; limit: number };
+  meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
   const { date: q_date, ...rest } = query || {};
   const date = q_date ? new Date(q_date as string) : new Date();
@@ -92,7 +92,7 @@ export const findAdminPaginated = async (
   query: Record<string, unknown>,
 ): Promise<{
   data: TEvent[];
-  meta: { total: number; page: number; limit: number };
+  meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
   const eventQuery = new AppQueryFind(Event, query)
     .populate([{ path: 'category', select: '_id name slug' }])

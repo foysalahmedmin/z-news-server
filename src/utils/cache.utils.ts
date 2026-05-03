@@ -57,6 +57,29 @@ export const withCache = async <T>(
   }
 };
 
+export const setCache = async (
+  key: string,
+  value: string,
+  ttlSeconds: number,
+): Promise<void> => {
+  if (!config.redis_enabled) return;
+  try {
+    await cacheClient.set(key, value, { EX: ttlSeconds });
+  } catch (error) {
+    console.warn(`setCache error for key ${key}:`, error);
+  }
+};
+
+export const getCache = async (key: string): Promise<string | null> => {
+  if (!config.redis_enabled) return null;
+  try {
+    return await cacheClient.get(key);
+  } catch (error) {
+    console.warn(`getCache error for key ${key}:`, error);
+    return null;
+  }
+};
+
 /**
  * Invalidate a specific cache key or multiple keys.
  * @param keys Key or array of keys to invalidate.

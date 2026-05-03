@@ -106,9 +106,9 @@ describe('News Service', () => {
     it('should throw error if published news not found', async () => {
       (NewsRepository.findOneLean as jest.Mock).mockResolvedValue(null);
 
-      await expect(
-        NewsService.getPublicNews('non-existent'),
-      ).rejects.toThrow(new AppError(httpStatus.NOT_FOUND, 'News not found'));
+      await expect(NewsService.getPublicNews('non-existent')).rejects.toThrow(
+        new AppError(httpStatus.NOT_FOUND, 'News not found'),
+      );
     });
   });
 

@@ -128,7 +128,7 @@ export const findWritersPaginated = async (
   query: Record<string, unknown>,
 ): Promise<{
   data: TUser[];
-  meta: { total: number; page: number; limit: number };
+  meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
   const userQuery = new AppQueryFind(User, {
     role: { $in: ['admin', 'author'] },
@@ -148,7 +148,7 @@ export const findAdminPaginated = async (
   query: Record<string, unknown>,
 ): Promise<{
   data: TUser[];
-  meta: { total: number; page: number; limit: number };
+  meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
   const userQuery = new AppQueryFind(User, query)
     .search(['name', 'email', 'image'])

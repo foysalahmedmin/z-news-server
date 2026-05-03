@@ -150,6 +150,21 @@ export const emailVerification = catchAsync(async (req, res) => {
   });
 });
 
+export const logout = catchAsync(async (req, res) => {
+  const token =
+    req.cookies?.[COOKIE_NAME] || (req.body?.refresh_token as string);
+  if (token) {
+    await AuthServices.logout(token);
+  }
+  res.clearCookie(COOKIE_NAME);
+  sendResponse(res, {
+    status: httpStatus.OK,
+    success: true,
+    message: 'Logged out successfully!',
+    data: null,
+  });
+});
+
 export const logoutAllSessions = catchAsync(async (req, res) => {
   await AuthServices.logoutAllSessions(req.user._id);
   sendResponse(res, {

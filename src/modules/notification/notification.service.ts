@@ -10,6 +10,7 @@ import {
 import { sendEmail } from '../../utils/send-email';
 import { News } from '../news/news.model';
 import { NotificationRecipient } from '../notification-recipient/notification-recipient.model';
+import { UserProfile } from '../user-profile/user-profile.model';
 import { User } from '../user/user.model';
 import * as NotificationRepository from './notification.repository';
 import { TNotification, TType } from './notification.type';
@@ -171,14 +172,21 @@ export const sendNewsNotification = async (payload: {
         emitToUser(authorId, 'notification-recipient-created', result);
 
         if (authorEmail) {
-          sendEmail({
-            to: authorEmail,
-            subject: notificationPayload.title,
-            text: notificationPayload.message,
-            html: `<p>${notificationPayload.message}</p><p><a href="${recipient.metadata.url}">View article</a></p>`,
-          }).catch((err) =>
-            console.error('Failed to send notification email:', err),
-          );
+          const profile = await UserProfile.findOne({
+            user: authorId,
+          }).lean();
+          const emailEnabled =
+            profile?.notification_preferences?.email_notifications !== false;
+          if (emailEnabled) {
+            sendEmail({
+              to: authorEmail,
+              subject: notificationPayload.title,
+              text: notificationPayload.message,
+              html: `<p>${notificationPayload.message}</p><p><a href="${recipient.metadata.url}">View article</a></p>`,
+            }).catch((err) =>
+              console.error('Failed to send notification email:', err),
+            );
+          }
         }
       }
     }

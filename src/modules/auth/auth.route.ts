@@ -72,6 +72,8 @@ router.post(
 
 router.post('/email-verification', AuthControllers.emailVerification);
 
+router.post('/logout', AuthControllers.logout);
+
 router.post(
   '/logout-all',
   auth(

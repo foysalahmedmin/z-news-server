@@ -63,8 +63,7 @@ describe('UserProfile Service', () => {
         mockProfileDoc,
       );
 
-      const result =
-        await UserProfileService.createOrGetProfile(mockUserId);
+      const result = await UserProfileService.createOrGetProfile(mockUserId);
 
       expect(UserProfileRepository.findByUserId).toHaveBeenCalledWith(
         mockUserId,
@@ -80,8 +79,7 @@ describe('UserProfile Service', () => {
         mockProfileDoc,
       );
 
-      const result =
-        await UserProfileService.createOrGetProfile(mockUserId);
+      const result = await UserProfileService.createOrGetProfile(mockUserId);
 
       expect(UserProfileRepository.create).toHaveBeenCalled();
       expect(result).toEqual(mockProfileDoc);
@@ -94,8 +92,7 @@ describe('UserProfile Service', () => {
         mockProfileDoc,
       );
 
-      const result =
-        await UserProfileService.getProfileByUserId(mockUserId);
+      const result = await UserProfileService.getProfileByUserId(mockUserId);
 
       expect(UserProfileRepository.findByUserId).toHaveBeenCalledWith(
         mockUserId,
@@ -108,7 +105,9 @@ describe('UserProfile Service', () => {
 
       await expect(
         UserProfileService.getProfileByUserId(mockUserId),
-      ).rejects.toThrow(new AppError(httpStatus.NOT_FOUND, 'Profile not found'));
+      ).rejects.toThrow(
+        new AppError(httpStatus.NOT_FOUND, 'Profile not found'),
+      );
     });
   });
 
@@ -138,7 +137,9 @@ describe('UserProfile Service', () => {
 
       await expect(
         UserProfileService.updateProfile(mockUserId, { bio: 'Updated' }),
-      ).rejects.toThrow(new AppError(httpStatus.NOT_FOUND, 'Profile not found'));
+      ).rejects.toThrow(
+        new AppError(httpStatus.NOT_FOUND, 'Profile not found'),
+      );
     });
   });
 

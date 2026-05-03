@@ -13,7 +13,7 @@ import { JwtPayload } from 'jsonwebtoken';
 import AppError from '../../builder/app-error';
 import config from '../../config';
 import { TJwtPayload } from '../../types/jsonwebtoken.type';
-import { invalidateCache } from '../../utils/cache.utils';
+import { getCache, invalidateCache, setCache } from '../../utils/cache.utils';
 import { sendEmail } from '../../utils/send-email';
 import { TUserDocument } from '../user/user.type';
 import * as AuthRepository from './auth.repository';
@@ -170,6 +170,14 @@ export const signup = async (payload: TSignup) => {
 // ─── Refresh Token ────────────────────────────────────────────────────────────
 
 export const refreshToken = async (token: string) => {
+  const blacklisted = await getCache(`auth:blacklist:${token}`);
+  if (blacklisted) {
+    throw new AppError(
+      httpStatus.UNAUTHORIZED,
+      'Token has been revoked. Please login again.',
+    );
+  }
+
   const decoded = verifyToken(token, config.jwt_refresh_secret!);
   const { email, iat, token_version } = decoded;
 
@@ -369,6 +377,25 @@ export const emailVerificationSource = async (user: TJwtPayload) => {
     text: 'Verify your email within 10 minuets',
     html: content,
   });
+};
+
+// ─── Logout ───────────────────────────────────────────────────────────────────
+
+export const logout = async (refreshToken: string) => {
+  try {
+    const decoded = verifyToken(
+      refreshToken,
+      config.jwt_refresh_secret!,
+    ) as JwtPayload;
+    if (decoded?.exp) {
+      const ttl = decoded.exp - Math.floor(Date.now() / 1000);
+      if (ttl > 0) {
+        await setCache(`auth:blacklist:${refreshToken}`, '1', ttl);
+      }
+    }
+  } catch {
+    // Token already expired — no need to blacklist
+  }
 };
 
 // ─── Logout All Sessions ──────────────────────────────────────────────────────

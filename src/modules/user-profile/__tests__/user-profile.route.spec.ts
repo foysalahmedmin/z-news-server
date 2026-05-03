@@ -87,9 +87,9 @@ describe('UserProfile Routes', () => {
 
   describe('GET /api/user-profile/top', () => {
     it('should return 200 with top users', async () => {
-      (UserProfileService.getTopUsersByReputation as jest.Mock).mockResolvedValue(
-        [{ user: mockUserId, reputation_score: 100 }],
-      );
+      (
+        UserProfileService.getTopUsersByReputation as jest.Mock
+      ).mockResolvedValue([{ user: mockUserId, reputation_score: 100 }]);
 
       const res = await request.get('/api/user-profile/top');
 

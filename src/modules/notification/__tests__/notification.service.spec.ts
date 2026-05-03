@@ -87,9 +87,8 @@ describe('Notification Service', () => {
     it('should create a notification', async () => {
       (Notification.create as jest.Mock).mockResolvedValue(mockNotificationDoc);
 
-      const result = await NotificationService.createNotification(
-        mockNotification,
-      );
+      const result =
+        await NotificationService.createNotification(mockNotification);
 
       expect(Notification.create).toHaveBeenCalledWith(mockNotification);
       expect(result).toEqual(mockNotification);
@@ -116,9 +115,7 @@ describe('Notification Service', () => {
     it('should throw error if notification not found', async () => {
       (Notification.findById as jest.Mock).mockResolvedValue(null);
 
-      await expect(
-        NotificationService.getNotification(mockId),
-      ).rejects.toThrow(
+      await expect(NotificationService.getNotification(mockId)).rejects.toThrow(
         new AppError(httpStatus.NOT_FOUND, 'Notification not found'),
       );
     });

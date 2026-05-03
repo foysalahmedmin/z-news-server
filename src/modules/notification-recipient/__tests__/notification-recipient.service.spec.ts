@@ -110,10 +110,7 @@ describe('NotificationRecipient Service', () => {
       await expect(
         NotificationRecipientService.getNotificationRecipient(mockId),
       ).rejects.toThrow(
-        new AppError(
-          httpStatus.NOT_FOUND,
-          'Notification recipient not found',
-        ),
+        new AppError(httpStatus.NOT_FOUND, 'Notification recipient not found'),
       );
     });
   });
@@ -138,10 +135,9 @@ describe('NotificationRecipient Service', () => {
       });
 
       const result =
-        await NotificationRecipientService.updateNotificationRecipient(
-          mockId,
-          { is_read: true },
-        );
+        await NotificationRecipientService.updateNotificationRecipient(mockId, {
+          is_read: true,
+        });
 
       expect(result).toBeDefined();
     });
@@ -156,10 +152,7 @@ describe('NotificationRecipient Service', () => {
           is_read: true,
         }),
       ).rejects.toThrow(
-        new AppError(
-          httpStatus.NOT_FOUND,
-          'Notification recipient not found',
-        ),
+        new AppError(httpStatus.NOT_FOUND, 'Notification recipient not found'),
       );
     });
   });
@@ -181,10 +174,7 @@ describe('NotificationRecipient Service', () => {
       await expect(
         NotificationRecipientService.deleteNotificationRecipient(mockId),
       ).rejects.toThrow(
-        new AppError(
-          httpStatus.NOT_FOUND,
-          'Notification recipient not found',
-        ),
+        new AppError(httpStatus.NOT_FOUND, 'Notification recipient not found'),
       );
     });
   });
@@ -223,10 +213,7 @@ describe('NotificationRecipient Service', () => {
           mockId,
         ),
       ).rejects.toThrow(
-        new AppError(
-          httpStatus.NOT_FOUND,
-          'Notification recipient not found',
-        ),
+        new AppError(httpStatus.NOT_FOUND, 'Notification recipient not found'),
       );
     });
   });

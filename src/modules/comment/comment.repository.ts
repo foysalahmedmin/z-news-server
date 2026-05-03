@@ -101,7 +101,7 @@ export const findPaginated = async (
   populateFields: TPopulate[] = [],
 ): Promise<{
   data: TComment[];
-  meta: { total: number; page: number; limit: number };
+  meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
   const commentQuery = new AppQueryFind(Comment, { ...filter, ...query })
     .filter()

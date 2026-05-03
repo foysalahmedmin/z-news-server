@@ -16,13 +16,33 @@ import { ArticleVersionService } from '../article-version/article-version.servic
 import { Bookmark as BookmarkModel } from '../bookmark/bookmark.model';
 import { Category } from '../category/category.model';
 import { Comment as CommentModel } from '../comment/comment.model';
+import { deleteFilePermanent } from '../file/file.service';
 import { sendNewsNotification } from '../notification/notification.service';
 import { Poll as PollModel } from '../poll/poll.model';
 import { Reaction as ReactionModel } from '../reaction/reaction.model';
+import { slugify } from '../../utils/slugify';
 import * as NewsRepository from './news.repository';
 import { TNews } from './news.type';
 
 const CACHE_PREFIX = 'news';
+
+const ensureUniqueSlug = async (
+  baseSlug: string,
+  excludeId: string,
+): Promise<string> => {
+  let slug = baseSlug;
+  let counter = 1;
+  while (true) {
+    const existing = await NewsRepository.findOneLean({ slug });
+    const existingId = (existing as unknown as { _id?: { toString(): string } })
+      ?._id;
+    if (!existing || existingId?.toString() === excludeId) {
+      return slug;
+    }
+    counter += 1;
+    slug = `${baseSlug}-${counter}`;
+  }
+};
 const CACHE_TTL = 1800; // 30 minutes
 
 const getCategoryIds = async ({
@@ -566,6 +586,12 @@ export const updateSelfNews = async (
 
   const update: Partial<TNews> = { ...payload };
 
+  if (payload.title && !payload.slug) {
+    update.slug = await ensureUniqueSlug(slugify(payload.title), id);
+  } else if (payload.slug && payload.slug !== data.slug) {
+    update.slug = await ensureUniqueSlug(payload.slug, id);
+  }
+
   if (
     Object.keys(payload).includes('slug') ||
     Object.keys(payload).includes('title') ||
@@ -647,6 +673,12 @@ export const updateNews = async (
   }
 
   const update: Partial<TNews> = { ...payload };
+
+  if (payload.title && !payload.slug) {
+    update.slug = await ensureUniqueSlug(slugify(payload.title), id);
+  } else if (payload.slug && payload.slug !== data.slug) {
+    update.slug = await ensureUniqueSlug(payload.slug, id);
+  }
 
   if (
     Object.keys(payload).includes('slug') ||
@@ -812,6 +844,12 @@ export const deleteNewsPermanent = async (id: string): Promise<void> => {
     ReactionModel.deleteMany({ news: id }),
     PollModel.deleteMany({ news: id }),
   ]);
+
+  // === Associated file cleanup ===
+  const fileIds: string[] = [];
+  if (news.thumbnail) fileIds.push(news.thumbnail.toString());
+  if (news.video) fileIds.push(news.video.toString());
+  await Promise.allSettled(fileIds.map((fid) => deleteFilePermanent(fid)));
 
   await NewsRepository.deleteById(id);
 };

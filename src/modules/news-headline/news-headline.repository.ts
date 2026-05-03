@@ -48,7 +48,7 @@ export const findPaginated = async (
   filterOverride: Record<string, unknown> = {},
 ): Promise<{
   data: TNewsHeadline[];
-  meta: { total: number; page: number; limit: number };
+  meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
   const NewsQuery = new AppQueryFind(NewsHeadline, {
     ...query,

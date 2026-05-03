@@ -41,7 +41,9 @@ export const findByIdWithBypass = async (
 
 // ─── Find Many ────────────────────────────────────────────────────────────────
 
-export const findManyByIds = async (ids: string[]): Promise<TNotification[]> => {
+export const findManyByIds = async (
+  ids: string[],
+): Promise<TNotification[]> => {
   return await Notification.find({ _id: { $in: ids } }).lean();
 };
 
@@ -61,7 +63,7 @@ export const findPaginated = async (
   filterOverride: Record<string, unknown> = {},
 ): Promise<{
   data: TNotification[];
-  meta: { total: number; page: number; limit: number };
+  meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
   const NotificationQuery = new AppQueryFind(Notification, {
     ...query,

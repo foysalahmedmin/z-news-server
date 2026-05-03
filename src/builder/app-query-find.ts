@@ -180,6 +180,7 @@ class AppQueryFind<T> {
       total: number;
       page: number;
       limit: number;
+      total_pages: number;
       statistics?: Record<string, number>;
     };
   }> {
@@ -215,6 +216,8 @@ class AppQueryFind<T> {
         {} as Record<string, number>,
       ) || undefined;
 
+    const total_pages = Math.ceil(total / this.limit);
+
     if (this.query_params.is_count_only) {
       return {
         data: [],
@@ -222,6 +225,7 @@ class AppQueryFind<T> {
           total,
           page: this.page,
           limit: this.limit,
+          total_pages,
           statistics,
         },
       };
@@ -231,7 +235,13 @@ class AppQueryFind<T> {
 
     return {
       data,
-      meta: { total, page: this.page, limit: this.limit, statistics },
+      meta: {
+        total,
+        page: this.page,
+        limit: this.limit,
+        total_pages,
+        statistics,
+      },
     };
   }
 }

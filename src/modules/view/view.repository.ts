@@ -81,7 +81,7 @@ export const findPaginated = async (
   populateFields: TPopulate[] = [],
 ): Promise<{
   data: TView[];
-  meta: { total: number; page: number; limit: number };
+  meta: { total: number; page: number; limit: number; total_pages: number };
 }> => {
   const viewQuery = new AppQueryFind(View, { ...filter, ...query })
     .filter()

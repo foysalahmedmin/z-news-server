@@ -120,9 +120,12 @@ describe('ArticleVersion Service', () => {
         mockVersion,
       ]);
 
-      const result = await ArticleVersionService.getVersionsByNewsId(mockNewsId);
+      const result =
+        await ArticleVersionService.getVersionsByNewsId(mockNewsId);
 
-      expect(ArticleVersion.getVersionsByNewsId).toHaveBeenCalledWith(mockNewsId);
+      expect(ArticleVersion.getVersionsByNewsId).toHaveBeenCalledWith(
+        mockNewsId,
+      );
       expect(result).toEqual([mockVersion]);
     });
   });
@@ -146,7 +149,9 @@ describe('ArticleVersion Service', () => {
 
       await expect(
         ArticleVersionService.getVersionById(mockId),
-      ).rejects.toThrow(new AppError(httpStatus.NOT_FOUND, 'Version not found'));
+      ).rejects.toThrow(
+        new AppError(httpStatus.NOT_FOUND, 'Version not found'),
+      );
     });
   });
 
@@ -203,9 +208,9 @@ describe('ArticleVersion Service', () => {
     it('should throw error if version not found on delete', async () => {
       (ArticleVersion.findById as jest.Mock).mockResolvedValue(null);
 
-      await expect(
-        ArticleVersionService.deleteVersion(mockId),
-      ).rejects.toThrow(new AppError(httpStatus.NOT_FOUND, 'Version not found'));
+      await expect(ArticleVersionService.deleteVersion(mockId)).rejects.toThrow(
+        new AppError(httpStatus.NOT_FOUND, 'Version not found'),
+      );
     });
   });
 });

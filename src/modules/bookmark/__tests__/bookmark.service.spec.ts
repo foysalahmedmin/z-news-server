@@ -157,7 +157,9 @@ describe('Bookmark Service', () => {
 
       await expect(
         BookmarkService.getBookmarkById(mockBookmarkId, mockUserId),
-      ).rejects.toThrow(new AppError(httpStatus.NOT_FOUND, 'Bookmark not found'));
+      ).rejects.toThrow(
+        new AppError(httpStatus.NOT_FOUND, 'Bookmark not found'),
+      );
     });
   });
 
@@ -179,7 +181,9 @@ describe('Bookmark Service', () => {
 
       await expect(
         BookmarkService.deleteBookmark(mockBookmarkId, mockUserId),
-      ).rejects.toThrow(new AppError(httpStatus.NOT_FOUND, 'Bookmark not found'));
+      ).rejects.toThrow(
+        new AppError(httpStatus.NOT_FOUND, 'Bookmark not found'),
+      );
     });
   });
 
@@ -193,7 +197,10 @@ describe('Bookmark Service', () => {
         name: 'My List',
         is_public: false,
       };
-      const result = await BookmarkService.createReadingList(mockUserId, payload);
+      const result = await BookmarkService.createReadingList(
+        mockUserId,
+        payload,
+      );
 
       expect(ReadingList.create).toHaveBeenCalled();
       expect(result).toEqual(mockReadingList);
@@ -254,7 +261,9 @@ describe('Bookmark Service', () => {
   describe('deleteReadingList', () => {
     it('should delete a reading list', async () => {
       (ReadingList.findOne as jest.Mock).mockResolvedValue(mockReadingList);
-      (Bookmark.updateMany as jest.Mock).mockResolvedValue({ modifiedCount: 0 });
+      (Bookmark.updateMany as jest.Mock).mockResolvedValue({
+        modifiedCount: 0,
+      });
 
       const result = await BookmarkService.deleteReadingList(
         mockListId,
