@@ -17,6 +17,21 @@ router.post(
 // Seed default badges (Super Admin only)
 router.post('/seed', auth('super-admin'), BadgeController.seedDefaultBadges);
 
+// Get badge progress for authenticated user
+router.get(
+  '/progress',
+  auth(
+    'super-admin',
+    'admin',
+    'editor',
+    'author',
+    'contributor',
+    'subscriber',
+    'user',
+  ),
+  BadgeController.getBadgeProgress,
+);
+
 // Get all badges (Public)
 router.get('/', BadgeController.getAllBadges);
 

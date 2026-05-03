@@ -114,6 +114,18 @@ const checkAndAwardBadges = catchAsync(async (req, res) => {
   });
 });
 
+// Get badge progress for authenticated user
+const getBadgeProgress = catchAsync(async (req, res) => {
+  const progress = await BadgeService.getBadgeProgress(req.user._id);
+
+  sendResponse(res, {
+    success: true,
+    status: httpStatus.OK,
+    message: 'Badge progress retrieved successfully',
+    data: progress,
+  });
+});
+
 // Seed default badges
 const seedDefaultBadges = catchAsync(async (_req, res) => {
   const badges = await BadgeService.seedDefaultBadges();
@@ -136,4 +148,5 @@ export const BadgeController = {
   deleteBadge,
   checkAndAwardBadges,
   seedDefaultBadges,
+  getBadgeProgress,
 };

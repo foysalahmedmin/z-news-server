@@ -360,6 +360,61 @@ const seedDefaultBadges = async () => {
   return await BadgeRepository.findMany({});
 };
 
+const getBadgeProgress = async (userId: string) => {
+  const profile = await UserProfileRepository.findOne({ user: userId });
+  if (!profile) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User profile not found');
+  }
+
+  const allBadges = await BadgeRepository.getActiveBadges();
+  const earnedBadgeIds = new Set(
+    profile.badges.map((b) => b.badge_id.toString()),
+  );
+
+  const getUserValue = (criteriaType: string): number => {
+    switch (criteriaType) {
+      case 'articles_read':
+        return profile.articles_read;
+      case 'comments_posted':
+        return profile.total_comments;
+      case 'reading_streak':
+        return profile.reading_streak;
+      case 'reputation_score':
+        return profile.reputation_score;
+      case 'years_member':
+        return (
+          (Date.now() - profile.created_at!.getTime()) /
+          (1000 * 60 * 60 * 24 * 365)
+        );
+      default:
+        return 0;
+    }
+  };
+
+  return (allBadges ?? []).map((badge) => {
+    const earned = earnedBadgeIds.has(badge._id!.toString());
+    const current = earned
+      ? badge.criteria.threshold
+      : getUserValue(badge.criteria.type);
+    const threshold = badge.criteria.threshold;
+    return {
+      badge: {
+        _id: badge._id,
+        name: badge.name,
+        description: badge.description,
+        icon: badge.icon,
+        category: badge.category,
+        rarity: badge.rarity,
+        points: badge.points,
+      },
+      earned,
+      current: Math.min(current, threshold),
+      threshold,
+      percentage: Math.min(Math.round((current / threshold) * 100), 100),
+    };
+  });
+};
+
 export const BadgeService = {
   createBadge,
   getAllBadges,
@@ -370,4 +425,5 @@ export const BadgeService = {
   deleteBadge,
   checkAndAwardBadges,
   seedDefaultBadges,
+  getBadgeProgress,
 };
