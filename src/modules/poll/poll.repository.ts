@@ -59,20 +59,16 @@ export const findMany = async (
   return await query;
 };
 
-export const findPaginated = async (
+export const findPaginated = (
   query: Record<string, unknown>,
   filterOverride: Record<string, unknown> = {},
-): Promise<{
-  data: TPollDocument[];
-  meta: { total: number; page: number; limit: number; total_pages: number };
-}> => {
-  const PollQuery = new AppQueryFind(Poll, { ...query, ...filterOverride })
+) => {
+  return new AppQueryFind(Poll, { ...query, ...filterOverride })
     .filter()
     .sort()
     .paginate()
-    .fields();
-
-  return await PollQuery.execute();
+    .fields()
+    .execute();
 };
 
 // ─── Update ───────────────────────────────────────────────────────────────────
