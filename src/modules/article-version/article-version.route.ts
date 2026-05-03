@@ -41,6 +41,7 @@ router.post(
 router.delete(
   '/:versionId',
   auth('super-admin', 'admin'),
+  validation(ArticleVersionValidation.deleteVersionSchema),
   ArticleVersionController.deleteVersion,
 );
 

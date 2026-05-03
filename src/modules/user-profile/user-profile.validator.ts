@@ -98,6 +98,24 @@ const addBadgeSchema = z.object({
   }),
 });
 
+const idSchema = z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), {
+  message: 'Invalid ID format',
+});
+
+const unfollowAuthorSchema = z.object({
+  params: z.object({ authorId: idSchema }),
+});
+
+const unfollowCategorySchema = z.object({
+  params: z.object({ categoryId: idSchema }),
+});
+
+const unfollowTopicSchema = z.object({
+  params: z.object({
+    topic: z.string({ required_error: 'Topic is required' }).min(1),
+  }),
+});
+
 export const UserProfileValidation = {
   createUserProfileSchema,
   updateUserProfileSchema,
@@ -105,5 +123,8 @@ export const UserProfileValidation = {
   followAuthorSchema,
   followCategorySchema,
   followTopicSchema,
+  unfollowAuthorSchema,
+  unfollowCategorySchema,
+  unfollowTopicSchema,
   addBadgeSchema,
 };

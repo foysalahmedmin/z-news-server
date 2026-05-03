@@ -23,3 +23,11 @@ export const updateMediaValidationSchema = z.object({
     tags: z.array(z.string()).optional(),
   }),
 });
+
+const idSchema = z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), {
+  message: 'Invalid ID format',
+});
+
+export const mediaOperationSchema = z.object({
+  params: z.object({ id: idSchema }),
+});

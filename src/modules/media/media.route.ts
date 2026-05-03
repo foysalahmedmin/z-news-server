@@ -27,6 +27,7 @@ router.patch(
 router.delete(
   '/:id',
   auth('super-admin', 'admin'),
+  validation(MediaValidations.mediaOperationSchema),
   MediaControllers.deleteMedia,
 );
 

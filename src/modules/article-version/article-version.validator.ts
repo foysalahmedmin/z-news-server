@@ -67,9 +67,16 @@ const restoreVersionSchema = z.object({
   }),
 });
 
+const deleteVersionSchema = z.object({
+  params: z.object({
+    versionId: z.string({ required_error: 'Version ID is required' }),
+  }),
+});
+
 export const ArticleVersionValidation = {
   createArticleVersionSchema,
   getVersionsByNewsIdSchema,
   compareVersionsSchema,
   restoreVersionSchema,
+  deleteVersionSchema,
 };

@@ -60,6 +60,7 @@ router.patch(
 router.delete(
   '/:badgeId',
   auth('super-admin', 'admin'),
+  validation(BadgeValidation.badgeOperationSchema),
   BadgeController.deleteBadge,
 );
 
@@ -67,6 +68,7 @@ router.delete(
 router.post(
   '/award/:userId',
   auth('super-admin', 'admin'),
+  validation(BadgeValidation.awardBadgeSchema),
   BadgeController.checkAndAwardBadges,
 );
 

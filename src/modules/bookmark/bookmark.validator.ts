@@ -86,6 +86,14 @@ const followReadingListSchema = z.object({
   }),
 });
 
+const idSchema = z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), {
+  message: 'Invalid ID format',
+});
+
+const bookmarkOperationSchema = z.object({
+  params: z.object({ bookmarkId: idSchema }),
+});
+
 export const BookmarkValidation = {
   createBookmarkSchema,
   updateBookmarkSchema,
@@ -94,4 +102,5 @@ export const BookmarkValidation = {
   updateReadingListSchema,
   addBookmarkToListSchema,
   followReadingListSchema,
+  bookmarkOperationSchema,
 };

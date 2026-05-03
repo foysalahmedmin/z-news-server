@@ -37,6 +37,7 @@ router.post(
 router.delete(
   '/follow/author/:authorId',
   auth(),
+  validation(UserProfileValidation.unfollowAuthorSchema),
   UserProfileController.unfollowAuthor,
 );
 
@@ -52,6 +53,7 @@ router.post(
 router.delete(
   '/follow/category/:categoryId',
   auth(),
+  validation(UserProfileValidation.unfollowCategorySchema),
   UserProfileController.unfollowCategory,
 );
 
@@ -67,6 +69,7 @@ router.post(
 router.delete(
   '/follow/topic/:topic',
   auth(),
+  validation(UserProfileValidation.unfollowTopicSchema),
   UserProfileController.unfollowTopic,
 );
 

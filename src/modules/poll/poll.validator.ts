@@ -79,9 +79,18 @@ const getPollsByNewsSchema = z.object({
   }),
 });
 
+const idSchema = z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), {
+  message: 'Invalid ID format',
+});
+
+const pollOperationSchema = z.object({
+  params: z.object({ pollId: idSchema }),
+});
+
 export const PollValidation = {
   createPollSchema,
   updatePollSchema,
   voteSchema,
   getPollsByNewsSchema,
+  pollOperationSchema,
 };

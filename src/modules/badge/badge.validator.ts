@@ -98,8 +98,22 @@ const getBadgesByCategorySchema = z.object({
   }),
 });
 
+const idSchema = z.string().refine((val) => /^[0-9a-fA-F]{24}$/.test(val), {
+  message: 'Invalid ID format',
+});
+
+const badgeOperationSchema = z.object({
+  params: z.object({ badgeId: idSchema }),
+});
+
+const awardBadgeSchema = z.object({
+  params: z.object({ userId: idSchema }),
+});
+
 export const BadgeValidation = {
   createBadgeSchema,
   updateBadgeSchema,
   getBadgesByCategorySchema,
+  badgeOperationSchema,
+  awardBadgeSchema,
 };

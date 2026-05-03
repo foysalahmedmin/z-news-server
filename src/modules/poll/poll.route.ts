@@ -64,7 +64,12 @@ router.post(
 router.get('/:pollId/results', PollController.getPollResults);
 
 // Delete poll (Creator or Admin)
-router.delete('/:pollId', auth(), PollController.deletePoll);
+router.delete(
+  '/:pollId',
+  auth(),
+  validation(PollValidation.pollOperationSchema),
+  PollController.deletePoll,
+);
 
 const PollRoutes = router;
 

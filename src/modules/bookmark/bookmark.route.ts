@@ -39,7 +39,12 @@ router.patch(
 );
 
 // Delete bookmark
-router.delete('/:bookmarkId', auth(), BookmarkController.deleteBookmark);
+router.delete(
+  '/:bookmarkId',
+  auth(),
+  validation(BookmarkValidation.bookmarkOperationSchema),
+  BookmarkController.deleteBookmark,
+);
 
 // ============ READING LIST ROUTES ============
 
@@ -72,6 +77,7 @@ router.patch(
 router.delete(
   '/reading-list/:listId',
   auth(),
+  validation(BookmarkValidation.followReadingListSchema),
   BookmarkController.deleteReadingList,
 );
 
@@ -87,6 +93,7 @@ router.post(
 router.delete(
   '/reading-list/:listId/follow',
   auth(),
+  validation(BookmarkValidation.followReadingListSchema),
   BookmarkController.unfollowReadingList,
 );
 

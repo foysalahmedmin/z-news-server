@@ -40,6 +40,7 @@ router.patch(
 router.delete(
   '/:id',
   auth('super-admin', 'admin'),
+  validation(TemplateValidation.templateOperationValidationSchema),
   TemplateController.deleteTemplate,
 );
 
